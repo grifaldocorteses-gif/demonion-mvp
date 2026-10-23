@@ -26,7 +26,8 @@ def init_db():
             usuario TEXT,
             modelo TEXT,
             km_actual REAL,
-            ultimo_servicio REAL
+            ultimo_servicio REAL,
+            litros_tanque REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -34,7 +35,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             usuario TEXT,
             km_recorridos REAL,
-            litros_cargados REAL,
+            litros_consumidos REAL,
             rendimiento REAL
         )
     """)
@@ -62,9 +63,11 @@ class VehiculoUpdate(BaseModel):
     modelo: str
     km_actual: float
 
-class CombustibleRegistro(BaseModel):
-    km_recorridos: float
+class CargarCombustible(BaseModel):
     litros_cargados: float
+
+class EvaluarRuta(BaseModel):
+    km_recorridos: float
 
 class MantenimientoRegistro(BaseModel):
     tipo_servicio: str
@@ -111,17 +114,19 @@ def home():
             <h3>Panel Operativo (<span id="current-user"></span>)</h3>
             <hr>
             
-            <h4>1. Control de Combustible (Rango Metrológico)</h4>
+            <h4>1. Control de Combustible y Autonomía</h4>
             <div class="flex-row">
-                <input type="number" id="km_rec" placeholder="Km Recorridos en el ciclo">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km_rec')">🎤 Voz</button>
+                <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados">
+                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
             </div>
-            <div class="flex-row">
-                <input type="number" id="litros" placeholder="Litros Cargados">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('litros')">🎤 Voz</button>
+            <button onclick="cargarCombustible()" style="background:#059669;">Registrar Carga al Tanque</button>
+
+            <div class="flex-row" style="margin-top: 10px;">
+                <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)">
+                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
             </div>
-            <button onclick="registrarCombustible()" style="background:#059669;">Evaluar Consumo de Gasolina</button>
-            <div id="diagnostico-combustible"></div>
+            <button onclick="evaluarRuta()" style="background:#0284c7;">Evaluar Ruta y Descontar Combustible</button>
+            <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
 
             <hr>
             <h4>2. Registro de Mantenimiento Preventivo</h4>
@@ -163,8 +168,8 @@ def home():
             function limpiarInterfaz() {
                 document.getElementById("modelo").value = "";
                 document.getElementById("km").value = "";
-                document.getElementById("km_rec").value = "";
-                document.getElementById("litros").value = "";
+                document.getElementById("litros_carga").value = "";
+                document.getElementById("km_ruta").value = "";
                 document.getElementById("diagnostico").innerHTML = "";
                 document.getElementById("diagnostico-combustible").innerHTML = "";
                 document.getElementById("diagnostico-mantenimiento").innerHTML = "";
@@ -183,7 +188,7 @@ def home():
 
                 recognition.onresult = function(event) {
                     let texto = event.results[0][0].transcript;
-                    if (inputId === 'km' || inputId === 'km_rec' || inputId === 'litros') {
+                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta') {
                         texto = texto.replace(/[^0-9.]/g, '');
                     }
                     document.getElementById(inputId).value = texto;
@@ -280,24 +285,46 @@ def home():
                 }
             }
 
-            async function registrarCombustible() {
-                let km_recorridos = parseFloat(document.getElementById("km_rec").value);
-                let litros_cargados = parseFloat(document.getElementById("litros").value);
-                let res = await fetch(API + "/combustible", {
+            async function cargarCombustible() {
+                let litros_cargados = parseFloat(document.getElementById("litros_carga").value);
+                let res = await fetch(API + "/combustible/cargar", {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ km_recorridos, litros_cargados })
+                    body: JSON.stringify({ litros_cargados })
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    ultimoDiagnostico += `\nRendimiento: ${data.rendimiento} km/L\nAnálisis: ${data.mensaje_alerta}`;
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p><b>Rendimiento:</b> ${data.rendimiento} km/L</p>
+                        <p style="color: green;"><b>✔ Carga Exitosa:</b> +${litros_cargados} L. Litros actuales en tanque: <b>${data.litros_tanque} L</b></p>
+                    `;
+                } else {
+                    alert(data.detail);
+                }
+            }
+
+            async function evaluarRuta() {
+                let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
+                let res = await fetch(API + "/combustible/evaluar", {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + authToken
+                    },
+                    body: JSON.stringify({ km_recorridos })
+                });
+                let data = await res.json();
+                if(res.ok) {
+                    ultimoDiagnostico += `\nRuta Evaluada (${km_recorridos} km): Consumo estimado ${data.litros_consumidos} L. Tanque restante: ${data.litros_restantes} L`;
+                    document.getElementById("diagnostico-combustible").innerHTML = `
+                        <p><b>Consumo Estimado Ruta:</b> ${data.litros_consumidos} L</p>
+                        <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
                         <p style="color: ${data.alerta_color};"><b>Análisis:</b> ${data.mensaje_alerta}</p>
                     `;
+                } else {
+                    alert(data.detail);
                 }
             }
 
@@ -387,8 +414,8 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
         cursor.execute("UPDATE vehiculos SET modelo = ?, km_actual = ? WHERE id = ?", (v.modelo, v.km_actual, vehiculo_id))
     else:
         ultimo_servicio = 0.0
-        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio) VALUES (?, ?, ?, ?)", 
-                       (usuario, v.modelo, v.km_actual, ultimo_servicio))
+        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio, litros_tanque) VALUES (?, ?, ?, ?, ?)", 
+                       (usuario, v.modelo, v.km_actual, ultimo_servicio, 0.0))
     
     conn.commit()
     conn.close()
@@ -424,33 +451,73 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn.close()
     return dict(row) if row else {}
 
-@app.post("/combustible")
-def registrar_combustible(c: CombustibleRegistro, authorization: str = Header(None)):
+@app.post("/combustible/cargar")
+def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
     if c.litros_cargados <= 0:
         raise HTTPException(status_code=400, detail="Los litros deben ser mayores a 0")
     
-    rendimiento = round(c.km_recorridos / c.litros_cargados, 2)
-    
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO combustible (usuario, km_recorridos, litros_cargados, rendimiento) VALUES (?, ?, ?, ?)",
-                   (usuario, c.km_recorridos, c.litros_cargados, rendimiento))
+    cursor.execute("SELECT id, litros_tanque FROM vehiculos WHERE usuario = ?", (usuario,))
+    row = cursor.fetchone()
+    
+    if not row:
+        raise HTTPException(status_code=400, detail="Debe registrar su vehículo primero en la sección 3")
+    
+    vehiculo_id, litros_actuales = row
+    if litros_actuales is None:
+        litros_actuales = 0.0
+    
+    nuevo_total_tanque = round(litros_actuales + c.litros_cargados, 2)
+    cursor.execute("UPDATE vehiculos SET litros_tanque = ? WHERE id = ?", (nuevo_total_tanque, vehiculo_id))
     conn.commit()
     conn.close()
 
-    if rendimiento < 25.0:
+    return {"litros_tanque": nuevo_total_tanque}
+
+@app.post("/combustible/evaluar")
+def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
+    usuario = verificar_token(authorization)
+    if e.km_recorridos <= 0:
+        raise HTTPException(status_code=400, detail="Los kilómetros deben ser mayores a 0")
+    
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, litros_tanque FROM vehiculos WHERE usuario = ?", (usuario,))
+    row = cursor.fetchone()
+    
+    if not row:
+        raise HTTPException(status_code=400, detail="Debe registrar su vehículo primero en la sección 3")
+    
+    vehiculo_id, litros_tanque = row
+    if litros_tanque is None:
+        litros_tanque = 0.0
+
+    # Rendimiento promedio estimado de referencia para moto repartidora: 30 km/L
+    rendimiento_estandar = 30.0
+    litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
+    litros_restantes = round(litros_tanque - litros_consumidos, 2)
+
+    cursor.execute("UPDATE vehiculos SET litros_tanque = ? WHERE id = ?", (max(0.0, litros_restantes), vehiculo_id))
+    cursor.execute("INSERT INTO combustible (usuario, km_recorridos, litros_consumidos, rendimiento) VALUES (?, ?, ?, ?)",
+                   (usuario, e.km_recorridos, litros_consumidos, rendimiento_estandar))
+    conn.commit()
+    conn.close()
+
+    if litros_restantes < 1.0:
         alerta_color = "red"
-        mensaje_alerta = "Consumo anormalmente alto. Revisa presión de neumáticos, filtros o afinación."
-    elif rendimiento < 32.0:
+        mensaje_alerta = "¡Alerta Crítica! Combustible insuficiente para esta ruta. Requiere recarga urgente."
+    elif litros_restantes < 3.0:
         alerta_color = "orange"
-        mensaje_alerta = "Rendimiento aceptable, pero mejorable con hábitos de conducción eficientes."
+        mensaje_alerta = "Precaución: El tanque quedará bajo después de este servicio."
     else:
         alerta_color = "green"
-        mensaje_alerta = "Excelente eficiencia de combustible en este ciclo."
+        mensaje_alerta = "Autonomía óptima para aceptar y realizar este viaje sin contratiempos."
 
     return {
-        "rendimiento": rendimiento,
+        "litros_consumidos": litros_consumidos,
+        "litros_restantes": max(0.0, litros_restantes),
         "alerta_color": alerta_color,
         "mensaje_alerta": mensaje_alerta
     }
@@ -479,6 +546,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
