@@ -111,18 +111,18 @@ def home():
             <h3>Panel Operativo (<span id="current-user"></span>)</h3>
             <hr>
             
-            <h4>1. Registrar Kilometraje (Desgaste Dinámico)</h4>
+            <h4>1. Control de Combustible (Rango Metrológico)</h4>
             <div class="flex-row">
-                <input type="text" id="modelo" placeholder="Modelo (Ej. Pulsar NS 200)">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('modelo')">🎤 Voz</button>
+                <input type="number" id="km_rec" placeholder="Km Recorridos en el ciclo">
+                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km_rec')">🎤 Voz</button>
             </div>
             <div class="flex-row">
-                <input type="number" id="km" placeholder="Kilometraje Actual">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km')">🎤 Voz</button>
+                <input type="number" id="litros" placeholder="Litros Cargados">
+                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('litros')">🎤 Voz</button>
             </div>
-            <button onclick="actualizarKm()">Actualizar y Evaluar Desgaste</button>
-            <div id="diagnostico"></div>
-            
+            <button onclick="registrarCombustible()" style="background:#059669;">Evaluar Consumo de Gasolina</button>
+            <div id="diagnostico-combustible"></div>
+
             <hr>
             <h4>2. Registro de Mantenimiento Preventivo</h4>
             <select id="tipo_serv">
@@ -135,13 +135,114 @@ def home():
             <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
 
             <hr>
-            <h4>3. Control de Combustible (Rango Metrológico)</h4>
+            <h4>3. Registrar Kilometraje (Desgaste Dinámico)</h4>
             <div class="flex-row">
-                <input type="number" id="km_rec" placeholder="Km Recorridos en el ciclo">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km_rec')">🎤 Voz</button>
+                <input type="text" id="modelo" placeholder="Modelo (Ej. Pulsar NS 200)">
+                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('modelo')">🎤 Voz</button>
             </div>
             <div class="flex-row">
-                <input type="number
+                <input type="number" id="km" placeholder="Kilometraje Actual">
+                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km')">🎤 Voz</button>
+            </div>
+            <button onclick="actualizarKm()">Actualizar y Evaluar Desgaste</button>
+            <div id="diagnostico"></div>
+
+            <hr>
+            <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)</button>
+            <button class="btn-backup" onclick="descargarRespaldo()">💾 Descargar Copia de Seguridad (DB)</button>
+            
+            <hr>
+            <button onclick="logout()" style="background:#6b7280; margin-top: 10px;">Cerrar Sesión</button>
+        </div>
+
+        <script>
+            const API = window.location.origin;
+            let authToken = "";
+            let ultimoDiagnostico = "";
+
+            function limpiarInterfaz() {
+                document.getElementById("modelo").value = "";
+                document.getElementById("km").value = "";
+                document.getElementById("km_rec").value = "";
+                document.getElementById("litros").value = "";
+                document.getElementById("diagnostico").innerHTML = "";
+                document.getElementById("diagnostico-combustible").innerHTML = "";
+                document.getElementById("diagnostico-mantenimiento").innerHTML = "";
+                ultimoDiagnostico = "";
+            }
+
+            function escucharVoz(inputId) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    alert("Tu navegador no soporta entrada por voz.");
+                    return;
+                }
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'es-MX';
+                recognition.start();
+
+                recognition.onresult = function(event) {
+                    let texto = event.results[0][0].transcript;
+                    if (inputId === 'km' || inputId === 'km_rec' || inputId === 'litros') {
+                        texto = texto.replace(/[^0-9.]/g, '');
+                    }
+                    document.getElementById(inputId).value = texto;
+                };
+
+                recognition.onerror = function(event) {
+                    alert("Error de voz: " + event.error);
+                };
+            }
+
+            function compartirReporte() {
+                if (!ultimoDiagnostico) {
+                    alert("Realiza una evaluación primero.");
+                    return;
+                }
+                const textoReporte = "*REPORTE OPERATIVO DEMONION MVP*\\n" + ultimoDiagnostico;
+
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Reporte Operativo',
+                        text: textoReporte
+                    }).catch(() => {});
+                } else {
+                    const url = "https://api.whatsapp.com/send?text=" + encodeURIComponent(textoReporte);
+                    window.open(url, '_blank');
+                }
+            }
+
+            function descargarRespaldo() {
+                window.location.href = API + "/backup";
+            }
+
+            async function register() {
+                let u = document.getElementById("user").value;
+                let p = document.getElementById("pass").value;
+                let res = await fetch(API + "/register", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({username: u, password: p})
+                });
+                let data = await res.json();
+                alert(data.mensaje || data.detail);
+            }
+
+            async function login() {
+                limpiarInterfaz();
+                let u = document.getElementById("user").value;
+                let p = document.getElementById("pass").value;
+                let res = await fetch(API + "/login", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({username: u, password: p})
+                });
+                if(res.ok) {
+                    let data = await res.json();
+                    authToken = data.token;
+                    document.getElementById("current-user").innerText = u;
+                    
+
 
 
 
