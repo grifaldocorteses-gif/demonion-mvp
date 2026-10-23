@@ -158,6 +158,17 @@ def home():
             let authToken = "";
             let ultimoDiagnostico = "";
 
+            function limpiarInterfaz() {
+                document.getElementById("modelo").value = "";
+                document.getElementById("km").value = "";
+                document.getElementById("km_rec").value = "";
+                document.getElementById("litros").value = "";
+                document.getElementById("diagnostico").innerHTML = "";
+                document.getElementById("diagnostico-combustible").innerHTML = "";
+                document.getElementById("diagnostico-mantenimiento").innerHTML = "";
+                ultimoDiagnostico = "";
+            }
+
             function escucharVoz(inputId) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechRecognition) {
@@ -216,6 +227,7 @@ def home():
             }
 
             async function login() {
+                limpiarInterfaz();
                 let u = document.getElementById("user").value;
                 let p = document.getElementById("pass").value;
                 let res = await fetch(API + "/login", {
@@ -237,6 +249,9 @@ def home():
 
             function logout() {
                 authToken = "";
+                limpiarInterfaz();
+                document.getElementById("user").value = "";
+                document.getElementById("pass").value = "";
                 document.getElementById("auth").style.display = "block";
                 document.getElementById("app").style.display = "none";
             }
@@ -309,7 +324,7 @@ def home():
                 });
                 if(res.ok) {
                     let data = await res.json();
-                    if(data) {
+                    if(data && Object.keys(data).length > 0) {
                         document.getElementById("modelo").value = data.modelo || "";
                         document.getElementById("km").value = data.km_actual || 0;
                     }
