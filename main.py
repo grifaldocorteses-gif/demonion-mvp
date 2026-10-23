@@ -26,7 +26,12 @@ def init_db():
             usuario TEXT,
             modelo TEXT,
             km_actual REAL,
-            ultimo_servicio REAL,
+            ultimo_servicio REAL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tanque_usuario (
+            usuario TEXT PRIMARY KEY,
             litros_tanque REAL DEFAULT 0.0
         )
     """)
@@ -420,8 +425,8 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
         cursor.execute("UPDATE vehiculos SET modelo = ?, km_actual = ? WHERE id = ?", (v.modelo, v.km_actual, vehiculo_id))
     else:
         ultimo_servicio = 0.0
-        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio, litros_tanque) VALUES (?, ?, ?, ?, ?)", 
-                       (usuario, v.modelo, v.km_actual, ultimo_servicio, 0.0))
+        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio) VALUES (?, ?, ?, ?)", 
+                       (usuario, v.modelo, v.km_actual, ultimo_servicio))
     
     conn.commit()
     conn.close()
@@ -465,22 +470,21 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, litros_tanque FROM vehiculos WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     
-    if not row:
-        raise HTTPException(status_code=400, detail="Debe registrar su vehículo primero en la sección 3")
-    
-    vehiculo_id, litros_actuales = row
-    if litros_actuales is None:
-        litros_actuales = 0.0
-    
-    nuevo_total_tanque = round(litros_actuales + c.litros_cargados, 2)
-    cursor.execute("UPDATE vehiculos SET litros_tanque = ? WHERE id = ?", (nuevo_total_tanque, vehiculo_id))
+    if row:
+        litros_actuales = row[0] if row[0] is not None else 0.0
+        nuevo_total = round(litros_actuales + c.litros_cargados, 2)
+        cursor.execute("UPDATE tanque_usuario SET litros_tanque = ? WHERE usuario = ?", (nuevo_total, usuario))
+    else:
+        nuevo_total = round(c.litros_cargados, 2)
+        cursor.execute("INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)", (usuario, nuevo_total))
+        
     conn.commit()
     conn.close()
 
-    return {"litros_tanque": nuevo_total_tanque}
+    return {"litros_tanque": nuevo_total}
 
 @app.post("/combustible/evaluar")
 def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
@@ -490,22 +494,21 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, litros_tanque FROM vehiculos WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     
-    if not row:
-        raise HTTPException(status_code=400, detail="Debe registrar su vehículo primero en la sección 3")
-    
-    vehiculo_id, litros_tanque = row
-    if litros_tanque is None:
-        litros_tanque = 0.0
+    litros_tanque = row[0] if row and row[0] is not None else 0.0
 
-    rendimiento_estandar = 30.0 # km por litro estimado
+    rendimiento_estandar = 30.0
     litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
     costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
     litros_restantes = round(litros_tanque - litros_consumidos, 2)
 
-    cursor.execute("UPDATE vehiculos SET litros_tanque = ? WHERE id = ?", (max(0.0, litros_restantes), vehiculo_id))
+    if row:
+        cursor.execute("UPDATE tanque_usuario SET litros_tanque = ? WHERE usuario = ?", (max(0.0, litros_restantes), usuario))
+    else:
+        cursor.execute("INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)", (usuario, max(0.0, litros_restantes)))
+
     cursor.execute("INSERT INTO combustible (usuario, km_recorridos, litros_consumidos, rendimiento) VALUES (?, ?, ?, ?)",
                    (usuario, e.km_recorridos, litros_consumidos, rendimiento_estandar))
     conn.commit()
@@ -553,6 +556,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
