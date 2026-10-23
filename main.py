@@ -68,6 +68,7 @@ class CargarCombustible(BaseModel):
 
 class EvaluarRuta(BaseModel):
     km_recorridos: float
+    precio_gasolina: float
 
 class MantenimientoRegistro(BaseModel):
     tipo_servicio: str
@@ -125,7 +126,11 @@ def home():
                 <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
             </div>
-            <button onclick="evaluarRuta()" style="background:#0284c7;">Evaluar Ruta y Descontar Combustible</button>
+            <div class="flex-row">
+                <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0">
+                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
+            </div>
+            <button onclick="evaluarRuta()" style="background:#0284c7;">Evaluar Costo, Ruta y Descontar</button>
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
 
             <hr>
@@ -188,7 +193,7 @@ def home():
 
                 recognition.onresult = function(event) {
                     let texto = event.results[0][0].transcript;
-                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta') {
+                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta' || inputId === 'precio_gas') {
                         texto = texto.replace(/[^0-9.]/g, '');
                     }
                     document.getElementById(inputId).value = texto;
@@ -307,19 +312,20 @@ def home():
 
             async function evaluarRuta() {
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
+                let precio_gasolina = parseFloat(document.getElementById("precio_gas").value);
                 let res = await fetch(API + "/combustible/evaluar", {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ km_recorridos })
+                    body: JSON.stringify({ km_recorridos, precio_gasolina })
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    ultimoDiagnostico += `\nRuta Evaluada (${km_recorridos} km): Consumo estimado ${data.litros_consumidos} L. Tanque restante: ${data.litros_restantes} L`;
+                    ultimoDiagnostico += `\nRuta (${km_recorridos} km): Gasto $${data.costo_viaje} MXN | Restantes: ${data.litros_restantes} L`;
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p><b>Consumo Estimado Ruta:</b> ${data.litros_consumidos} L</p>
+                        <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
                         <p style="color: ${data.alerta_color};"><b>Análisis:</b> ${data.mensaje_alerta}</p>
                     `;
@@ -494,9 +500,9 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     if litros_tanque is None:
         litros_tanque = 0.0
 
-    # Rendimiento promedio estimado de referencia para moto repartidora: 30 km/L
-    rendimiento_estandar = 30.0
+    rendimiento_estandar = 30.0 # km por litro estimado
     litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
+    costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
     litros_restantes = round(litros_tanque - litros_consumidos, 2)
 
     cursor.execute("UPDATE vehiculos SET litros_tanque = ? WHERE id = ?", (max(0.0, litros_restantes), vehiculo_id))
@@ -507,16 +513,17 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
 
     if litros_restantes < 1.0:
         alerta_color = "red"
-        mensaje_alerta = "¡Alerta Crítica! Combustible insuficiente para esta ruta. Requiere recarga urgente."
+        mensaje_alerta = f"¡Alerta Crítica! Gasto estimado: ${costo_viaje}. Combustible insuficiente para esta ruta."
     elif litros_restantes < 3.0:
         alerta_color = "orange"
-        mensaje_alerta = "Precaución: El tanque quedará bajo después de este servicio."
+        mensaje_alerta = f"Precaución: Gasto estimado ${costo_viaje}. Tanque bajo después de este servicio."
     else:
         alerta_color = "green"
-        mensaje_alerta = "Autonomía óptima para aceptar y realizar este viaje sin contratiempos."
+        mensaje_alerta = f"Ruta rentable. Gasto estimado: ${costo_viaje} MXN. Autonomía óptima."
 
     return {
         "litros_consumidos": litros_consumidos,
+        "costo_viaje": costo_viaje,
         "litros_restantes": max(0.0, litros_restantes),
         "alerta_color": alerta_color,
         "mensaje_alerta": mensaje_alerta
@@ -546,6 +553,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
