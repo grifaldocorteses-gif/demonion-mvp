@@ -124,7 +124,18 @@ def home():
             <div id="diagnostico"></div>
             
             <hr>
-            <h4>2. Control de Combustible (Rango Metrológico)</h4>
+            <h4>2. Registro de Mantenimiento Preventivo</h4>
+            <select id="tipo_serv">
+                <option value="Cambio de Aceite">Cambio de Aceite</option>
+                <option value="Kit de Arrastre / Cadena">Kit de Arrastre / Cadena</option>
+                <option value="Pastillas de Freno">Pastillas de Freno</option>
+                <option value="Afinacion General">Afinación General</option>
+            </select>
+            <button onclick="registrarMantenimiento()" style="background:#d97706;">Registrar Servicio Realizado</button>
+            <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
+
+            <hr>
+            <h4>3. Control de Combustible (Rango Metrológico)</h4>
             <div class="flex-row">
                 <input type="number" id="km_rec" placeholder="Km Recorridos en el ciclo">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km_rec')">🎤 Voz</button>
@@ -135,17 +146,6 @@ def home():
             </div>
             <button onclick="registrarCombustible()" style="background:#059669;">Evaluar Consumo de Gasolina</button>
             <div id="diagnostico-combustible"></div>
-            
-            <hr>
-            <h4>3. Registro de Mantenimiento Preventivo</h4>
-            <select id="tipo_serv">
-                <option value="Cambio de Aceite">Cambio de Aceite</option>
-                <option value="Kit de Arrastre / Cadena">Kit de Arrastre / Cadena</option>
-                <option value="Pastillas de Freno">Pastillas de Freno</option>
-                <option value="Afinacion General">Afinación General</option>
-            </select>
-            <button onclick="registrarMantenimiento()" style="background:#d97706;">Registrar Servicio Realizado</button>
-            <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
 
             <hr>
             <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)</button>
@@ -479,4 +479,5 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
