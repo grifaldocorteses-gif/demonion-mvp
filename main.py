@@ -271,9 +271,9 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    ultimoDiagnostico = "Vehículo: " + data.modelo + "\\nKm desde servicio: " + data.km_desde_servicio + " km\\nEstado: " + data.mensaje_alerta;
+                    ultimoDiagnostico = "Estado: Sincronizado\\nKm desde servicio: " + data.km_desde_servicio + " km\\nDiagnóstico: " + data.mensaje_alerta;
                     document.getElementById("diagnostico").innerHTML = `
-                        <p><b>Estado:</b> ${data.modelo}</p>
+                        <p><b>Estado:</b> Sincronizado</p>
                         <p><b>Km desde último servicio:</b> ${data.km_desde_servicio} km</p>
                         <p style="color: ${data.alerta_color};"><b>Diagnóstico:</b> ${data.mensaje_alerta}</p>
                     `;
@@ -479,5 +479,6 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
