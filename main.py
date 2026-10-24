@@ -541,6 +541,8 @@ def home():
 
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
+                        <p><b>Costo Operativo:</b> $${data.costo_por_km} MXN / km</p>
+                        <p><b>Autonomía Proyectada:</b> ${data.autonomia_restante_km} km restantes</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
                         <p style="color: ${data.alerta_color};"><b>Análisis Telemetría:</b> ${data.mensaje_alerta}</p>
                     `;
@@ -713,7 +715,6 @@ def reiniciar_mantenimiento(m: RegistrarMantenimiento, authorization: str = Head
         ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = 0.0
     """, (usuario, m.componente))
 
-    # Actualizar el odómetro de último servicio en la tabla vehículos para reflejar la distancia desde el cambio
     cursor.execute("UPDATE vehiculos SET ultimo_servicio = ? WHERE usuario = ?", (km_actual, usuario))
 
     cursor.execute("INSERT INTO bitacora_servicios (usuario, componente, km_realizado) VALUES (?, ?, ?)",
@@ -764,6 +765,10 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
     costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
     litros_restantes = round(litros_tanque - litros_consumidos, 2)
+    
+    # Nuevas variables de telemetría analítica (Opción 2 y 3)
+    costo_por_km = round(costo_viaje / e.km_recorridos, 2)
+    autonomia_restante_km = round(max(0.0, litros_restantes) * rendimiento_estandar, 1)
 
     cursor.execute("""
         INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
@@ -788,6 +793,8 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     return {
         "litros_consumidos": litros_consumidos,
         "costo_viaje": costo_viaje,
+        "costo_por_km": costo_por_km,
+        "autonomia_restante_km": autonomia_restante_km,
         "litros_restantes": max(0.0, litros_restantes),
         "alerta_color": alerta_color,
         "mensaje_alerta": mensaje_alerta
@@ -797,6 +804,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
