@@ -122,10 +122,10 @@ def home():
             
             <h4>1. Control de Combustible y Autonomía</h4>
             <div class="flex-row">
-                <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados">
+                <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados (Tanque Lleno / Nuevo)">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
             </div>
-            <button onclick="cargarCombustible()" style="background:#059669;">Registrar Carga al Tanque</button>
+            <button onclick="cargarCombustible()" style="background:#059669;">Registrar Carga y Reiniciar Tanque</button>
 
             <div class="flex-row" style="margin-top: 10px;">
                 <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)">
@@ -308,7 +308,7 @@ def home():
                 let data = await res.json();
                 if(res.ok) {
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: green;"><b>✔ Carga Exitosa:</b> +${litros_cargados} L. Litros actuales en tanque: <b>${data.litros_tanque} L</b></p>
+                        <p style="color: green;"><b>✔ Tanque Reiniciado y Actualizado:</b> Nuevos litros en tanque: <b>${data.litros_tanque} L</b></p>
                     `;
                 } else {
                     alert(data.detail);
@@ -470,16 +470,13 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
     
-    if row:
-        litros_actuales = row[0] if row[0] is not None else 0.0
-        nuevo_total = round(litros_actuales + c.litros_cargados, 2)
-        cursor.execute("UPDATE tanque_usuario SET litros_tanque = ? WHERE usuario = ?", (nuevo_total, usuario))
-    else:
-        nuevo_total = round(c.litros_cargados, 2)
-        cursor.execute("INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)", (usuario, nuevo_total))
+    # MODIFICACIÓN: REINICIO Y REEMPLAZO DIRECTO (Tanque lleno / nueva carga limpia)
+    nuevo_total = round(c.litros_cargados, 2)
+    cursor.execute("""
+        INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
+        ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?
+    """, (usuario, nuevo_total, nuevo_total))
         
     conn.commit()
     conn.close()
@@ -556,6 +553,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
