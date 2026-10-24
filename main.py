@@ -132,6 +132,7 @@ def home():
             .progress-container { background: #e2e8f0; border-radius: 4px; height: 10px; width: 100%; margin: 5px 0; overflow: hidden; }
             .progress-bar { height: 100%; width: 100%; background: #22c55e; transition: width 0.3s ease; }
             .bitacora-box { background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px; font-size: 12px; color: #334155; }
+            .panel-oficial { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; margin-top: 8px; }
         </style>
     </head>
     <body>
@@ -149,7 +150,6 @@ def home():
             
             <h4>1. Control de Combustible y Autonomía</h4>
             <div class="flex-row">
-                <!-- VISTA PREVIA EN TIEMPO REAL CON ONINPUT -->
                 <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
             </div>
@@ -168,7 +168,12 @@ def home():
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
             <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
+            
+            <!-- CONTENEDOR DE VISTA PREVIA -->
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
+            
+            <!-- CONTENEDOR OFICIAL PERMANENTE (RENDIMIENTO DEL DÍA) -->
+            <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
 
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
@@ -289,6 +294,9 @@ def home():
                 document.getElementById("km_ruta").value = "";
                 document.getElementById("diagnostico").innerHTML = "";
                 document.getElementById("diagnostico-combustible").innerHTML = "";
+                let panelOficial = document.getElementById("diagnostico-oficial");
+                panelOficial.innerHTML = "";
+                panelOficial.style.display = "none";
                 document.getElementById("anulador_frenos").value = "revision";
                 document.getElementById("anulador_cadena").value = "revision";
                 document.getElementById("anulador_llantas").value = "revision";
@@ -348,13 +356,11 @@ def home():
                 }
             }
 
-            // SIMULACIÓN / VISTA PREVIA EN TIEMPO REAL AL DIGITAR LITROS
             function simularCarga() {
                 let litrosEntrada = parseFloat(document.getElementById("litros_carga").value);
                 let divDiag = document.getElementById("diagnostico-combustible");
 
                 if (!litrosEntrada || litrosEntrada <= 0) {
-                    // Si borra el input, se puede optar por no mostrar simulación o mantener el estado anterior
                     if (document.getElementById("km_ruta").value > 0) {
                         simularRuta();
                     } else {
@@ -670,10 +676,11 @@ def home():
                     gastoTotalAcumuladoGlobal = 0.0;
                     document.getElementById("litros_carga").value = "";
                     document.getElementById("km_ruta").value = "";
-                    document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: #047857; font-weight: bold;">✔ Acción realizada con éxito:</p>
-                        <p><b>Tanque y Contadores de Telemetría:</b> Reiniciados a 0 correctamente.</p>
-                    `;
+                    document.getElementById("diagnostico-combustible").innerHTML = "";
+                    let panelOficial = document.getElementById("diagnostico-oficial");
+                    panelOficial.innerHTML = "";
+                    panelOficial.style.display = "none";
+                    alert("✔ Tanque y contadores de telemetría reiniciados correctamente.");
                 } else {
                     alert("Error al reiniciar.");
                 }
@@ -715,18 +722,21 @@ def home():
                         colorIntensidad = "orange";
                     }
 
-                    document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: #047857; font-weight: bold;">✔ Ruta Oficial Registrada y Descontada:</p>
+                    // Limpiar vista previa y mostrar de forma permanente en el panel oficial
+                    document.getElementById("diagnostico-combustible").innerHTML = "";
+                    let panelOficial = document.getElementById("diagnostico-oficial");
+                    panelOficial.style.display = "block";
+                    panelOficial.innerHTML = `
+                        <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento del Día (Rendimiento Oficial Registrado):</p>
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p><b>Costo Operativo:</b> $${data.costo_por_km} MXN / km</p>
-                        <p><b>Autonomía Proyectada:</b> ${data.autonomia_restante_km} km restantes</p>
+                        <p><b>Costo Operativo:</b> ${data.costo_por_km} MXN / km</p>
+                        <p><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
-                        <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 6px 0;">
-                        <p style="color: #1e3a8a; font-weight: bold;">📊 Análisis Telemetría - Acumulados:</p>
-                        <p><b>Km Totales Recorridos en Rutas:</b> ${kmTotalesAcumuladosGlobal} km</p>
-                        <p><b>Gasto Total Acumulado en Gasolina:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
-                        <p style="color: ${colorIntensidad};"><b>Evaluación de Uso (Pulsar NS 200):</b> ${intensidadUso}</p>
-                        <p style="color: ${data.alerta_color};"><b>Estado:</b> ${data.mensaje_alerta}</p>
+                        <hr style="border: 0; border-top: 1px dashed #bbf7d0; margin: 6px 0;">
+                        <p style="color: #1e3a8a; font-weight: bold;">📊 Acumulados Globales:</p>
+                        <p><b>Km Totales Recorridos:</b> ${kmTotalesAcumuladosGlobal} km</p>
+                        <p><b>Gasto Total Acumulado:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
+                        <p style="color: ${colorIntensidad};"><b>Evaluación de Uso:</b> ${intensidadUso}</p>
                     `;
                 } else {
                     alert(data.detail);
@@ -1057,6 +1067,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
