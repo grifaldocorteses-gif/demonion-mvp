@@ -146,34 +146,34 @@ def home():
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
-            <!-- CHECKLIST ESTRICTO OBLIGATORIO PARA DESBLOQUEO -->
+            <!-- CHECKLIST ACTUALIZADO CON TÉRMINOS TÉCNICOS Y BLOQUEO DE SEGURIDAD -->
             <div class="checklist-box">
-                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">🚨 SEGURIDAD VITAL: Cambie el estatus de todos los componentes a "Operativo (OK)" para desbloquear el Bloque 1.</p>
+                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">🚨 SEGURIDAD VITAL: Verifique y cambie el estatus de todos los componentes a "Operativo (OK)" para desbloquear el Bloque 1.</p>
                 <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Obligatoria:</p>
                 <div class="checklist-grid">
                     <div class="check-item">
-                        <span>🛑 Frenos</span>
+                        <span>🛑 Frenos / Suspensión</span>
                         <select id="anulador_frenos" onchange="verificarAnuladores()">
                             <option value="revision" selected>Requiere Revisión</option>
                             <option value="ok">Operativo (OK)</option>
                         </select>
                     </div>
                     <div class="check-item">
-                        <span>⛓ Cadena / Arrastre</span>
+                        <span>⛓ Kit Arrastre / Piñones</span>
                         <select id="anulador_cadena" onchange="verificarAnuladores()">
                             <option value="revision" selected>Requiere Revisión</option>
                             <option value="ok">Operativo (OK)</option>
                         </select>
                     </div>
                     <div class="check-item">
-                        <span>🛢 Nivel de Aceite</span>
-                        <select id="anulador_aceite" onchange="verificarAnuladores()">
+                        <span>🛞 Llantas / Presión</span>
+                        <select id="anulador_llantas" onchange="verificarAnuladores()">
                             <option value="revision" selected>Requiere Revisión</option>
                             <option value="ok">Operativo (OK)</option>
                         </select>
                     </div>
                     <div class="check-item">
-                        <span>💡 Sistema Eléctrico</span>
+                        <span>💡 Sistema Eléctrico / Intermitentes</span>
                         <select id="anulador_luces" onchange="verificarAnuladores()">
                             <option value="revision" selected>Requiere Revisión</option>
                             <option value="ok">Operativo (OK)</option>
@@ -229,7 +229,7 @@ def home():
                 document.getElementById("diagnostico-mantenimiento").innerHTML = "";
                 document.getElementById("anulador_frenos").value = "revision";
                 document.getElementById("anulador_cadena").value = "revision";
-                document.getElementById("anulador_aceite").value = "revision";
+                document.getElementById("anulador_llantas").value = "revision";
                 document.getElementById("anulador_luces").value = "revision";
                 bloquearSistema(true, "🔒 Bloqueo de seguridad: Verifique y cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
                 ultimoDiagnostico = "";
@@ -259,10 +259,10 @@ def home():
             function verificarAnuladores() {
                 let f = document.getElementById("anulador_frenos").value;
                 let c = document.getElementById("anulador_cadena").value;
-                let a = document.getElementById("anulador_aceite").value;
+                let ll = document.getElementById("anulador_llantas").value;
                 let l = document.getElementById("anulador_luces").value;
 
-                if (f === "revision" || c === "revision" || a === "revision" || l === "revision") {
+                if (f === "revision" || c === "revision" || ll === "revision" || l === "revision") {
                     bloquearSistema(true, "🚨 SEGURIDAD VITAL: Hay componentes en 'Requiere Revisión'. El Bloque 1 permanece bloqueado hasta confirmar que todos los puntos estén en 'Operativo (OK)'.");
                     ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
                 } else {
@@ -645,6 +645,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
