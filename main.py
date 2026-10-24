@@ -44,13 +44,21 @@ def init_db():
             rendimiento REAL
         )
     """)
-    # Tabla para llevar el control de los km acumulados por cada componente específico
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS mantenimiento_componentes (
             usuario TEXT,
             componente TEXT,
             km_acumulados REAL DEFAULT 0.0,
             PRIMARY KEY (usuario, componente)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS bitacora_servicios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario TEXT,
+            componente TEXT,
+            km_realizado REAL,
+            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     conn.commit()
@@ -114,6 +122,7 @@ def home():
             .bloqueado { background: #94a3b8 !important; cursor: not-allowed !important; }
             .progress-container { background: #e2e8f0; border-radius: 4px; height: 10px; width: 100%; margin: 5px 0; overflow: hidden; }
             .progress-bar { height: 100%; width: 100%; background: #22c55e; transition: width 0.3s ease; }
+            .bitacora-box { background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px; font-size: 12px; color: #334155; }
         </style>
     </head>
     <body>
@@ -218,12 +227,11 @@ def home():
                 </div>
                 <div id="alerta-inversion" style="font-size: 12px; margin-top: 4px; font-weight: bold; color: #16a34a;">Estado óptimo. Sin gastos imprevistos próximos.</div>
                 
-                <!-- BOTÓN DE REINICIO DE CICLO AL 100% -->
                 <button class="btn-mantenimiento" onclick="registrarMantenimientoRealizado()">🔧 Registrar Mantenimiento Realizado (Reiniciar al 100%)</button>
             </div>
 
             <hr>
-            <h4>3. Registrar Kilometraje y Bitácora</h4>
+            <h4>3. Registrar Kilometraje y Bitácora de Campo</h4>
             <div class="flex-row">
                 <input type="text" id="modelo" placeholder="Modelo (Ej. Pulsar NS 200)">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('modelo')">🎤 Voz</button>
@@ -234,6 +242,12 @@ def home():
             </div>
             <button onclick="actualizarKm()">Actualizar Odómetro</button>
             <div id="diagnostico"></div>
+
+            <!-- BITÁCORA / HISTORIAL RÁPIDO DE SERVICIOS -->
+            <div class="bitacora-box">
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #1e293b;">📋 Historial de Mantenimientos Realizados:</p>
+                <div id="lista-bitacora">Sin registros de mantenimiento en esta sesión.</div>
+            </div>
 
             <hr>
             <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)</button>
@@ -253,6 +267,7 @@ def home():
                 "Kit de Arrastre / Piñones": 0,
                 "Pastillas de Freno": 0
             };
+            let bitacoraLocal = [];
 
             function limpiarInterfaz() {
                 document.getElementById("modelo").value = "";
@@ -267,7 +282,9 @@ def home():
                 document.getElementById("anulador_luces").value = "revision";
                 document.getElementById("anulador_epp").value = "revision";
                 document.getElementById("anulador_docs").value = "revision";
+                document.getElementById("lista-bitacora").innerHTML = "Sin registros de mantenimiento en esta sesión.";
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
+                bitacoraLocal = [];
                 bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
                 ultimoDiagnostico = "";
             }
@@ -358,6 +375,13 @@ def home():
                 if(res.ok) {
                     kmComponentes[tipoServicio] = 0;
                     sincronizarVistaComponente();
+                    
+                    // Agregar a bitácora local
+                    let kmActualVal = document.getElementById("km").value || "0";
+                    bitacoraLocal.unshift(`✔ [${kmActualVal} km] ${tipoServicio} cambiado y reiniciado.`);
+                    if(bitacoraLocal.length > 5) bitacoraLocal.pop();
+                    document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
+
                     alert("✔ " + data.mensaje);
                 } else {
                     alert(data.detail);
@@ -514,7 +538,6 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    // Acumulamos los km de la ruta en todos los componentes para actualizar su desgaste
                     for (let comp in kmComponentes) {
                         kmComponentes[comp] += km_recorridos;
                     }
@@ -542,7 +565,6 @@ def home():
                     }
                 }
                 
-                // Cargar estado de mantenimientos del usuario
                 let resMantenimiento = await fetch(API + "/mantenimiento/estado", {
                     headers: { "Authorization": "Bearer " + authToken }
                 });
@@ -554,6 +576,17 @@ def home():
                         }
                     });
                     sincronizarVistaComponente();
+                }
+
+                let resBitacora = await fetch(API + "/bitacora", {
+                    headers: { "Authorization": "Bearer " + authToken }
+                });
+                if(resBitacora.ok) {
+                    let dataBit = await resBitacora.json();
+                    if(dataBit.length > 0) {
+                        bitacoraLocal = dataBit.map(b => `✔ [${b.km_realizado} km] ${b.componente} registrado.`);
+                        document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
+                    }
                 }
             }
         </script>
@@ -642,15 +675,35 @@ def obtener_estado_mantenimiento(authorization: str = Header(None)):
     conn.close()
     return [dict(r) for r in rows]
 
+@app.get("/bitacora")
+def obtener_bitacora(authorization: str = Header(None)):
+    usuario = verificar_token(authorization)
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT componente, km_realizado FROM bitacora_servicios WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
 @app.post("/mantenimiento/reiniciar")
 def reiniciar_mantenimiento(m: RegistrarMantenimiento, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    
+    cursor.execute("SELECT km_actual FROM vehiculos WHERE usuario = ?", (usuario,))
+    v_row = cursor.fetchone()
+    km_actual = v_row[0] if v_row else 0.0
+
     cursor.execute("""
         INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados) VALUES (?, ?, 0.0)
         ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = 0.0
     """, (usuario, m.componente))
+
+    cursor.execute("INSERT INTO bitacora_servicios (usuario, componente, km_realizado) VALUES (?, ?, ?)",
+                   (usuario, m.componente, km_actual))
+    
     conn.commit()
     conn.close()
     return {"mensaje": f"Ciclo de '{m.componente}' reiniciado al 100% correctamente."}
@@ -681,7 +734,6 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # Actualizar km acumulados en BD para cada componente
     for comp in ["Cambio de Aceite", "Kit de Arrastre / Piñones", "Pastillas de Freno"]:
         cursor.execute("""
             INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados) 
@@ -730,6 +782,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
