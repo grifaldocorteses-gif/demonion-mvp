@@ -149,7 +149,8 @@ def home():
             
             <h4>1. Control de Combustible y Autonomía</h4>
             <div class="flex-row">
-                <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados">
+                <!-- VISTA PREVIA EN TIEMPO REAL CON ONINPUT -->
+                <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
             </div>
             
@@ -347,13 +348,43 @@ def home():
                 }
             }
 
+            // SIMULACIÓN / VISTA PREVIA EN TIEMPO REAL AL DIGITAR LITROS
+            function simularCarga() {
+                let litrosEntrada = parseFloat(document.getElementById("litros_carga").value);
+                let divDiag = document.getElementById("diagnostico-combustible");
+
+                if (!litrosEntrada || litrosEntrada <= 0) {
+                    // Si borra el input, se puede optar por no mostrar simulación o mantener el estado anterior
+                    if (document.getElementById("km_ruta").value > 0) {
+                        simularRuta();
+                    } else {
+                        divDiag.innerHTML = "";
+                    }
+                    return;
+                }
+
+                let totalSimulado = round(litrosActualesTanque + litrosEntrada, 2);
+                let rendimientoEstandar = 30.0;
+                let autonomiaProyectada = round(totalSimulado * rendimientoEstandar, 1);
+
+                divDiag.innerHTML = `
+                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Carga]</i></p>
+                    <p><b>Litros en Tanque (Post-Carga):</b> ${totalSimulado} L (${litrosActualesTanque} L actuales + ${litrosEntrada} L nuevos)</p>
+                    <p><b>Autonomía Estimada (Pulsar NS 200):</b> ${autonomiaProyectada} km</p>
+                `;
+            }
+
             function simularRuta() {
                 let kmRutaVal = parseFloat(document.getElementById("km_ruta").value);
                 let precioGasVal = parseFloat(document.getElementById("precio_gas").value) || 24.0;
                 let divDiag = document.getElementById("diagnostico-combustible");
 
                 if (!kmRutaVal || kmRutaVal <= 0) {
-                    divDiag.innerHTML = "";
+                    if (document.getElementById("litros_carga").value > 0) {
+                        simularCarga();
+                    } else {
+                        divDiag.innerHTML = "";
+                    }
                     return;
                 }
 
@@ -483,7 +514,9 @@ def home():
                         texto = texto.replace(/[^0-9.]/g, '');
                     }
                     document.getElementById(inputId).value = texto;
-                    if (inputId === 'km_ruta' || inputId === 'precio_gas') {
+                    if (inputId === 'litros_carga') {
+                        simularCarga();
+                    } else if (inputId === 'km_ruta' || inputId === 'precio_gas') {
                         simularRuta();
                     }
                 };
@@ -605,7 +638,6 @@ def home():
                     let rendimientoEstandar = 30.0;
                     let autonomiaTanque = round(litrosActualesTanque * rendimientoEstandar, 1);
 
-                    // Mensaje inmediato al registrar carga en la interfaz
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p style="color: #047857; font-weight: bold;">✔ Carga Registrada y Tanque Acumulado:</p>
                         <p><b>Litros Totales en Tanque:</b> ${litrosActualesTanque} L</p>
@@ -686,7 +718,7 @@ def home():
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p style="color: #047857; font-weight: bold;">✔ Ruta Oficial Registrada y Descontada:</p>
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p><b>Costo Operativo:</b> ${data.costo_por_km} MXN / km</p>
+                        <p><b>Costo Operativo:</b> $${data.costo_por_km} MXN / km</p>
                         <p><b>Autonomía Proyectada:</b> ${data.autonomia_restante_km} km restantes</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
                         <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 6px 0;">
@@ -1025,6 +1057,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
