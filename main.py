@@ -105,6 +105,9 @@ def home():
             .btn-backup { background: #475569; font-weight: bold; margin-top: 5px; }
             #app, #auth { display: none; }
             .flex-row { display: flex; gap: 5px; }
+            .checklist-box { background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 8px; }
+            .checklist-item { display: flex; align-items: center; gap: 10px; margin: 5px 0; font-size: 14px; }
+            .checklist-item input { width: 20px; height: 20px; margin: 0; }
         </style>
     </head>
     <body>
@@ -139,7 +142,7 @@ def home():
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
 
             <hr>
-            <h4>2. Registro de Mantenimiento Preventivo</h4>
+            <h4>2. Mantenimiento Preventivo y Checklist Operativo</h4>
             <select id="tipo_serv">
                 <option value="Cambio de Aceite">Cambio de Aceite</option>
                 <option value="Kit de Arrastre / Cadena">Kit de Arrastre / Cadena</option>
@@ -148,6 +151,16 @@ def home():
             </select>
             <button onclick="registrarMantenimiento()" style="background:#d97706;">Registrar Servicio Realizado</button>
             <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
+
+            <div class="checklist-box">
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">Checklist Pre-Ruta (Inspección Rápida):</p>
+                <div class="checklist-item"><input type="checkbox" id="chk_frenos"> Frenos (Delantero y Trasero)</div>
+                <div class="checklist-item"><input type="checkbox" id="chk_llantas"> Presión y Estado de Llantas</div>
+                <div class="checklist-item"><input type="checkbox" id="chk_luces"> Luces, Stop e Intermitentes</div>
+                <div class="checklist-item"><input type="checkbox" id="chk_cadena"> Tensión y Lubricación de Cadena</div>
+                <button onclick="validarChecklist()" style="background:#475569; margin-top: 8px; font-size: 13px; padding: 6px;">Validar Estado de la Moto</button>
+                <div id="diagnostico-checklist" style="margin-top: 5px; font-size: 13px;"></div>
+            </div>
 
             <hr>
             <h4>3. Registrar Kilometraje (Desgaste Dinámico)</h4>
@@ -159,7 +172,7 @@ def home():
                 <input type="number" id="km" placeholder="Kilometraje Actual">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km')">🎤 Voz</button>
             </div>
-            <button onclick="actualizarKm()">Actualizar y Evaluar Desgaste</button>
+            <button onclick="actualizarKm()">Actualizar y Sincronizar Odómetro</button>
             <div id="diagnostico"></div>
 
             <hr>
@@ -183,6 +196,7 @@ def home():
                 document.getElementById("diagnostico").innerHTML = "";
                 document.getElementById("diagnostico-combustible").innerHTML = "";
                 document.getElementById("diagnostico-mantenimiento").innerHTML = "";
+                document.getElementById("diagnostico-checklist").innerHTML = "";
                 ultimoDiagnostico = "";
             }
 
@@ -207,6 +221,22 @@ def home():
                 recognition.onerror = function(event) {
                     alert("Error de voz: " + event.error);
                 };
+            }
+
+            function validarChecklist() {
+                let f = document.getElementById("chk_frenos").checked;
+                let l = document.getElementById("chk_llantas").checked;
+                let lu = document.getElementById("chk_luces").checked;
+                let c = document.getElementById("chk_cadena").checked;
+
+                let div = document.getElementById("diagnostico-checklist");
+                if (f && l && lu && c) {
+                    div.innerHTML = "<span style='color: green; font-weight: bold;'>✔ Checklist OK: Moto en óptimas condiciones para repartir.</span>";
+                    ultimoDiagnostico += "\nChecklist: Aprobado (Listo para ruta)";
+                } else {
+                    div.innerHTML = "<span style='color: red; font-weight: bold;'>⚠ Precaución: Faltan puntos críticos por revisar antes de salir.</span>";
+                    ultimoDiagnostico += "\nChecklist: Alerta (Revisión pendiente)";
+                }
             }
 
             function compartirReporte() {
@@ -286,9 +316,9 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    ultimoDiagnostico = `Estado: Sincronizado\nKm desde servicio: ${data.km_desde_servicio} km\nDiagnóstico: ${data.mensaje_alerta}`;
+                    ultimoDiagnostico = `Estado Odómetro: ${data.km_actual} km\nKm desde servicio: ${data.km_desde_servicio} km\nDiagnóstico Desgaste: ${data.mensaje_alerta}`;
                     document.getElementById("diagnostico").innerHTML = `
-                        <p><b>Estado:</b> Sincronizado</p>
+                        <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
                         <p><b>Km desde último servicio:</b> ${data.km_desde_servicio} km</p>
                         <p style="color: ${data.alerta_color};"><b>Diagnóstico:</b> ${data.mensaje_alerta}</p>
                     `;
@@ -367,6 +397,7 @@ def home():
                     if(data && Object.keys(data).length > 0) {
                         document.getElementById("modelo").value = data.modelo || "";
                         document.getElementById("km").value = data.km_actual || 0;
+                        actualizarKm();
                     }
                 }
             }
@@ -471,7 +502,6 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # MODIFICACIÓN: REINICIO Y REEMPLAZO DIRECTO (Tanque lleno / nueva carga limpia)
     nuevo_total = round(c.litros_cargados, 2)
     cursor.execute("""
         INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
@@ -538,7 +568,7 @@ def registrar_mantenimiento(m: MantenimientoRegistro, authorization: str = Heade
     cursor.execute("SELECT id, km_actual FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     if not row:
-        raise HTTPException(status_code=400, detail="Debe registrar un vehículo primero")
+        raise HTTPException(status_code=400, detail="Debe registrar un vehículo primero en la sección 3")
     
     vehiculo_id, km_actual = row
     cursor.execute("UPDATE vehiculos SET ultimo_servicio = ? WHERE id = ?", (km_actual, vehiculo_id))
@@ -553,6 +583,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
