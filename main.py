@@ -122,6 +122,7 @@ def home():
             .btn-mantenimiento { background: #d97706; font-weight: bold; margin-top: 6px; }
             .btn-reset-tanque { background: #e11d48; font-weight: bold; font-size: 12px; padding: 8px; width: 30%; }
             .btn-main-carga { width: 68%; }
+            .btn-leido { background: #16a34a; font-weight: bold; margin-top: 10px; }
             #app, #auth { display: none; }
             .flex-row { display: flex; gap: 5px; align-items: center; }
             .checklist-box { background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fcd34d; margin-top: 10px; margin-bottom: 10px; }
@@ -133,7 +134,7 @@ def home():
             .progress-bar { height: 100%; width: 100%; background: #22c55e; transition: width 0.3s ease; }
             .bitacora-box { background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px; font-size: 12px; color: #334155; }
             .panel-oficial { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; margin-top: 8px; }
-            .alerta-normativa { background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px; border-radius: 4px; font-size: 12px; color: #1e3a8a; margin-top: 10px; }
+            .alerta-normativa { background: #eff6ff; border: 1px solid #2563eb; padding: 12px; border-radius: 6px; font-size: 12px; color: #1e3a8a; margin-top: 10px; }
         </style>
     </head>
     <body>
@@ -176,56 +177,68 @@ def home():
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
-            <div class="checklist-box">
-                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Atención: Confirme que cada punto esté en "Operativo (OK)" para desbloquear el Bloque 1.</p>
-                <div class="checklist-grid">
-                    <div class="check-item">
-                        <span>🛑 Frenos / Suspensión</span>
-                        <select id="anulador_frenos" onchange="verificarAnuladores()">
-                            <option value="revision" selected>Requiere Revisión</option>
-                            <option value="ok">Operativo (OK)</option>
-                        </select>
-                    </div>
-                    <div class="check-item">
-                        <span>⛓ Kit Arrastre / Piñones</span>
-                        <select id="anulador_cadena" onchange="verificarAnuladores()">
-                            <option value="revision" selected>Requiere Revisión</option>
-                            <option value="ok">Operativo (OK)</option>
-                        </select>
-                    </div>
-                    <div class="check-item">
-                        <span>🛞 Llantas / Presión</span>
-                        <select id="anulador_llantas" onchange="verificarAnuladores()">
-                            <option value="revision" selected>Requiere Revisión</option>
-                            <option value="ok">Operativo (OK)</option>
-                        </select>
-                    </div>
-                    <div class="check-item">
-                        <span>💡 Sistema Eléctrico / Intermitentes</span>
-                        <select id="anulador_luces" onchange="verificarAnuladores()">
-                            <option value="revision" selected>Requiere Revisión</option>
-                            <option value="ok">Operativo (OK)</option>
-                        </select>
-                    </div>
-                    <div class="check-item">
-                        <span>🪖 Casco / Indumentaria (EPP)</span>
-                        <select id="anulador_epp" onchange="verificarAnuladores()">
-                            <option value="revision" selected>Requiere Revisión</option>
-                            <option value="ok">Operativo (OK)</option>
-                        </select>
-                    </div>
-                    <div class="check-item">
-                        <span>📄 Licencia / Póliza Vigente</span>
-                        <select id="anulador_docs" onchange="verificarAnuladores()">
-                            <option value="revision" selected>Requiere Revisión</option>
-                            <option value="ok">Operativo (OK)</option>
-                        </select>
+            <!-- CONTENEDOR CONTROLLADOR DE VISTA (CHECKLIST VS PROTOCOLO SUPERPUESTO) -->
+            <div id="contenedor-inspeccion">
+                <div id="checklist-contenedor" class="checklist-box">
+                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Jornada alta detectada: Confirme los 6 puntos críticos de seguridad para desbloquear el sistema.</p>
+                    <div class="checklist-grid">
+                        <div class="check-item">
+                            <span>🛑 Frenos / Suspensión</span>
+                            <select id="anulador_frenos" onchange="verificarAnuladores()">
+                                <option value="revision" selected>Requiere Revisión</option>
+                                <option value="ok">Operativo (OK)</option>
+                            </select>
+                        </div>
+                        <div class="check-item">
+                            <span>⛓ Kit Arrastre / Piñones</span>
+                            <select id="anulador_cadena" onchange="verificarAnuladores()">
+                                <option value="revision" selected>Requiere Revisión</option>
+                                <option value="ok">Operativo (OK)</option>
+                            </select>
+                        </div>
+                        <div class="check-item">
+                            <span>🛞 Llantas / Presión</span>
+                            <select id="anulador_llantas" onchange="verificarAnuladores()">
+                                <option value="revision" selected>Requiere Revisión</option>
+                                <option value="ok">Operativo (OK)</option>
+                            </select>
+                        </div>
+                        <div class="check-item">
+                            <span>💡 Sistema Eléctrico / Intermitentes</span>
+                            <select id="anulador_luces" onchange="verificarAnuladores()">
+                                <option value="revision" selected>Requiere Revisión</option>
+                                <option value="ok">Operativo (OK)</option>
+                            </select>
+                        </div>
+                        <div class="check-item">
+                            <span>🪖 Casco / Indumentaria (EPP)</span>
+                            <select id="anulador_epp" onchange="verificarAnuladores()">
+                                <option value="revision" selected>Requiere Revisión</option>
+                                <option value="ok">Operativo (OK)</option>
+                            </select>
+                        </div>
+                        <div class="check-item">
+                            <span>📄 Licencia / Póliza Vigente</span>
+                            <select id="anulador_docs" onchange="verificarAnuladores()">
+                                <option value="revision" selected>Requiere Revisión</option>
+                                <option value="ok">Operativo (OK)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- MENSAJE DE NORMATIVA Y PROTOCOLO DE SEGURIDAD VIAL -->
-            <div id="protocolo-normativo" class="alerta-normativa" style="display:none;"></div>
+                <!-- PROTOCOLO SUPERPUESTO QUE REEMPLAZA EL CHECKLIST AL COMPLETARSE -->
+                <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
+                    <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
+                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección debido a la alta exigencia de tu jornada. Cumple estrictamente la reglamentación oficial:</p>
+                    <ul style="margin: 4px 0 8px 15px; padding: 0;">
+                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en avenidas secundarias y <b>80 km/h</b> en vías de acceso controlado. Reduzca a <b>30 km/h</b> en zonas escolares.</li>
+                        <li><b>Equipo de Protección (EPP):</b> Uso obligatorio de casco certificado (DOT / ECE) y chaleco reflejante nocturno.</li>
+                        <li><b>Cero Invasión:</b> Prohibido circular en banquetas, ciclovías o carriles confinados de transporte masivo.</li>
+                    </ul>
+                    <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
+                </div>
+            </div>
 
             <select id="tipo_serv" onchange="sincronizarVistaComponente()" style="margin-top: 10px;">
                 <option value="Cambio de Aceite" data-ciclo="2500">Cambio de Aceite (Ciclo: 2,500 km)</option>
@@ -281,6 +294,7 @@ def home():
             let litrosActualesTanque = 0.0;
             let kmTotalesAcumuladosGlobal = 0.0;
             let gastoTotalAcumuladoGlobal = 0.0;
+            let protocoloConfirmadoLeido = false;
             let kmComponentes = {
                 "Cambio de Aceite": 0,
                 "Kit de Arrastre / Piñones": 0,
@@ -298,7 +312,9 @@ def home():
                 let panelOficial = document.getElementById("diagnostico-oficial");
                 panelOficial.innerHTML = "";
                 panelOficial.style.display = "none";
+                protocoloConfirmadoLeido = false;
                 document.getElementById("protocolo-normativo").style.display = "none";
+                document.getElementById("checklist-contenedor").style.display = "block";
                 document.getElementById("anulador_frenos").value = "revision";
                 document.getElementById("anulador_cadena").value = "revision";
                 document.getElementById("anulador_llantas").value = "revision";
@@ -311,7 +327,7 @@ def home():
                 gastoTotalAcumuladoGlobal = 0.0;
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 bitacoraLocal = [];
-                bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
+                verificarJornadaYBloqueo();
                 ultimoDiagnostico = "";
             }
 
@@ -341,36 +357,55 @@ def home():
                 }
             }
 
-            function verificarAnuladores() {
-                let f = document.getElementById("anulador_frenos").value;
-                let c = document.getElementById("anulador_cadena").value;
-                let ll = document.getElementById("anulador_llantas").value;
-                let l = document.getElementById("anulador_luces").value;
-                let epp = document.getElementById("anulador_epp").value;
-                let docs = document.getElementById("anulador_docs").value;
-                let panelNormativo = document.getElementById("protocolo-normativo");
+            // CONDICIONAL DE JORNADA PESADA O KM ALTOS
+            function verificarJornadaYDiagnostico() {
+                let checklistElem = document.getElementById("checklist-contenedor");
+                let protocoloElem = document.getElementById("protocolo-normativo");
 
-                if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
-                    bloquearSistema(true, "⚠️ Precaución: Hay elementos pendientes de revisión. El Bloque 1 se habilitará cuando todos los puntos estén en 'Operativo (OK)'.");
-                    ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva Integral";
-                    panelNormativo.style.display = "none";
+                // El checklist solo se activa si la jornada o km acumulados superan los 90 km
+                if (kmTotalesAcumuladosGlobal >= 90.0) {
+                    if (!protocoloConfirmadoLeido) {
+                        let f = document.getElementById("anulador_frenos").value;
+                        let c = document.getElementById("anulador_cadena").value;
+                        let ll = document.getElementById("anulador_llantas").value;
+                        let l = document.getElementById("anulador_luces").value;
+                        let epp = document.getElementById("anulador_epp").value;
+                        let docs = document.getElementById("anulador_docs").value;
+
+                        if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
+                            bloquearSistema(true, "⚠️ Jornada Alta (>90 km): Hay elementos críticos pendientes de revisión obligatoria.");
+                            checklistElem.style.display = "block";
+                            protocoloElem.style.display = "none";
+                            ultimoDiagnostico = "Estado Operativo: Bloqueado por Jornada Pesada";
+                        } else {
+                            // Al completar los 6 puntos en OK, se superpone el protocolo en la misma área
+                            bloquearSistema(false, "✔ Inspección aprobada para jornada pesada.");
+                            checklistElem.style.display = "none";
+                            protocoloElem.style.display = "block";
+                            ultimoDiagnostico = "Estado Operativo: Protocolo Vial Activo y Habilitado";
+                        }
+                    } else {
+                        // Si ya confirmó leído, se oculta el protocolo y se muestra el checklist minimizado/aprobado
+                        checklistElem.style.display = "block";
+                        protocoloElem.style.display = "none";
+                        bloquearSistema(false, "✔ Jornada pesada auditada y protocolo vial confirmado.");
+                    }
                 } else {
-                    bloquearSistema(false, "✔ Inspección aprobada: Moto, EPP y documentos listos para operar con seguridad.");
-                    ultimoDiagnostico = "Estado Operativo: Habilitado y Seguro (OK)";
-                    
-                    // MENSAJE DE SEGURIDAD VIAL Y NORMATIVA GUBERNAMENTAL
-                    panelNormativo.style.display = "block";
-                    panelNormativo.innerHTML = `
-                        <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
-                        <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Para garantizar cero incidentes y proteger tu integridad en ruta, cumple estrictamente la Reglamentación Oficial de Tránsito:</p>
-                        <ul style="margin: 4px 0 0 15px; padding: 0;">
-                            <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en avenidas primarias/secundarias y <b>80 km/h</b> en vías de acceso controlado (e.g., periféricos/autopistas urbanas). Reduzca a <b>30 km/h</b> en zonas escolares y residenciales.</li>
-                            <li><b>Equipo Protección Personal (EPP):</b> Uso obligatorio de casco certificado (DOT / ECE 22.05), chamarra con protecciones y elemento reflejante obligatorio en horario nocturno (18:00 a 06:00 hrs).</li>
-                            <li><b>Preferencia y Posición:</b> Prohibido circular sobre banquetas, áreas peatonales o ciclovías. El adelantamiento se realiza exclusivamente por el carril izquierdo.</li>
-                            <li><b>Cero Invasión:</b> Prohibido circular en carriles confinados de transporte masivo o adelantar entre filas de vehículos en movimiento a más de 30 km/h.</li>
-                        </ul>
-                    `;
+                    // Jornada ligera o inicial: sistema libre sin requerir el checklist pesado
+                    protocoloConfirmadoLeido = false;
+                    checklistElem.style.display = "none";
+                    protocoloElem.style.display = "none";
+                    bloquearSistema(false, "✔ Jornada Óptima / Inicial: Sistema Operativo Habilitado Directamente.");
                 }
+            }
+
+            function verificarAnuladores() {
+                verificarJornadaYDiagnostico();
+            }
+
+            function confirmarLeidoProtocolo() {
+                protocoloConfirmadoLeido = true;
+                verificarJornadaYDiagnostico();
             }
 
             function simularCarga() {
@@ -598,9 +633,9 @@ def home():
                     document.getElementById("current-user").innerText = u;
                     document.getElementById("auth").style.display = "none";
                     document.getElementById("app").style.display = "block";
-                    cargarEstadoVehiculo();
+                    await cargarEstadoVehiculo();
                     sincronizarVistaComponente();
-                    verificarAnuladores();
+                    verificarJornadaYDiagnostico();
                 } else {
                     alert("Credenciales inválidas");
                 }
@@ -691,6 +726,7 @@ def home():
                     litrosActualesTanque = 0.0;
                     kmTotalesAcumuladosGlobal = 0.0;
                     gastoTotalAcumuladoGlobal = 0.0;
+                    protocoloConfirmadoLeido = false;
                     document.getElementById("litros_carga").value = "";
                     document.getElementById("km_ruta").value = "";
                     document.getElementById("diagnostico-combustible").innerHTML = `
@@ -700,6 +736,7 @@ def home():
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.innerHTML = "";
                     panelOficial.style.display = "none";
+                    verificarJornadaYDiagnostico();
                 } else {
                     alert("Error al reiniciar.");
                 }
@@ -730,6 +767,7 @@ def home():
                         kmComponentes[comp] += km_recorridos;
                     }
                     sincronizarVistaComponente();
+                    verificarJornadaYDiagnostico();
 
                     let intensidadUso = "Óptima / Moderada";
                     let colorIntensidad = "green";
@@ -1085,6 +1123,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
