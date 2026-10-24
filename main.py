@@ -109,6 +109,7 @@ def home():
             .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
             .check-item { background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
             .check-item select { padding: 5px; font-size: 12px; margin: 0; }
+            .bloqueado { background: #94a3b8 !important; cursor: not-allowed !important; }
         </style>
     </head>
     <body>
@@ -129,7 +130,7 @@ def home():
                 <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados (Tanque Lleno / Nuevo)">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
             </div>
-            <button id="btn_cargar" onclick="cargarCombustible()" style="background:#059669;">Registrar Carga y Reiniciar Tanque</button>
+            <button id="btn_cargar" class="bloqueado" onclick="cargarCombustible()">Registrar Carga y Reiniciar Tanque (Bloqueado por Seguridad)</button>
 
             <div class="flex-row" style="margin-top: 10px;">
                 <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)">
@@ -139,16 +140,16 @@ def home():
                 <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
-            <button id="btn_evaluar" onclick="evaluarRuta()" style="background:#0284c7;">Evaluar Costo, Ruta y Descontar</button>
+            <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Bloqueado por Seguridad)</button>
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
 
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
-            <!-- CHECKLIST OPTIMIZADO: SUGERENCIA ARRIBA Y OPCIONES EN REVISIÓN POR DEFECTO -->
+            <!-- CHECKLIST ESTRICTO OBLIGATORIO PARA DESBLOQUEO -->
             <div class="checklist-box">
-                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #d97706;">⏳ Sugerencia: Complete la revisión de todos los componentes antes de iniciar el viaje.</p>
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Sugerida:</p>
+                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">🚨 SEGURIDAD VITAL: Cambie el estatus de todos los componentes a "Operativo (OK)" para desbloquear el Bloque 1.</p>
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Obligatoria:</p>
                 <div class="checklist-grid">
                     <div class="check-item">
                         <span>🛑 Frenos</span>
@@ -216,6 +217,7 @@ def home():
             const API = window.location.origin;
             let authToken = "";
             let ultimoDiagnostico = "";
+            let sistemaBloqueado = true;
 
             function limpiarInterfaz() {
                 document.getElementById("modelo").value = "";
@@ -229,8 +231,29 @@ def home():
                 document.getElementById("anulador_cadena").value = "revision";
                 document.getElementById("anulador_aceite").value = "revision";
                 document.getElementById("anulador_luces").value = "revision";
-                verificarAnuladores();
+                bloquearSistema(true, "🔒 Bloqueo de seguridad: Verifique y cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
                 ultimoDiagnostico = "";
+            }
+
+            function bloquearSistema(bloquear, mensaje) {
+                let btnCargar = document.getElementById("btn_cargar");
+                let btnEvaluar = document.getElementById("btn_evaluar");
+                let div = document.getElementById("diagnostico-anulador");
+
+                sistemaBloqueado = bloquear;
+                div.innerHTML = mensaje;
+
+                if (bloquear) {
+                    btnCargar.classList.add("bloqueado");
+                    btnCargar.style.background = "#94a3b8";
+                    btnEvaluar.classList.add("bloqueado");
+                    btnEvaluar.style.background = "#94a3b8";
+                } else {
+                    btnCargar.classList.remove("bloqueado");
+                    btnCargar.style.background = "#059669";
+                    btnEvaluar.classList.remove("bloqueado");
+                    btnEvaluar.style.background = "#0284c7";
+                }
             }
 
             function verificarAnuladores() {
@@ -239,14 +262,12 @@ def home():
                 let a = document.getElementById("anulador_aceite").value;
                 let l = document.getElementById("anulador_luces").value;
 
-                let div = document.getElementById("diagnostico-anulador");
-
                 if (f === "revision" || c === "revision" || a === "revision" || l === "revision") {
-                    div.innerHTML = "<span style='color: #ea580c;'>💡 Recomendación Preventiva: Se detectaron componentes que requieren inspección (frenos, cadena, aceite o luces) antes de iniciar el viaje. Verifique su estado.</span>";
-                    ultimoDiagnostico = "Estado Operativo: Revisión Preventiva Sugerida en Componentes";
+                    bloquearSistema(true, "🚨 SEGURIDAD VITAL: Hay componentes en 'Requiere Revisión'. El Bloque 1 permanece bloqueado hasta confirmar que todos los puntos estén en 'Operativo (OK)'.");
+                    ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
                 } else {
-                    div.innerHTML = "<span style='color: green;'>✔ Inspección OK: Todos los componentes listos para rodar.</span>";
-                    ultimoDiagnostico = "Estado Operativo: Inspección Óptima (OK)";
+                    bloquearSistema(false, "✔ Inspección de Seguridad OK: Moto verificada y Bloque 1 habilitado para operar.");
+                    ultimoDiagnostico = "Estado Operativo: Habilitado y Seguro (OK)";
                 }
             }
 
@@ -360,6 +381,10 @@ def home():
             }
 
             async function cargarCombustible() {
+                if (sistemaBloqueado) {
+                    alert("⚠️ ACCIÓN BLOQUEADA POR SEGURIDAD: Debe cambiar el estatus de todos los componentes del checklist a 'Operativo (OK)' en el Bloque 2 para usar el control de combustible.");
+                    return;
+                }
                 let litros_cargados = parseFloat(document.getElementById("litros_carga").value);
                 let res = await fetch(API + "/combustible/cargar", {
                     method: "POST",
@@ -380,6 +405,10 @@ def home():
             }
 
             async function evaluarRuta() {
+                if (sistemaBloqueado) {
+                    alert("⚠️ ACCIÓN BLOQUEADA POR SEGURIDAD: Debe cambiar el estatus de todos los componentes del checklist a 'Operativo (OK)' en el Bloque 2 para evaluar rutas.");
+                    return;
+                }
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
                 let precio_gasolina = parseFloat(document.getElementById("precio_gas").value);
                 let res = await fetch(API + "/combustible/evaluar", {
@@ -616,6 +645,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
