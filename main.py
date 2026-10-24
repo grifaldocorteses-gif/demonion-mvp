@@ -35,7 +35,6 @@ def init_db():
             litros_tanque REAL DEFAULT 0.0
         )
     """)
-    # Tabla para acumular estadisticas de rutas (km totales y gasto total de combustible)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS estadisticas_rutas (
             usuario TEXT PRIMARY KEY,
@@ -337,12 +336,14 @@ def home():
                 }
             }
 
+            // SIMULACIÓN PREVIA CON PROYECCIÓN DE ACUMULADOS Y EVALUACIÓN DE USO (PULSAR NS 200)
             function simularRuta() {
                 let kmRutaVal = parseFloat(document.getElementById("km_ruta").value);
                 let precioGasVal = parseFloat(document.getElementById("precio_gas").value) || 24.0;
                 let divDiag = document.getElementById("diagnostico-combustible");
 
                 if (!kmRutaVal || kmRutaVal <= 0) {
+                    divDiag.innerHTML = "";
                     return;
                 }
 
@@ -353,8 +354,23 @@ def home():
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
 
+                // Proyección de acumulados si se acepta el viaje
+                let kmTotalesProyectados = round(kmTotalesAcumuladosGlobal + kmRutaVal, 1);
+                let gastoTotalProyectado = round(gastoTotalAcumuladoGlobal + costoViaje, 2);
+
+                // Evaluación de intensidad de uso para una Pulsar NS 200 (Referencia óptima diaria recomendada: ~100 km)
+                let intensidadUso = "Óptima / Moderada";
+                let colorIntensidad = "green";
+                if (kmTotalesProyectados > 150) {
+                    intensidadUso = "⚠️ Alta Exigencia / Jornada Pesada (Desgaste acelerado de componentes)";
+                    colorIntensidad = "red";
+                } else if (kmTotalesProyectados > 90) {
+                    intensidadUso = "⚡ Exigencia Estándar / Operación Normal";
+                    colorIntensidad = "orange";
+                }
+
                 let alertaColor = "green";
-                let mensajeAlerta = `Ruta viable para aceptar. Gasto estimado: $${costoViaje} MXN.`;
+                let mensajeAlerta = `Ruta viable para aceptar.`;
 
                 if (litrosRestantesSimulados < 1.0) {
                     alertaColor = "red";
@@ -365,12 +381,17 @@ def home():
                 }
 
                 divDiag.innerHTML = `
-                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
+                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje y Acumulados Proyectados]</i></p>
                     <p><b>Consumo Ruta (Sim):</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
                     <p><b>Costo Operativo:</b> $${costoPorKm} MXN / km</p>
                     <p><b>Autonomía Proyectada:</b> ${autonomiaRestanteKm} km restantes</p>
                     <p><b>Litros Restantes Estimados:</b> ${litrosRestantesSimulados} L</p>
-                    <p style="color: ${alertaColor};"><b>Análisis Telemetría:</b> ${mensajeAlerta}</p>
+                    <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 6px 0;">
+                    <p style="color: #1e3a8a; font-weight: bold;">📊 Proyección Post-Viaje (Acumulados):</p>
+                    <p><b>Km Totales Proyectados:</b> ${kmTotalesProyectados} km</p>
+                    <p><b>Gasto Total Proyectado en Gasolina:</b> $${gastoTotalProyectado} MXN</p>
+                    <p style="color: ${colorIntensidad};"><b>Evaluación de Uso (Pulsar NS 200):</b> ${intensidadUso}</p>
+                    <p style="color: ${alertaColor};"><b>Estado:</b> ${mensajeAlerta}</p>
                 `;
             }
 
@@ -603,15 +624,28 @@ def home():
                     }
                     sincronizarVistaComponente();
 
+                    // Evaluación oficial de uso tras registrar
+                    let intensidadUso = "Óptima / Moderada";
+                    let colorIntensidad = "green";
+                    if (kmTotalesAcumuladosGlobal > 150) {
+                        intensidadUso = "⚠️ Alta Exigencia / Jornada Pesada";
+                        colorIntensidad = "red";
+                    } else if (kmTotalesAcumuladosGlobal > 90) {
+                        intensidadUso = "⚡ Exigencia Estándar / Operación Normal";
+                        colorIntensidad = "orange";
+                    }
+
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p style="color: #047857; font-weight: bold;">✔ Ruta Oficial Registrada y Descontada:</p>
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Costo Operativo:</b> $${data.costo_por_km} MXN / km</p>
                         <p><b>Autonomía Proyectada:</b> ${data.autonomia_restante_km} km restantes</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
+                        <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 6px 0;">
                         <p style="color: #1e3a8a; font-weight: bold;">📊 Análisis Telemetría - Acumulados:</p>
                         <p><b>Km Totales Recorridos en Rutas:</b> ${kmTotalesAcumuladosGlobal} km</p>
                         <p><b>Gasto Total Acumulado en Gasolina:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
+                        <p style="color: ${colorIntensidad};"><b>Evaluación de Uso (Pulsar NS 200):</b> ${intensidadUso}</p>
                         <p style="color: ${data.alerta_color};"><b>Estado:</b> ${data.mensaje_alerta}</p>
                     `;
                 } else {
@@ -883,7 +917,6 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     costo_por_km = round(costo_viaje / e.km_recorridos, 2)
     autonomia_restante_km = round(max(0.0, litros_restantes) * rendimiento_estandar, 1)
 
-    # Actualizar acumulados de rutas y gasto total en la base de datos
     cursor.execute("""
         INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado) 
         VALUES (?, ?, ?)
@@ -892,7 +925,6 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
             gasto_total_acumulado = gasto_total_acumulado + ?
     """, (usuario, e.km_recorridos, costo_viaje, e.km_recorridos, costo_viaje))
 
-    # Obtener los totales actualizados para devolverlos a la interfaz
     cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
     km_totales_acumulados = est_row[0]
@@ -934,6 +966,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
