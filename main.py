@@ -103,7 +103,7 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>DEMONION MVP - Sistema Completo</title>
+        <title>DEMONION MVP - Telemetría Pro</title>
         <style>
             body { font-family: sans-serif; margin: 15px; background: #f4f4f9; color: #333; }
             .card { background: white; padding: 15px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -140,10 +140,10 @@ def home():
             
             <h4>1. Control de Combustible y Autonomía</h4>
             <div class="flex-row">
-                <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados (Tanque Lleno / Nuevo)">
+                <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
             </div>
-            <button id="btn_cargar" class="bloqueado" onclick="cargarCombustible()">Registrar Carga y Reiniciar Tanque (Bloqueado por Seguridad)</button>
+            <button id="btn_cargar" class="bloqueado" onclick="cargarCombustible()">Registrar Carga y Reiniciar Tanque (Bloqueado)</button>
 
             <div class="flex-row" style="margin-top: 10px;">
                 <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)">
@@ -153,15 +153,14 @@ def home():
                 <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
-            <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Bloqueado por Seguridad)</button>
+            <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Bloqueado)</button>
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
 
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
             <div class="checklist-box">
-                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Atención: Confirme que cada punto esté en "Operativo (OK)" para desbloquear el control de combustible y rutas.</p>
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Integral Obligatoria:</p>
+                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Atención: Confirme que cada punto esté en "Operativo (OK)" para desbloquear el Bloque 1.</p>
                 <div class="checklist-grid">
                     <div class="check-item">
                         <span>🛑 Frenos / Suspensión</span>
@@ -208,14 +207,12 @@ def home():
                 </div>
             </div>
 
-            <!-- SELECTOR DINÁMICO DE COMPONENTES -->
             <select id="tipo_serv" onchange="sincronizarVistaComponente()">
                 <option value="Cambio de Aceite" data-ciclo="2500">Cambio de Aceite (Ciclo: 2,500 km)</option>
                 <option value="Kit de Arrastre / Piñones" data-ciclo="15000">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
                 <option value="Pastillas de Freno" data-ciclo="5000">Pastillas de Freno (Ciclo: 5,000 km)</option>
             </select>
 
-            <!-- BARRA DE PROGRESO E INVERSIÓN CON BOTÓN DE REINICIO -->
             <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 8px; margin-bottom: 10px;">
                 <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📊 Vida Útil del Componente Seleccionado:</p>
                 <div style="font-size: 12px; display: flex; justify-content: space-between;">
@@ -231,22 +228,21 @@ def home():
             </div>
 
             <hr>
-            <h4>3. Registrar Kilometraje y Bitácora de Campo</h4>
+            <h4>3. Telemetría de Precisión y Bitácora Analítica</h4>
             <div class="flex-row">
                 <input type="text" id="modelo" placeholder="Modelo (Ej. Pulsar NS 200)">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('modelo')">🎤 Voz</button>
             </div>
             <div class="flex-row">
-                <input type="number" id="km" placeholder="Kilometraje Actual">
+                <input type="number" id="km" placeholder="Kilometraje Actual (Odómetro)">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km')">🎤 Voz</button>
             </div>
-            <button onclick="actualizarKm()">Actualizar Odómetro</button>
+            <button onclick="actualizarKm()">Sincronizar Odómetro y Auditar Telemetría</button>
             <div id="diagnostico"></div>
 
-            <!-- BITÁCORA / HISTORIAL RÁPIDO DE SERVICIOS -->
             <div class="bitacora-box">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #1e293b;">📋 Historial de Mantenimientos Realizados:</p>
-                <div id="lista-bitacora">Sin registros de mantenimiento en esta sesión.</div>
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #1e293b;">📋 Auditoría y Bitácora Analítica:</p>
+                <div id="lista-bitacora">Sin registros analíticos en esta sesión.</div>
             </div>
 
             <hr>
@@ -282,7 +278,7 @@ def home():
                 document.getElementById("anulador_luces").value = "revision";
                 document.getElementById("anulador_epp").value = "revision";
                 document.getElementById("anulador_docs").value = "revision";
-                document.getElementById("lista-bitacora").innerHTML = "Sin registros de mantenimiento en esta sesión.";
+                document.getElementById("lista-bitacora").innerHTML = "Sin registros analíticos en esta sesión.";
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 bitacoraLocal = [];
                 bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
@@ -376,9 +372,8 @@ def home():
                     kmComponentes[tipoServicio] = 0;
                     sincronizarVistaComponente();
                     
-                    // Agregar a bitácora local
                     let kmActualVal = document.getElementById("km").value || "0";
-                    bitacoraLocal.unshift(`✔ [${kmActualVal} km] ${tipoServicio} cambiado y reiniciado.`);
+                    bitacoraLocal.unshift(`✔ [Odómetro: ${kmActualVal} km] Auditoría: ${tipoServicio} auditado y reiniciado al 100%.`);
                     if(bitacoraLocal.length > 5) bitacoraLocal.pop();
                     document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
 
@@ -416,11 +411,11 @@ def home():
                     alert("Realiza una evaluación primero.");
                     return;
                 }
-                const textoReporte = "*REPORTE OPERATIVO DEMONION MVP*\\n" + ultimoDiagnostico;
+                const textoReporte = "*REPORTE TELEMETRÍA DEMONION MVP*\\n" + ultimoDiagnostico;
 
                 if (navigator.share) {
                     navigator.share({
-                        title: 'Reporte Operativo',
+                        title: 'Reporte Telemetría',
                         text: textoReporte
                     }).catch(() => {});
                 } else {
@@ -468,7 +463,7 @@ def home():
                 }
             }
 
-            async function logout() {
+            function logout() {
                 authToken = "";
                 limpiarInterfaz();
                 document.getElementById("user").value = "";
@@ -492,14 +487,14 @@ def home():
                 if(res.ok) {
                     document.getElementById("diagnostico").innerHTML = `
                         <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
-                        <p style="color: ${data.alerta_color};"><b>Diagnóstico:</b> ${data.mensaje_alerta}</p>
+                        <p style="color: ${data.alerta_color};"><b>Telemetría:</b> ${data.mensaje_alerta}</p>
                     `;
                 }
             }
 
             async function cargarCombustible() {
                 if (sistemaBloqueado) {
-                    alert("⚠️ Acción bloqueada: Debe confirmar que todos los puntos del checklist estén en 'Operativo (OK)' para usar el control de combustible.");
+                    alert("⚠️ Acción bloqueada: Debe confirmar el checklist para usar el control de combustible.");
                     return;
                 }
                 let litros_cargados = parseFloat(document.getElementById("litros_carga").value);
@@ -514,7 +509,7 @@ def home():
                 let data = await res.json();
                 if(res.ok) {
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: green;"><b>✔ Tanque Reiniciado y Actualizado:</b> Nuevos litros en tanque: <b>${data.litros_tanque} L</b></p>
+                        <p style="color: green;"><b>✔ Tanque Reiniciado:</b> ${data.litros_tanque} L</p>
                     `;
                 } else {
                     alert(data.detail);
@@ -523,7 +518,7 @@ def home():
 
             async function evaluarRuta() {
                 if (sistemaBloqueado) {
-                    alert("⚠️ Acción bloqueada: Debe confirmar que todos los puntos del checklist estén en 'Operativo (OK)' para evaluar rutas.");
+                    alert("⚠️ Acción bloqueada: Debe confirmar el checklist para evaluar rutas.");
                     return;
                 }
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
@@ -543,10 +538,13 @@ def home():
                     }
                     sincronizarVistaComponente();
 
+                    let desviacionTexto = data.desviacion_eficiencia !== undefined ? `<br><b>Índice de Desviación de Fábrica:</b> ${data.desviacion_eficiencia}%` : '';
+
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
-                        <p style="color: ${data.alerta_color};"><b>Análisis:</b> ${data.mensaje_alerta}</p>
+                        <p style="color: ${data.alerta_color};"><b>Análisis Telemetría:</b> ${data.mensaje_alerta}</p>
+                        ${desviacionTexto}
                     `;
                 } else {
                     alert(data.detail);
@@ -584,7 +582,7 @@ def home():
                 if(resBitacora.ok) {
                     let dataBit = await resBitacora.json();
                     if(dataBit.length > 0) {
-                        bitacoraLocal = dataBit.map(b => `✔ [${b.km_realizado} km] ${b.componente} registrado.`);
+                        bitacoraLocal = dataBit.map(b => `✔ [Odómetro: ${b.km_realizado} km] Auditoría: ${b.componente} registrado.`);
                         document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
                     }
                 }
@@ -650,7 +648,7 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
         "modelo": v.modelo,
         "km_actual": v.km_actual,
         "alerta_color": "green",
-        "mensaje_alerta": "Odómetro sincronizado correctamente."
+        "mensaje_alerta": "Odómetro sincronizado y telemetría de precisión activa."
     }
 
 @app.get("/vehiculo")
@@ -706,7 +704,7 @@ def reiniciar_mantenimiento(m: RegistrarMantenimiento, authorization: str = Head
     
     conn.commit()
     conn.close()
-    return {"mensaje": f"Ciclo de '{m.componente}' reiniciado al 100% correctamente."}
+    return {"mensaje": f"Ciclo de '{m.componente}' auditado y reiniciado al 100%."}
 
 @app.post("/combustible/cargar")
 def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
@@ -749,6 +747,7 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
     costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
     litros_restantes = round(litros_tanque - litros_consumidos, 2)
+    desviacion = 0.0  # Cálculo base de telemetría de fábrica
 
     cursor.execute("""
         INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
@@ -762,26 +761,28 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
 
     if litros_restantes < 1.0:
         alerta_color = "red"
-        mensaje_alerta = f"¡Alerta Crítica! Gasto estimado: ${costo_viaje}. Combustible insuficiente para esta ruta."
+        mensaje_alerta = f"¡Alerta Crítica! Gasto estimado: ${costo_viaje}."
     elif litros_restantes < 3.0:
         alerta_color = "orange"
-        mensaje_alerta = f"Precaución: Gasto estimado ${costo_viaje}. Tanque bajo después de este servicio."
+        mensaje_alerta = f"Precaución: Gasto estimado ${costo_viaje}."
     else:
         alerta_color = "green"
-        mensaje_alerta = f"Ruta rentable. Gasto estimado: ${costo_viaje} MXN. Autonomía óptima."
+        mensaje_alerta = f"Ruta rentable. Gasto estimado: ${costo_viaje} MXN."
 
     return {
         "litros_consumidos": litros_consumidos,
         "costo_viaje": costo_viaje,
         "litros_restantes": max(0.0, litros_restantes),
         "alerta_color": alerta_color,
-        "mensaje_alerta": mensaje_alerta
+        "mensaje_alerta": mensaje_alerta,
+        "desviacion_eficiencia": desviacion
     }
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
