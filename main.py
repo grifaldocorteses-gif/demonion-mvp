@@ -105,10 +105,11 @@ def home():
             .btn-backup { background: #475569; font-weight: bold; margin-top: 5px; }
             #app, #auth { display: none; }
             .flex-row { display: flex; gap: 5px; }
-            .checklist-box { background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px; margin-bottom: 10px; }
+            .checklist-box { background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fcd34d; margin-top: 10px; margin-bottom: 10px; }
             .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
             .check-item { background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
             .check-item select { padding: 5px; font-size: 12px; margin: 0; }
+            .bloqueado { background: #94a3b8 !important; cursor: not-allowed !important; }
         </style>
     </head>
     <body>
@@ -129,7 +130,7 @@ def home():
                 <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados (Tanque Lleno / Nuevo)">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
             </div>
-            <button onclick="cargarCombustible()" style="background:#059669;">Registrar Carga y Reiniciar Tanque</button>
+            <button id="btn_cargar" class="bloqueado" onclick="cargarCombustible()">Registrar Carga y Reiniciar Tanque (Requiere Checklist)</button>
 
             <div class="flex-row" style="margin-top: 10px;">
                 <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)">
@@ -139,19 +140,20 @@ def home():
                 <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
-            <button onclick="evaluarRuta()" style="background:#0284c7;">Evaluar Costo, Ruta y Descontar</button>
+            <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Requiere Checklist)</button>
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
 
             <hr>
-            <h4>2. Mantenimiento Preventivo y Anuladores Operativos</h4>
+            <h4>2. Mantenimiento Preventivo y Checklist Obligatorio</h4>
             
-            <!-- CHECKLIST Y ANULADORES CON PRIORIDAD ALTA (ARRIBA) -->
+            <!-- CHECKLIST ESTRICTO OBLIGATORIO -->
             <div class="checklist-box">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">Checklist con Anuladores de Ruta (Bloqueo Preventivo):</p>
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">⚠️ Obligatorio: Valide el estado mecánico para desbloquear ruta y combustible:</p>
                 <div class="checklist-grid">
                     <div class="check-item">
                         <span>🛑 Frenos</span>
                         <select id="anulador_frenos" onchange="verificarAnuladores()">
+                            <option value="pendiente">-- Seleccionar --</option>
                             <option value="ok">Operativo (OK)</option>
                             <option value="bloqueo">Falla / Desgastado (BLOQUEAR)</option>
                         </select>
@@ -159,6 +161,7 @@ def home():
                     <div class="check-item">
                         <span>⛓ Cadena / Arrastre</span>
                         <select id="anulador_cadena" onchange="verificarAnuladores()">
+                            <option value="pendiente">-- Seleccionar --</option>
                             <option value="ok">Operativo (OK)</option>
                             <option value="bloqueo">Floja / Dañada (BLOQUEAR)</option>
                         </select>
@@ -166,6 +169,7 @@ def home():
                     <div class="check-item">
                         <span>🛢 Nivel de Aceite</span>
                         <select id="anulador_aceite" onchange="verificarAnuladores()">
+                            <option value="pendiente">-- Seleccionar --</option>
                             <option value="ok">Operativo (OK)</option>
                             <option value="bloqueo">Bajo / Sucio (BLOQUEAR)</option>
                         </select>
@@ -173,6 +177,7 @@ def home():
                     <div class="check-item">
                         <span>💡 Sistema Eléctrico</span>
                         <select id="anulador_luces" onchange="verificarAnuladores()">
+                            <option value="pendiente">-- Seleccionar --</option>
                             <option value="ok">Operativo (OK)</option>
                             <option value="bloqueo">Luces/Intermitentes (BLOQUEAR)</option>
                         </select>
@@ -181,7 +186,7 @@ def home():
                 <div id="diagnostico-anulador" style="margin-top: 8px; font-weight: bold; font-size: 13px;"></div>
             </div>
 
-            <!-- REGISTRO DE SERVICIO MOVIDO HACIA ABAJO -->
+            <!-- REGISTRO DE SERVICIO ABAJO -->
             <select id="tipo_serv">
                 <option value="Cambio de Aceite">Cambio de Aceite</option>
                 <option value="Kit de Arrastre / Cadena">Kit de Arrastre / Cadena</option>
@@ -216,7 +221,7 @@ def home():
             const API = window.location.origin;
             let authToken = "";
             let ultimoDiagnostico = "";
-            let sistemaBloqueado = false;
+            let sistemaBloqueado = true;
 
             function limpiarInterfaz() {
                 document.getElementById("modelo").value = "";
@@ -227,8 +232,33 @@ def home():
                 document.getElementById("diagnostico-combustible").innerHTML = "";
                 document.getElementById("diagnostico-mantenimiento").innerHTML = "";
                 document.getElementById("diagnostico-anulador").innerHTML = "";
+                document.getElementById("anulador_frenos").value = "pendiente";
+                document.getElementById("anulador_cadena").value = "pendiente";
+                document.getElementById("anulador_aceite").value = "pendiente";
+                document.getElementById("anulador_luces").value = "pendiente";
+                bloquearSistema("🔒 Sistema bloqueado. Complete el checklist pre-ruta.");
                 ultimoDiagnostico = "";
-                sistemaBloqueado = false;
+            }
+
+            function bloquearComportamiento(bloquear, mensaje) {
+                let btnCargar = document.getElementById("btn_cargar");
+                let btnEvaluar = document.getElementById("btn_evaluar");
+                let div = document.getElementById("diagnostico-anulador");
+
+                sistemaBloqueado = bloquear;
+                div.innerHTML = mensaje;
+
+                if (bloquear) {
+                    btnCargar.classList.add("bloqueado");
+                    btnCargar.style.background = "#94a3b8";
+                    btnEvaluar.classList.add("bloqueado");
+                    btnEvaluar.style.background = "#94a3b8";
+                } else {
+                    btnCargar.classList.remove("bloqueado");
+                    btnCargar.style.background = "#059669";
+                    btnEvaluar.classList.remove("bloqueado");
+                    btnEvaluar.style.background = "#0284c7";
+                }
             }
 
             function verificarAnuladores() {
@@ -237,15 +267,16 @@ def home():
                 let a = document.getElementById("anulador_aceite").value;
                 let l = document.getElementById("anulador_luces").value;
 
-                let div = document.getElementById("diagnostico-anulador");
+                if (f === "pendiente" || c === "pendiente" || a === "pendiente" || l === "pendiente") {
+                    bloquearComportamiento(true, "<span style='color: #d97706;'>⏳ Checklist incompleto: Seleccione el estado de todos los componentes.</span>");
+                    return;
+                }
 
                 if (f === "bloqueo" || c === "bloqueo" || a === "bloqueo" || l === "bloqueo") {
-                    sistemaBloqueado = true;
-                    div.innerHTML = "<span style='color: red;'>❌ ALERTA CRÍTICA: Hay componentes con fallo. Salida a ruta BLOQUEADA hasta realizar mantenimiento.</span>";
+                    bloquearComportamiento(true, "<span style='color: red;'>❌ ALERTA CRÍTICA: Falla detectada. Salida a ruta y combustible BLOQUEADOS.</span>");
                     ultimoDiagnostico = "Estado Operativo: BLOQUEADO POR FALLA MECÁNICA";
                 } else {
-                    sistemaBloqueado = false;
-                    div.innerHTML = "<span style='color: green;'>✔ Sistema Operativo: Todos los componentes habilitados para ruta.</span>";
+                    bloquearComportamiento(false, "<span style='color: green;'>✔ Checklist Aprobado: Moto 100% lista y operacional para ruta.</span>");
                     ultimoDiagnostico = "Estado Operativo: Habilitado (OK)";
                 }
             }
@@ -323,7 +354,6 @@ def home():
                     document.getElementById("auth").style.display = "none";
                     document.getElementById("app").style.display = "block";
                     cargarEstadoVehiculo();
-                    verificarAnuladores();
                 } else {
                     alert("Credenciales inválidas");
                 }
@@ -361,7 +391,7 @@ def home():
 
             async function cargarCombustible() {
                 if (sistemaBloqueado) {
-                    alert("Acción bloqueada: Resuelva las fallas mecánicas en el Bloque 2 antes de operar combustible.");
+                    alert("Acción bloqueada: Debe completar y aprobar el checklist pre-ruta en el Bloque 2.");
                     return;
                 }
                 let litros_cargados = parseFloat(document.getElementById("litros_carga").value);
@@ -385,7 +415,7 @@ def home():
 
             async function evaluarRuta() {
                 if (sistemaBloqueado) {
-                    alert("Ruta NO autorizada: El sistema detectó componentes con fallas críticas en el Bloque 2.");
+                    alert("Ruta NO autorizada: Debe completar y aprobar el checklist pre-ruta en el Bloque 2.");
                     return;
                 }
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
@@ -624,6 +654,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
