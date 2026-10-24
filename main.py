@@ -487,6 +487,7 @@ def home():
                 if(res.ok) {
                     document.getElementById("diagnostico").innerHTML = `
                         <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
+                        <p><b>Distancia desde último servicio:</b> ${data.km_desde_servicio} km</p>
                         <p style="color: ${data.alerta_color};"><b>Telemetría:</b> ${data.mensaje_alerta}</p>
                     `;
                 }
@@ -538,13 +539,10 @@ def home():
                     }
                     sincronizarVistaComponente();
 
-                    let desviacionTexto = data.desviacion_eficiencia !== undefined ? `<br><b>Índice de Desviación de Fábrica:</b> ${data.desviacion_eficiencia}%` : '';
-
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
                         <p style="color: ${data.alerta_color};"><b>Análisis Telemetría:</b> ${data.mensaje_alerta}</p>
-                        ${desviacionTexto}
                     `;
                 } else {
                     alert(data.detail);
@@ -560,6 +558,10 @@ def home():
                     if(data && Object.keys(data).length > 0) {
                         document.getElementById("modelo").value = data.modelo || "";
                         document.getElementById("km").value = data.km_actual || 0;
+                        document.getElementById("diagnostico").innerHTML = `
+                            <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
+                            <p><b>Distancia desde último servicio:</b> ${data.km_desde_servicio || 0} km</p>
+                        `;
                     }
                 }
                 
@@ -632,21 +634,28 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM vehiculos WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT id, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     
     if row:
-        cursor.execute("UPDATE vehiculos SET modelo = ?, km_actual = ? WHERE usuario = ?", (v.modelo, v.km_actual, usuario))
+        vehiculo_id, km_previo, ultimo_servicio = row
+        if ultimo_servicio is None:
+            ultimo_servicio = 0.0
+        cursor.execute("UPDATE vehiculos SET modelo = ?, km_actual = ? WHERE id = ?", (v.modelo, v.km_actual, vehiculo_id))
     else:
-        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio) VALUES (?, ?, ?, 0.0)", 
-                       (usuario, v.modelo, v.km_actual))
+        ultimo_servicio = v.km_actual
+        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio) VALUES (?, ?, ?, ?)", 
+                       (usuario, v.modelo, v.km_actual, ultimo_servicio))
     
     conn.commit()
     conn.close()
     
+    km_desde_servicio = max(0.0, v.km_actual - (ultimo_servicio if ultimo_servicio else 0.0))
+
     return {
         "modelo": v.modelo,
         "km_actual": v.km_actual,
+        "km_desde_servicio": km_desde_servicio,
         "alerta_color": "green",
         "mensaje_alerta": "Odómetro sincronizado y telemetría de precisión activa."
     }
@@ -657,10 +666,15 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT modelo, km_actual FROM vehiculos WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT modelo, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     conn.close()
-    return dict(row) if row else {}
+    
+    if row:
+        data = dict(row)
+        data["km_desde_servicio"] = max(0.0, data["km_actual"] - (data["ultimo_servicio"] if data["ultimo_servicio"] else 0.0))
+        return data
+    return {}
 
 @app.get("/mantenimiento/estado")
 def obtener_estado_mantenimiento(authorization: str = Header(None)):
@@ -698,6 +712,9 @@ def reiniciar_mantenimiento(m: RegistrarMantenimiento, authorization: str = Head
         INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados) VALUES (?, ?, 0.0)
         ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = 0.0
     """, (usuario, m.componente))
+
+    # Actualizar el odómetro de último servicio en la tabla vehículos para reflejar la distancia desde el cambio
+    cursor.execute("UPDATE vehiculos SET ultimo_servicio = ? WHERE usuario = ?", (km_actual, usuario))
 
     cursor.execute("INSERT INTO bitacora_servicios (usuario, componente, km_realizado) VALUES (?, ?, ?)",
                    (usuario, m.componente, km_actual))
@@ -747,7 +764,6 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
     costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
     litros_restantes = round(litros_tanque - litros_consumidos, 2)
-    desviacion = 0.0  # Cálculo base de telemetría de fábrica
 
     cursor.execute("""
         INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
@@ -774,14 +790,14 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "costo_viaje": costo_viaje,
         "litros_restantes": max(0.0, litros_restantes),
         "alerta_color": alerta_color,
-        "mensaje_alerta": mensaje_alerta,
-        "desviacion_eficiencia": desviacion
+        "mensaje_alerta": mensaje_alerta
     }
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
