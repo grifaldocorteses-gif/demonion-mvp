@@ -177,9 +177,8 @@ def home():
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
-            <!-- CONTENEDOR CONTROLLADOR DE VISTA (CHECKLIST VS PROTOCOLO SUPERPUESTO) -->
             <div id="contenedor-inspeccion">
-                <div id="checklist-contenedor" class="checklist-box">
+                <div id="checklist-contenedor" class="checklist-box" style="display:none;">
                     <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Jornada alta detectada: Confirme los 6 puntos críticos de seguridad para desbloquear el sistema.</p>
                     <div class="checklist-grid">
                         <div class="check-item">
@@ -227,7 +226,6 @@ def home():
                     </div>
                 </div>
 
-                <!-- PROTOCOLO SUPERPUESTO QUE REEMPLAZA EL CHECKLIST AL COMPLETARSE -->
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                     <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
                     <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección debido a la alta exigencia de tu jornada. Cumple estrictamente la reglamentación oficial:</p>
@@ -314,7 +312,7 @@ def home():
                 panelOficial.style.display = "none";
                 protocoloConfirmadoLeido = false;
                 document.getElementById("protocolo-normativo").style.display = "none";
-                document.getElementById("checklist-contenedor").style.display = "block";
+                document.getElementById("checklist-contenedor").style.display = "none";
                 document.getElementById("anulador_frenos").value = "revision";
                 document.getElementById("anulador_cadena").value = "revision";
                 document.getElementById("anulador_llantas").value = "revision";
@@ -327,7 +325,7 @@ def home():
                 gastoTotalAcumuladoGlobal = 0.0;
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 bitacoraLocal = [];
-                verificarJornadaYBloqueo();
+                bloquearSistema(true, "🔒 Verificación pendiente.");
                 ultimoDiagnostico = "";
             }
 
@@ -338,31 +336,23 @@ def home():
                 let div = document.getElementById("diagnostico-anulador");
 
                 sistemaBloqueado = bloquear;
-                div.innerHTML = mensaje;
+                if(div) div.innerHTML = mensaje;
 
                 if (bloquear) {
-                    btnCargar.classList.add("bloqueado");
-                    btnCargar.style.background = "#94a3b8";
-                    btnReset.classList.add("bloqueado");
-                    btnReset.style.background = "#94a3b8";
-                    btnEvaluar.classList.add("bloqueado");
-                    btnEvaluar.style.background = "#94a3b8";
+                    if(btnCargar) { btnCargar.classList.add("bloqueado"); btnCargar.style.background = "#94a3b8"; }
+                    if(btnReset) { btnReset.classList.add("bloqueado"); btnReset.style.background = "#94a3b8"; }
+                    if(btnEvaluar) { btnEvaluar.classList.add("bloqueado"); btnEvaluar.style.background = "#94a3b8"; }
                 } else {
-                    btnCargar.classList.remove("bloqueado");
-                    btnCargar.style.background = "#0284c7";
-                    btnReset.classList.remove("bloqueado");
-                    btnReset.style.background = "#e11d48";
-                    btnEvaluar.classList.remove("bloqueado");
-                    btnEvaluar.style.background = "#059669";
+                    if(btnCargar) { btnCargar.classList.remove("bloqueado"); btnCargar.style.background = "#0284c7"; }
+                    if(btnReset) { btnReset.classList.remove("bloqueado"); btnReset.style.background = "#e11d48"; }
+                    if(btnEvaluar) { btnEvaluar.classList.remove("bloqueado"); btnEvaluar.style.background = "#059669"; }
                 }
             }
 
-            // CONDICIONAL DE JORNADA PESADA O KM ALTOS
             function verificarJornadaYDiagnostico() {
                 let checklistElem = document.getElementById("checklist-contenedor");
                 let protocoloElem = document.getElementById("protocolo-normativo");
 
-                // El checklist solo se activa si la jornada o km acumulados superan los 90 km
                 if (kmTotalesAcumuladosGlobal >= 90.0) {
                     if (!protocoloConfirmadoLeido) {
                         let f = document.getElementById("anulador_frenos").value;
@@ -374,27 +364,24 @@ def home():
 
                         if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
                             bloquearSistema(true, "⚠️ Jornada Alta (>90 km): Hay elementos críticos pendientes de revisión obligatoria.");
-                            checklistElem.style.display = "block";
-                            protocoloElem.style.display = "none";
+                            if(checklistElem) checklistElem.style.display = "block";
+                            if(protocoloElem) protocoloElem.style.display = "none";
                             ultimoDiagnostico = "Estado Operativo: Bloqueado por Jornada Pesada";
                         } else {
-                            // Al completar los 6 puntos en OK, se superpone el protocolo en la misma área
                             bloquearSistema(false, "✔ Inspección aprobada para jornada pesada.");
-                            checklistElem.style.display = "none";
-                            protocoloElem.style.display = "block";
+                            if(checklistElem) checklistElem.style.display = "none";
+                            if(protocoloElem) protocoloElem.style.display = "block";
                             ultimoDiagnostico = "Estado Operativo: Protocolo Vial Activo y Habilitado";
                         }
                     } else {
-                        // Si ya confirmó leído, se oculta el protocolo y se muestra el checklist minimizado/aprobado
-                        checklistElem.style.display = "block";
-                        protocoloElem.style.display = "none";
+                        if(checklistElem) checklistElem.style.display = "block";
+                        if(protocoloElem) protocoloElem.style.display = "none";
                         bloquearSistema(false, "✔ Jornada pesada auditada y protocolo vial confirmado.");
                     }
                 } else {
-                    // Jornada ligera o inicial: sistema libre sin requerir el checklist pesado
                     protocoloConfirmadoLeido = false;
-                    checklistElem.style.display = "none";
-                    protocoloElem.style.display = "none";
+                    if(checklistElem) checklistElem.style.display = "none";
+                    if(protocoloElem) protocoloElem.style.display = "none";
                     bloquearSistema(false, "✔ Jornada Óptima / Inicial: Sistema Operativo Habilitado Directamente.");
                 }
             }
@@ -498,6 +485,7 @@ def home():
 
             function sincronizarVistaComponente() {
                 let selectElem = document.getElementById("tipo_serv");
+                if(!selectElem) return;
                 let tipoServicio = selectElem.value;
                 let cicloMax = parseFloat(selectElem.options[selectElem.selectedIndex].getAttribute("data-ciclo"));
                 
@@ -510,21 +498,18 @@ def home():
                 let txtVida = document.getElementById("porcentaje-vida");
                 let alertaInv = document.getElementById("alerta-inversion");
 
-                barra.style.width = vidaRestante + "%";
-                txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante (" + kmAcumulados + " / " + cicloMax + " km)";
+                if(barra) barra.style.width = vidaRestante + "%";
+                if(txtVida) txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante (" + kmAcumulados + " / " + cicloMax + " km)";
 
                 if (vidaRestante > 40) {
-                    barra.style.background = "#22c55e";
-                    alertaInv.style.color = "#16a34a";
-                    alertaInv.innerText = `Estado óptimo para ${tipoServicio}. Sin gastos imprevistos próximos.`;
+                    if(barra) barra.style.background = "#22c55e";
+                    if(alertaInv) { alertaInv.style.color = "#16a34a"; alertaInv.innerText = `Estado óptimo para ${tipoServicio}. Sin gastos imprevistos próximos.`; }
                 } else if (vidaRestante > 15) {
-                    barra.style.background = "#eab308";
-                    alertaInv.style.color = "#ca8a04";
-                    alertaInv.innerText = `⚠️ Precaución: El componente ${tipoServicio} se acerca al límite de su ciclo.`;
+                    if(barra) barra.style.background = "#eab308";
+                    if(alertaInv) { alertaInv.style.color = "#ca8a04"; alertaInv.innerText = `⚠️ Precaución: El componente ${tipoServicio} se acerca al límite de su ciclo.`; }
                 } else {
-                    barra.style.background = "#ef4444";
-                    alertaInv.style.color = "#dc2626";
-                    alertaInv.innerText = `🚨 Alerta de Inversión: Es tiempo obligatorio de cambiar ${tipoServicio}.`;
+                    if(barra) barra.style.background = "#ef4444";
+                    if(alertaInv) { alertaInv.style.color = "#dc2626"; alertaInv.innerText = `🚨 Alerta de Inversión: Es tiempo obligatorio de cambiar ${tipoServicio}.`; }
                 }
             }
 
@@ -633,6 +618,8 @@ def home():
                     document.getElementById("current-user").innerText = u;
                     document.getElementById("auth").style.display = "none";
                     document.getElementById("app").style.display = "block";
+                    
+                    // CORRECCIÓN ASÍNCRONA: Cargar estado completo antes de evaluar jornada
                     await cargarEstadoVehiculo();
                     sincronizarVistaComponente();
                     verificarJornadaYDiagnostico();
@@ -701,428 +688,7 @@ def home():
                         <p><b>Litros Totales en Tanque:</b> ${litrosActualesTanque} L</p>
                         <p><b>Autonomía Disponible (Pulsar NS 200):</b> ${autonomiaTanque} km</p>
                     `;
-                    document.getElementById("litros_carga").value = "";
-                } else {
-                    alert(data.detail);
-                }
-            }
-
-            async function reiniciarTanqueYTelemetria() {
-                if (sistemaBloqueado) {
-                    alert("⚠️ Acción bloqueada: El sistema está bloqueado por seguridad.");
-                    return;
-                }
-                if (!confirm("¿Estás seguro de reiniciar el tanque a 0 L y borrar todos los acumulados de telemetría de rutas?")) {
-                    return;
-                }
-                let res = await fetch(API + "/combustible/reiniciar-telemetria", {
-                    method: "POST",
-                    headers: { 
-                        "Authorization": "Bearer " + authToken
-                    }
-                });
-                let data = await res.json();
-                if(res.ok) {
-                    litrosActualesTanque = 0.0;
-                    kmTotalesAcumuladosGlobal = 0.0;
-                    gastoTotalAcumuladoGlobal = 0.0;
-                    protocoloConfirmadoLeido = false;
-                    document.getElementById("litros_carga").value = "";
-                    document.getElementById("km_ruta").value = "";
-                    document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: #047857; font-weight: bold;">✔ Acción realizada con éxito:</p>
-                        <p><b>Tanque y Contadores de Telemetría:</b> Reiniciados a 0 correctamente.</p>
-                    `;
-                    let panelOficial = document.getElementById("diagnostico-oficial");
-                    panelOficial.innerHTML = "";
-                    panelOficial.style.display = "none";
-                    verificarJornadaYDiagnostico();
-                } else {
-                    alert("Error al reiniciar.");
-                }
-            }
-
-            async function evaluarRuta() {
-                if (sistemaBloqueado) {
-                    alert("⚠️ Acción bloqueada: Debe confirmar el checklist para evaluar rutas.");
-                    return;
-                }
-                let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
-                let precio_gasolina = parseFloat(document.getElementById("precio_gas").value);
-                let res = await fetch(API + "/combustible/evaluar", {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + authToken
-                    },
-                    body: JSON.stringify({ km_recorridos, precio_gasolina })
-                });
-                let data = await res.json();
-                if(res.ok) {
-                    litrosActualesTanque = data.litros_restantes;
-                    kmTotalesAcumuladosGlobal = data.km_totales_acumulados;
-                    gastoTotalAcumuladoGlobal = data.gasto_total_acumulado;
-
-                    for (let comp in kmComponentes) {
-                        kmComponentes[comp] += km_recorridos;
-                    }
-                    sincronizarVistaComponente();
-                    verificarJornadaYDiagnostico();
-
-                    let intensidadUso = "Óptima / Moderada";
-                    let colorIntensidad = "green";
-                    if (kmTotalesAcumuladosGlobal > 150) {
-                        intensidadUso = "⚠️ Alta Exigencia / Jornada Pesada";
-                        colorIntensidad = "red";
-                    } else if (kmTotalesAcumuladosGlobal > 90) {
-                        intensidadUso = "⚡ Exigencia Estándar / Operación Normal";
-                        colorIntensidad = "orange";
-                    }
-
-                    document.getElementById("diagnostico-combustible").innerHTML = "";
-                    let panelOficial = document.getElementById("diagnostico-oficial");
-                    panelOficial.style.display = "block";
-                    panelOficial.innerHTML = `
-                        <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento del Día (Rendimiento Oficial Registrado):</p>
-                        <p><b>Último consumo de ruta registrado:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p><b>Último costo operativo registrado:</b> ${data.costo_por_km} MXN / km</p>
-                        <p><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
-                        <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
-                        <hr style="border: 0; border-top: 1px dashed #bbf7d0; margin: 6px 0;">
-                        <p style="color: #1e3a8a; font-weight: bold;">📊 Acumulados Globales:</p>
-                        <p><b>Km Totales Recorridos:</b> ${kmTotalesAcumuladosGlobal} km</p>
-                        <p><b>Gasto Total Acumulado:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
-                        <p style="color: ${colorIntensidad};"><b>Evaluación de Uso:</b> ${intensidadUso}</p>
-                    `;
-                } else {
-                    alert(data.detail);
-                }
-            }
-
-            async function cargarEstadoVehiculo() {
-                let res = await fetch(API + "/vehiculo", {
-                    headers: { "Authorization": "Bearer " + authToken }
-                });
-                if(res.ok) {
-                    let data = await res.json();
-                    if(data && Object.keys(data).length > 0) {
-                        document.getElementById("modelo").value = data.modelo || "";
-                        document.getElementById("km").value = data.km_actual || 0;
-                        document.getElementById("diagnostico").innerHTML = `
-                            <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
-                            <p><b>Distancia desde último servicio:</b> ${data.km_desde_servicio || 0} km</p>
-                        `;
-                    }
-                }
-                
-                let resTanque = await fetch(API + "/tanque/estado", {
-                    headers: { "Authorization": "Bearer " + authToken }
-                });
-                if(resTanque.ok) {
-                    let dataTanque = await resTanque.json();
-                    litrosActualesTanque = dataTanque.litros_tanque || 0.0;
-                }
-
-                let resEstadisticas = await fetch(API + "/estadisticas/rutas", {
-                    headers: { "Authorization": "Bearer " + authToken }
-                });
-                if(resEstadisticas.ok) {
-                    let dataEst = await resEstadisticas.json();
-                    kmTotalesAcumuladosGlobal = dataEst.km_totales_acumulados || 0.0;
-                    gastoTotalAcumuladoGlobal = dataEst.gasto_total_acumulado || 0.0;
-                }
-
-                let resMantenimiento = await fetch(API + "/mantenimiento/estado", {
-                    headers: { "Authorization": "Bearer " + authToken }
-                });
-                if(resMantenimiento.ok) {
-                    let dataMaint = await resMantenimiento.json();
-                    dataMaint.forEach(item => {
-                        if(kmComponentes.hasOwnProperty(item.componente)) {
-                            kmComponentes[item.componente] = item.km_acumulados;
-                        }
-                    });
-                    sincronizarVistaComponente();
-                }
-
-                let resBitacora = await fetch(API + "/bitacora", {
-                    headers: { "Authorization": "Bearer " + authToken }
-                });
-                if(resBitacora.ok) {
-                    let dataBit = await resBitacora.json();
-                    if(dataBit.length > 0) {
-                        bitacoraLocal = dataBit.map(b => `✔ [Odómetro: ${b.km_realizado} km] Auditoría: ${b.componente} registrado.`);
-                        document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
-                    }
-                }
-            }
-        </script>
-    </body>
-    </html>
-    """
-    return html_content
-
-@app.get("/backup")
-def descargar_backup():
-    if os.path.exists(DB_NAME):
-        return FileResponse(DB_NAME, media_type="application/octet-stream", filename="respaldo_demonion.db")
-    raise HTTPException(status_code=404, detail="Base de datos no encontrada")
-
-@app.post("/register")
-def register(user: User):
-    hashed_password = hash_password(user.password)
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("INSERT INTO usuarios (username, password) VALUES (?, ?)", (user.username, hashed_password))
-        conn.commit()
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="Usuario existente")
-    finally:
-        conn.close()
-    return {"mensaje": "Registrado"}
-
-@app.post("/login")
-def login(user: User):
-    hashed_password = hash_password(user.password)
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM usuarios WHERE username = ? AND password = ?", (user.username, hashed_password))
-    row = cursor.fetchone()
-    conn.close()
-    if not row:
-        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-    token = secrets.token_hex(32)
-    active_sessions[token] = user.username
-    return {"token": token}
-
-@app.get("/tanque/estado")
-def obtener_estado_tanque(authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    conn.close()
-    return {"litros_tanque": row[0] if row and row[0] is not None else 0.0}
-
-@app.get("/estadisticas/rutas")
-def obtener_estadisticas_rutas(authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return dict(row)
-    return {"km_totales_acumulados": 0.0, "gasto_total_acumulado": 0.0}
-
-@app.post("/combustible/reiniciar-telemetria")
-def reiniciar_tanque_y_telemetria(authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE tanque_usuario SET litros_tanque = 0.0 WHERE usuario = ?", (usuario,))
-    cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0 WHERE usuario = ?", (usuario,))
-    conn.commit()
-    conn.close()
-    return {"mensaje": "Tanque y contadores de telemetría reiniciados con éxito."}
-
-@app.post("/vehiculo")
-def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    
-    if row:
-        vehiculo_id, km_previo, ultimo_servicio = row
-        if ultimo_servicio is None:
-            ultimo_servicio = 0.0
-        cursor.execute("UPDATE vehiculos SET modelo = ?, km_actual = ? WHERE id = ?", (v.modelo, v.km_actual, vehiculo_id))
-    else:
-        ultimo_servicio = v.km_actual
-        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio) VALUES (?, ?, ?, ?)", 
-                       (usuario, v.modelo, v.km_actual, ultimo_servicio))
-    
-    conn.commit()
-    conn.close()
-    
-    km_desde_servicio = max(0.0, v.km_actual - (ultimo_servicio if ultimo_servicio else 0.0))
-
-    return {
-        "modelo": v.modelo,
-        "km_actual": v.km_actual,
-        "km_desde_servicio": km_desde_servicio,
-        "alerta_color": "green",
-        "mensaje_alerta": "Odómetro sincronizado y telemetría de precisión activa."
-    }
-
-@app.get("/vehiculo")
-def obtener_vehiculo(authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT modelo, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    conn.close()
-    
-    if row:
-        data = dict(row)
-        data["km_desde_servicio"] = max(0.0, data["km_actual"] - (data["ultimo_servicio"] if data["ultimo_servicio"] else 0.0))
-        return data
-    return {}
-
-@app.get("/mantenimiento/estado")
-def obtener_estado_mantenimiento(authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT componente, km_acumulados FROM mantenimiento_componentes WHERE usuario = ?", (usuario,))
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
-
-@app.get("/bitacora")
-def obtener_bitacora(authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT componente, km_realizado FROM bitacora_servicios WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
-
-@app.post("/mantenimiento/reiniciar")
-def reiniciar_mantenimiento(m: RegistrarMantenimiento, authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT km_actual FROM vehiculos WHERE usuario = ?", (usuario,))
-    v_row = cursor.fetchone()
-    km_actual = v_row[0] if v_row else 0.0
-
-    cursor.execute("""
-        INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados) VALUES (?, ?, 0.0)
-        ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = 0.0
-    """, (usuario, m.componente))
-
-    cursor.execute("UPDATE vehiculos SET ultimo_servicio = ? WHERE usuario = ?", (km_actual, usuario))
-
-    cursor.execute("INSERT INTO bitacora_servicios (usuario, componente, km_realizado) VALUES (?, ?, ?)",
-                   (usuario, m.componente, km_actual))
-    
-    conn.commit()
-    conn.close()
-    return {"mensaje": f"Ciclo de '{m.componente}' auditado y reiniciado al 100%."}
-
-@app.post("/combustible/cargar")
-def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    if c.litros_cargados <= 0:
-        raise HTTPException(status_code=400, detail="Los litros deben ser mayores a 0")
-    
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    litros_anteriores = row[0] if row and row[0] is not None else 0.0
-    
-    nuevo_total = round(litros_anteriores + c.litros_cargados, 2)
-    
-    cursor.execute("""
-        INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
-        ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?
-    """, (usuario, nuevo_total, nuevo_total))
-    conn.commit()
-    conn.close()
-    return {"litros_tanque": nuevo_total}
-
-@app.post("/combustible/evaluar")
-def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    if e.km_recorridos <= 0:
-        raise HTTPException(status_code=400, detail="Los kilómetros deben ser mayores a 0")
-    
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    for comp in ["Cambio de Aceite", "Kit de Arrastre / Piñones", "Pastillas de Freno"]:
-        cursor.execute("""
-            INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados) 
-            VALUES (?, ?, ?)
-            ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = km_acumulados + ?
-        """, (usuario, comp, e.km_recorridos, e.km_recorridos))
-
-    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    litros_tanque = row[0] if row and row[0] is not None else 0.0
-
-    rendimiento_estandar = 30.0
-    litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
-    costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
-    litros_restantes = round(litros_tanque - litros_consumidos, 2)
-    
-    costo_por_km = round(costo_viaje / e.km_recorridos, 2)
-    autonomia_restante_km = round(max(0.0, litros_restantes) * rendimiento_estandar, 1)
-
-    cursor.execute("""
-        INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado) 
-        VALUES (?, ?, ?)
-        ON CONFLICT(usuario) DO UPDATE SET 
-            km_totales_acumulados = km_totales_acumulados + ?,
-            gasto_total_acumulado = gasto_total_acumulado + ?
-    """, (usuario, e.km_recorridos, costo_viaje, e.km_recorridos, costo_viaje))
-
-    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
-    est_row = cursor.fetchone()
-    km_totales_acumulados = est_row[0]
-    gasto_total_acumulado = est_row[1]
-
-    cursor.execute("""
-        INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
-        ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?
-    """, (usuario, max(0.0, litros_restantes), max(0.0, litros_restantes)))
-
-    cursor.execute("INSERT INTO combustible (usuario, km_recorridos, litros_consumidos, rendimiento) VALUES (?, ?, ?, ?)",
-                   (usuario, e.km_recorridos, litros_consumidos, rendimiento_estandar))
-    conn.commit()
-    conn.close()
-
-    if litros_restantes < 1.0:
-        alerta_color = "red"
-        mensaje_alerta = f"¡Alerta Crítica! Gasto estimado: ${costo_viaje}."
-    elif litros_restantes < 3.0:
-        alerta_color = "orange"
-        mensaje_alerta = f"Precaución: Gasto estimado ${costo_viaje}."
-    else:
-        alerta_color = "green"
-        mensaje_alerta = f"Ruta rentable. Gasto estimado: ${costo_viaje} MXN."
-
-    return {
-        "litros_consumidos": litros_consumidos,
-        "costo_viaje": costo_viaje,
-        "costo_por_km": costo_por_km,
-        "autonomia_restante_km": autonomia_restante_km,
-        "litros_restantes": max(0.0, litros_restantes),
-        "km_totales_acumulados": km_totales_acumulados,
-        "gasto_total_acumulado": gasto_total_acumulado,
-        "alerta_color": alerta_color,
-        "mensaje_alerta": mensaje_alerta
-    }
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+                    
 
 
 
