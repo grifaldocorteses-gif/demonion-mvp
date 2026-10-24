@@ -135,13 +135,19 @@ def home():
             .input-voz-group { display: flex; gap: 4px; align-items: center; }
             .entorno-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 8px; border-radius: 6px; font-size: 11px; color: #1e3a8a; margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
             
-            /* Tarjetas de Diagnóstico Organizadas y Compactas */
+            /* Tarjetas Interactivas con Desplegable */
             .diagnostico-container { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-            .diag-card { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; }
+            .diag-card { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; cursor: pointer; transition: background 0.2s; }
+            .diag-card:hover { background: #f1f5f9; }
+            .diag-header { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+            .diag-header-left { display: flex; align-items: center; gap: 8px; }
             .diag-icon { font-size: 16px; line-height: 1; }
-            .diag-content { display: flex; flex-direction: column; gap: 1px; width: 100%; font-size: 12px; }
             .diag-title { font-weight: bold; color: #475569; font-size: 11px; text-transform: uppercase; }
-            
+            .diag-subtitle { font-size: 12px; font-weight: bold; }
+            .diag-arrow { font-size: 10px; color: #64748b; font-weight: bold; }
+            .diag-details { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 11px; color: #334155; }
+            .diag-details ul { margin: 4px 0 0 15px; padding: 0; }
+
             .checklist-box { background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fcd34d; margin-top: 10px; margin-bottom: 10px; }
             .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
             .check-item { background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
@@ -245,7 +251,7 @@ def home():
 
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                     <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
-                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple estrictamente la reglamentación oficial:</p>
+                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple strictly la reglamentación oficial:</p>
                     <ul style="margin: 4px 0 8px 15px; padding: 0;">
                         <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en secundarias y <b>80 km/h</b> en acceso controlado. <b>30 km/h</b> en escuelas.</li>
                         <li><b>Equipo de Protección (EPP):</b> Casco certificado (DOT / ECE) y chaleco reflejante nocturno.</li>
@@ -281,7 +287,7 @@ def home():
             <div id="entorno-dispositivo" class="entorno-box">
                 <span id="info-clima">🌤️ Clima: Cargando...</span>
                 <span id="info-bateria">🔋 Batería: --%</span>
-                <span id="info-horario">🕒 Sincronía: --:--</span>
+                <span id="info-horario">🕒 Hora: --:--</span>
                 <span id="info-red">📶 Red: Conectado</span>
             </div>
 
@@ -409,6 +415,18 @@ def home():
                 } else {
                     elemRed.innerText = "📶 Red: Offline (Local)";
                     elemRed.style.color = "#dc2626";
+                }
+            }
+
+            function toggleDesplegable(idDetails, idArrow) {
+                let details = document.getElementById(idDetails);
+                let arrow = document.getElementById(idArrow);
+                if (details.style.display === "block") {
+                    details.style.display = "none";
+                    arrow.innerText = "▼";
+                } else {
+                    details.style.display = "block";
+                    arrow.innerText = "▲";
                 }
             }
 
@@ -717,20 +735,26 @@ def home():
                     
                     let estatusKilometraje = "Kilometraje Estándar (Óptimo)";
                     let colorKm = "#16a34a";
+                    let recomendacionUso = "Uso personal balanceado. El desgaste mecánico está dentro de los rangos ideales de fábrica.";
+
                     if (km_actual > 20000 || (antiguedadAnios > 0 && (km_actual / antiguedadAnios) > 15000)) {
                         estatusKilometraje = "Kilometraje Elevado (>15k-20k km anuales)";
                         colorKm = "#dc2626";
+                        recomendacionUso = "Uso intensivo / comercial detectado. Realiza revisiones preventivas de aceite cada 2,000 km para prevenir desgaste en cilindro.";
                     } else if (km_actual > 10000) {
-                        estatusKilometraje = "Kilometraje Moderado / Alto uso comercial";
+                        estatusKilometraje = "Kilometraje Moderado / Uso Medio";
                         colorKm = "#d97706";
+                        recomendacionUso = "Uso continuo. Se recomienda revisar la tensión y lubricación de cadena semanalmente.";
                     }
 
                     let retencionEstimada = Math.max(30, 100 - (18 + deprecioAntiguedadPct));
                     let valorOriginalReferencia = 45000.0;
                     let valorMonetarioEstimado = Math.round(valorOriginalReferencia * (retencionEstimada / 100.0));
+                    let montoDepreciacion = valorOriginalReferencia - valorMonetarioEstimado;
 
                     let mantenimientoProximo = "Ninguno / Óptimo";
                     let minKmRestantes = 999999;
+                    let desgloseMantenimientos = "";
 
                     for (let comp in kmComponentes) {
                         let cicloMax = 2500;
@@ -739,46 +763,104 @@ def home():
 
                         let kmUsadosComp = kmComponentes[comp];
                         let kmRestantesComp = Math.max(0, cicloMax - kmUsadosComp);
+                        
+                        desgloseMantenimientos += `<li><b>${comp}:</b> ${kmRestantesComp} km restantes (Ciclo: ${cicloMax} km)</li>`;
+
                         if (kmRestantesComp < minKmRestantes) {
                             minKmRestantes = kmRestantesComp;
                             mantenimientoProximo = `${comp} (Faltan ~${kmRestantesComp} km)`;
                         }
                     }
 
-                    // Renderizado organizado estrictamente en contenedor de tarjetas
+                    let promedioDiario = antiguedadAnios > 0 ? Math.round(km_actual / (antiguedadAnios * 365)) : km_actual;
+                    let promedioMensual = antiguedadAnios > 0 ? Math.round(km_actual / (antiguedadAnios * 12)) : km_actual;
+
+                    // Renderizado en 4 Tarjetas Interactivas Desplegables
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
-                            <div class="diag-card">
-                                <span class="diag-icon">💰</span>
-                                <div class="diag-content">
-                                    <span class="diag-title">Valor Comercial Estimado</span>
-                                    <span style="color: #047857; font-weight: bold; font-size: 13px;">$${valorMonetarioEstimado.toLocaleString()} MXN (~${retencionEstimada}% retención)</span>
+                            
+                            <!-- Tarjeta 1: Valor Comercial -->
+                            <div class="diag-card" onclick="toggleDesplegable('details-valor', 'arrow-valor')">
+                                <div class="diag-header">
+                                    <div class="diag-header-left">
+                                        <span class="diag-icon">💰</span>
+                                        <div style="display:flex; flex-direction:column;">
+                                            <span class="diag-title">VALOR COMERCIAL ESTIMADO</span>
+                                            <span class="diag-subtitle" style="color: #047857;">$${valorMonetarioEstimado.toLocaleString()} MXN (~${retencionEstimada}% retención)</span>
+                                        </div>
+                                    </div>
+                                    <span id="arrow-valor" class="diag-arrow">▼</span>
+                                </div>
+                                <div id="details-valor" class="diag-details">
+                                    <p style="margin:0 0 4px 0;"><b>Desglose Financiero de Mercado:</b></p>
+                                    <ul>
+                                        <li><b>Precio de Referencia (Nuevo):</b> $${valorOriginalReferencia.toLocaleString()} MXN</li>
+                                        <li><b>Depreciación Acumulada:</b> -$${montoDepreciacion.toLocaleString()} MXN</li>
+                                        <li><b>Precio Sugerido Venta Rápida:</b> $${Math.round(valorMonetarioEstimado * 0.92).toLocaleString()} MXN</li>
+                                    </ul>
                                 </div>
                             </div>
 
-                            <div class="diag-card">
-                                <span class="diag-icon">🔧</span>
-                                <div class="diag-content">
-                                    <span class="diag-title">Próximo Mantenimiento Crítico</span>
-                                    <span style="color: #d97706; font-weight: bold;">${mantenimientoProximo}</span>
+                            <!-- Tarjeta 2: Próximo Mantenimiento -->
+                            <div class="diag-card" onclick="toggleDesplegable('details-maint', 'arrow-maint')">
+                                <div class="diag-header">
+                                    <div class="diag-header-left">
+                                        <span class="diag-icon">🔧</span>
+                                        <div style="display:flex; flex-direction:column;">
+                                            <span class="diag-title">PRÓXIMO MANTENIMIENTO CRÍTICO</span>
+                                            <span class="diag-subtitle" style="color: #d97706;">${mantenimientoProximo}</span>
+                                        </div>
+                                    </div>
+                                    <span id="arrow-maint" class="diag-arrow">▼</span>
+                                </div>
+                                <div id="details-maint" class="diag-details">
+                                    <p style="margin:0 0 4px 0;"><b>Estado Actual de Componentes:</b></p>
+                                    <ul>
+                                        ${desgloseMantenimientos}
+                                    </ul>
                                 </div>
                             </div>
 
-                            <div class="diag-card">
-                                <span class="diag-icon">📅</span>
-                                <div class="diag-content">
-                                    <span class="diag-title">Antigüedad y Odómetro Sincronizado</span>
-                                    <span><b>${antiguedadAnios}</b> año(s) | <b>${data.km_actual}</b> km</span>
+                            <!-- Tarjeta 3: Antigüedad y Odómetro -->
+                            <div class="diag-card" onclick="toggleDesplegable('details-odometer', 'arrow-odometer')">
+                                <div class="diag-header">
+                                    <div class="diag-header-left">
+                                        <span class="diag-icon">📅</span>
+                                        <div style="display:flex; flex-direction:column;">
+                                            <span class="diag-title">ANTIGÜEDAD Y ODÓMETRO SINCRONIZADO</span>
+                                            <span class="diag-subtitle">${antiguedadAnios} año(s) | ${data.km_actual} km</span>
+                                        </div>
+                                    </div>
+                                    <span id="arrow-odometer" class="diag-arrow">▼</span>
+                                </div>
+                                <div id="details-odometer" class="diag-details">
+                                    <p style="margin:0 0 4px 0;"><b>Promedios Operativos de Cadencia:</b></p>
+                                    <ul>
+                                        <li><b>Promedio Diario:</b> ~${promedioDiario} km / día</li>
+                                        <li><b>Promedio Mensual:</b> ~${promedioMensual} km / mes</li>
+                                        <li><b>Año Modelo Registrado:</b> ${anio}</li>
+                                    </ul>
                                 </div>
                             </div>
 
-                            <div class="diag-card">
-                                <span class="diag-icon">⚠️</span>
-                                <div class="diag-content">
-                                    <span class="diag-title">Análisis de Kilometraje</span>
-                                    <span style="color: ${colorKm}; font-weight: bold;">${estatusKilometraje}</span>
+                            <!-- Tarjeta 4: Análisis de Kilometraje -->
+                            <div class="diag-card" onclick="toggleDesplegable('details-km', 'arrow-km')">
+                                <div class="diag-header">
+                                    <div class="diag-header-left">
+                                        <span class="diag-icon">⚠️</span>
+                                        <div style="display:flex; flex-direction:column;">
+                                            <span class="diag-title">ANÁLISIS DE KILOMETRAJE</span>
+                                            <span class="diag-subtitle" style="color: ${colorKm};">${estatusKilometraje}</span>
+                                        </div>
+                                    </div>
+                                    <span id="arrow-km" class="diag-arrow">▼</span>
+                                </div>
+                                <div id="details-km" class="diag-details">
+                                    <p style="margin:0 0 4px 0;"><b>Diagnóstico Preventivo Operativo:</b></p>
+                                    <p style="margin: 2px 0 0 0;">${recomendacionUso}</p>
                                 </div>
                             </div>
+
                         </div>
                     `;
                     ultimoDiagnostico = `Unidad: ${data.marca} ${data.modelo} ${data.anio} | Valor Est: $${valorMonetarioEstimado} MXN | Prox Mantenimiento: ${mantenimientoProximo}`;
