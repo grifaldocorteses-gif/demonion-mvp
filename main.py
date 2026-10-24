@@ -133,6 +133,7 @@ def home():
             .telemetria-item { display: flex; flex-direction: column; gap: 2px; }
             .telemetria-item label { font-size: 11px; font-weight: bold; color: #475569; }
             .input-voz-group { display: flex; gap: 4px; align-items: center; }
+            .entorno-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 8px; border-radius: 6px; font-size: 12px; color: #1e3a8a; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
             .checklist-box { background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fcd34d; margin-top: 10px; margin-bottom: 10px; }
             .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
             .check-item { background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
@@ -238,7 +239,7 @@ def home():
                     <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
                     <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple estrictamente la reglamentación oficial:</p>
                     <ul style="margin: 4px 0 8px 15px; padding: 0;">
-                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en secundarias y <b>80 km/h</b> en acceso controlado. <b>30 km/h</b> en zonas escolares.</li>
+                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en secundarias y <b>80 km/h</b> en acceso controlado. <b>30 km/h</b> en escuelas.</li>
                         <li><b>Equipo de Protección (EPP):</b> Casco certificado (DOT / ECE) y chaleco reflejante nocturno.</li>
                         <li><b>Cero Invasión:</b> Prohibido circular en banquetas, ciclovías o carriles confinados.</li>
                     </ul>
@@ -269,6 +270,11 @@ def home():
             <hr>
             <h4>3. Telemetría de Precisión y Bitácora Analítica</h4>
             
+            <div id="entorno-dispositivo" class="entorno-box">
+                <span id="info-clima">🌤️ Clima: Cargando ubicación...</span>
+                <span id="info-bateria">🔋 Batería: --%</span>
+            </div>
+
             <div class="telemetria-grid">
                 <div class="telemetria-item">
                     <label>Marca</label>
@@ -331,6 +337,52 @@ def home():
                 "Pastillas de Freno": 0
             };
             let bitacoraLocal = [];
+
+            // Inicializar herramientas nativas del navegador (Clima y Batería)
+            function iniciarTelemetriaNativa() {
+                // 1. API de Batería
+                if (navigator.getBattery) {
+                    navigator.getBattery().then(battery => {
+                        actualizarBateria(battery);
+                        battery.addEventListener('levelchange', () => actualizarBateria(battery));
+                        battery.addEventListener('chargingchange', () => actualizarBateria(battery));
+                    });
+                } else {
+                    document.getElementById("info-bateria").innerText = "🔋 Batería: No disponible";
+                }
+
+                // 2. Geolocalización y Clima (Open-Meteo API)
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        let lat = position.coords.latitude;
+                        let lon = position.coords.longitude;
+                        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data && data.current_weather) {
+                                    let temp = data.current_weather.temperature;
+                                    document.getElementById("info-clima").innerText = `🌤️ Clima Actual: ${temp}°C`;
+                                }
+                            })
+                            .catch(() => {
+                                document.getElementById("info-clima").innerText = "🌤️ Clima: Sin conexión a red";
+                            });
+                    }, () => {
+                        document.getElementById("info-clima").innerText = "🌤️ Clima: Ubicación denegada";
+                    });
+                } else {
+                    document.getElementById("info-clima").innerText = "🌤️ Clima: No soportado";
+                }
+            }
+
+            function actualizarBateria(battery) {
+                let nivel = Math.round(battery.level * 100);
+                let estadoCarga = battery.charging ? "⚡ (Cargando)" : "";
+                let colorBat = nivel < 20 && !battery.charging ? "#dc2626" : "#1e3a8a";
+                let elemBat = document.getElementById("info-bateria");
+                elemBat.innerText = `🔋 Batería: ${nivel}% ${estadoCarga}`;
+                elemBat.style.color = colorBat;
+            }
 
             function limpiarVariablesLocales() {
                 litrosActualesTanque = 0.0;
@@ -600,6 +652,7 @@ def home():
                     await cargarEstadoVehiculo();
                     sincronizarVistaComponente();
                     verificarJornadaYDiagnostico();
+                    iniciarTelemetriaNativa();
                 } else {
                     alert("Credenciales inválidas");
                 }
