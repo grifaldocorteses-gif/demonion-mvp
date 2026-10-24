@@ -105,7 +105,7 @@ def home():
             .btn-backup { background: #475569; font-weight: bold; margin-top: 5px; }
             #app, #auth { display: none; }
             .flex-row { display: flex; gap: 5px; }
-            .checklist-box { background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px; }
+            .checklist-box { background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px; margin-bottom: 10px; }
             .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
             .check-item { background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
             .check-item select { padding: 5px; font-size: 12px; margin: 0; }
@@ -144,15 +144,8 @@ def home():
 
             <hr>
             <h4>2. Mantenimiento Preventivo y Anuladores Operativos</h4>
-            <select id="tipo_serv">
-                <option value="Cambio de Aceite">Cambio de Aceite</option>
-                <option value="Kit de Arrastre / Cadena">Kit de Arrastre / Cadena</option>
-                <option value="Pastillas de Freno">Pastillas de Freno</option>
-                <option value="Afinacion General">Afinación General</option>
-            </select>
-            <button onclick="registrarMantenimiento()" style="background:#d97706;">Registrar Servicio Realizado</button>
-            <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
-
+            
+            <!-- CHECKLIST Y ANULADORES CON PRIORIDAD ALTA (ARRIBA) -->
             <div class="checklist-box">
                 <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">Checklist con Anuladores de Ruta (Bloqueo Preventivo):</p>
                 <div class="checklist-grid">
@@ -187,6 +180,16 @@ def home():
                 </div>
                 <div id="diagnostico-anulador" style="margin-top: 8px; font-weight: bold; font-size: 13px;"></div>
             </div>
+
+            <!-- REGISTRO DE SERVICIO MOVIDO HACIA ABAJO -->
+            <select id="tipo_serv">
+                <option value="Cambio de Aceite">Cambio de Aceite</option>
+                <option value="Kit de Arrastre / Cadena">Kit de Arrastre / Cadena</option>
+                <option value="Pastillas de Freno">Pastillas de Freno</option>
+                <option value="Afinacion General">Afinación General</option>
+            </select>
+            <button onclick="registrarMantenimiento()" style="background:#d97706;">Registrar Servicio Realizado</button>
+            <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
 
             <hr>
             <h4>3. Registrar Kilometraje (Desgaste Dinámico)</h4>
@@ -621,6 +624,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
