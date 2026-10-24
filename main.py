@@ -44,12 +44,11 @@ def init_db():
             rendimiento REAL
         )
     """)
+    # Tabla para llevar el acumulado de km recorridos en rutas para la vida útil
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS mantenimientos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario TEXT,
-            tipo_servicio TEXT,
-            km_realizado REAL
+        CREATE TABLE IF NOT EXISTS km_acumulados_componentes (
+            usuario TEXT PRIMARY KEY,
+            km_totales_recorridos REAL DEFAULT 0.0
         )
     """)
     conn.commit()
@@ -74,9 +73,6 @@ class CargarCombustible(BaseModel):
 class EvaluarRuta(BaseModel):
     km_recorridos: float
     precio_gasolina: float
-
-class MantenimientoRegistro(BaseModel):
-    tipo_servicio: str
 
 def verificar_token(authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
@@ -111,7 +107,7 @@ def home():
             .check-item select { padding: 5px; font-size: 12px; margin: 0; }
             .bloqueado { background: #94a3b8 !important; cursor: not-allowed !important; }
             .progress-container { background: #e2e8f0; border-radius: 4px; height: 10px; width: 100%; margin: 5px 0; overflow: hidden; }
-            .progress-bar { height: 100%; width: 0%; background: #22c55e; transition: width 0.3s ease; }
+            .progress-bar { height: 100%; width: 100%; background: #22c55e; transition: width 0.3s ease; }
         </style>
     </head>
     <body>
@@ -197,18 +193,18 @@ def home():
                 </div>
             </div>
 
-            <!-- SELECTOR DINÁMICO DE COMPONENTES VINCULADO A LA BARRA DE PROGRESO -->
+            <!-- SELECTOR DINÁMICO DE COMPONENTES VINCULADO AUTOMÁTICAMENTE A LOS KM DEL BLOQUE 1 -->
             <select id="tipo_serv" onchange="actualizarBarraProgreso()">
-                <option value="Cambio de Aceite">Cambio de Aceite (Ciclo: 2,500 km)</option>
-                <option value="Kit de Arrastre / Piñones">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
-                <option value="Pastillas de Freno">Pastillas de Freno (Ciclo: 5,000 km)</option>
+                <option value="Cambio de Aceite" data-ciclo="2500">Cambio de Aceite (Ciclo: 2,500 km)</option>
+                <option value="Kit de Arrastre / Piñones" data-ciclo="15000">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
+                <option value="Pastillas de Freno" data-ciclo="5000">Pastillas de Freno (Ciclo: 5,000 km)</option>
             </select>
 
-            <!-- BARRA DE PROGRESO CONECTADA AL COMPONENTE SELECCIONADO -->
+            <!-- BARRA DE PROGRESO CONECTADA A LOS KM ACUMULADOS DE RUTA -->
             <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 8px; margin-bottom: 10px;">
                 <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📊 Vida Útil del Componente Seleccionado:</p>
                 <div style="font-size: 12px; display: flex; justify-content: space-between;">
-                    <span id="label-componente-activo">Desgaste específico</span>
+                    <span id="label-componente-activo">Desgaste por Kilometraje de Rutas</span>
                     <span id="porcentaje-vida">100% Vida Restante</span>
                 </div>
                 <div class="progress-container">
@@ -216,9 +212,6 @@ def home():
                 </div>
                 <div id="alerta-inversion" style="font-size: 12px; margin-top: 4px; font-weight: bold; color: #16a34a;">Estado óptimo. Sin gastos imprevistos próximos.</div>
             </div>
-
-            <button onclick="registrarMantenimiento()" style="background:#d97706;">Registrar Mantenimiento Realizado</button>
-            <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
 
             <hr>
             <h4>3. Registrar Kilometraje y Bitácora</h4>
@@ -230,13 +223,8 @@ def home():
                 <input type="number" id="km" placeholder="Kilometraje Actual">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km')">🎤 Voz</button>
             </div>
-            <button onclick="actualizarKm()">Actualizar Odómetro y Calcular Desgaste</button>
+            <button onclick="actualizarKm()">Actualizar Odómetro</button>
             <div id="diagnostico"></div>
-
-            <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px;">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📋 Historial de Servicios Registrados:</p>
-                <div id="historial-servicios" style="font-size: 12px; color: #475569;">Sin registros recientes en esta sesión.</div>
-            </div>
 
             <hr>
             <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)</button>
@@ -251,9 +239,7 @@ def home():
             let authToken = "";
             let ultimoDiagnostico = "";
             let sistemaBloqueado = true;
-            let historialLocal = [];
-            let kmActualGlobal = 0;
-            let ultimoServicioKm = 0;
+            let kmAcumuladosRutas = 0;
 
             function limpiarInterfaz() {
                 document.getElementById("modelo").value = "";
@@ -262,17 +248,13 @@ def home():
                 document.getElementById("km_ruta").value = "";
                 document.getElementById("diagnostico").innerHTML = "";
                 document.getElementById("diagnostico-combustible").innerHTML = "";
-                document.getElementById("diagnostico-mantenimiento").innerHTML = "";
                 document.getElementById("anulador_frenos").value = "revision";
                 document.getElementById("anulador_cadena").value = "revision";
                 document.getElementById("anulador_llantas").value = "revision";
                 document.getElementById("anulador_luces").value = "revision";
                 document.getElementById("anulador_epp").value = "revision";
                 document.getElementById("anulador_docs").value = "revision";
-                document.getElementById("historial-servicios").innerHTML = "Sin registros recientes en esta sesión.";
-                historialLocal = [];
-                kmActualGlobal = 0;
-                ultimoServicioKm = 0;
+                kmAcumuladosRutas = 0;
                 bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
                 ultimoDiagnostico = "";
             }
@@ -316,23 +298,24 @@ def home():
             }
 
             function actualizarBarraProgreso() {
-                let tipoServicio = document.getElementById("tipo_serv").value;
-                let labelComp = document.getElementById("label-componente-activo");
-                labelComp.innerText = tipoServicio;
+                let selectElem = document.getElementById("tipo_serv");
+                let tipoServicio = selectElem.value;
+                let cicloMax = parseFloat(selectElem.options[selectElem.selectedIndex].getAttribute("data-ciclo"));
+                
+                document.getElementById("label-componente-activo").innerText = tipoServicio;
 
-                let cicloMax = 2500; // Aceite por defecto
-                if (tipoServicio.includes("Arrastre")) cicloMax = 15000;
-                else if (tipoServicio.includes("Freno")) cicloMax = 5000;
-
-                let kmDesdeServicio = Math.max(0, kmActualGlobal - ultimoServicioKm);
-                let vidaRestante = Math.max(0, Math.min(100, 100 - (kmDesdeServicio / cicloMax) * 100));
+                // El desgaste baja en función de los kilómetros acumulados en las rutas del Bloque 1
+                let kmRecorridosEnRutas = kmAcumuladosRutas % cicloMax; 
+                let ciclosCompletos = Math.floor(kmAcumuladosRutas / cicloMax);
+                
+                let vidaRestante = Math.max(0, Math.min(100, 100 - (kmRecorridosEnRutas / cicloMax) * 100));
                 
                 let barra = document.getElementById("barra-vida");
                 let txtVida = document.getElementById("porcentaje-vida");
                 let alertaInv = document.getElementById("alerta-inversion");
 
                 barra.style.width = vidaRestante + "%";
-                txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante";
+                txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante (Ciclos cumplidos: " + ciclosCompletos + ")";
 
                 if (vidaRestante > 40) {
                     barra.style.background = "#22c55e";
@@ -345,7 +328,7 @@ def home():
                 } else {
                     barra.style.background = "#ef4444";
                     alertaInv.style.color = "#dc2626";
-                    alertaInv.innerText = `🚨 Alerta de Inversión: Gasto inminente requerido en ${tipoServicio} para evitar fallas.`;
+                    alertaInv.innerText = `🚨 Alerta de Inversión: Es tiempo recomendado de cambiar el componente (${tipoServicio}) debido al kilometraje acumulado en ruta.`;
                 }
             }
 
@@ -450,16 +433,10 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    kmActualGlobal = data.km_actual;
-                    ultimoServicioKm = data.km_actual - data.km_desde_servicio;
-
                     document.getElementById("diagnostico").innerHTML = `
                         <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
-                        <p><b>Km desde último servicio:</b> ${data.km_desde_servicio} km</p>
                         <p style="color: ${data.alerta_color};"><b>Diagnóstico:</b> ${data.mensaje_alerta}</p>
                     `;
-
-                    actualizarBarraProgreso();
                 }
             }
 
@@ -504,6 +481,10 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
+                    // Acumulamos los km de esta ruta evaluada para actualizar la vida útil en tiempo real
+                    kmAcumuladosRutas += km_recorridos;
+                    actualizarBarraProgreso();
+
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
@@ -511,30 +492,6 @@ def home():
                     `;
                 } else {
                     alert(data.detail);
-                }
-            }
-
-            async function registrarMantenimiento() {
-                let tipo_servicio = document.getElementById("tipo_serv").value;
-                let kmActualVal = document.getElementById("km").value || "0";
-                let res = await fetch(API + "/mantenimiento", {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + authToken
-                    },
-                    body: JSON.stringify({ tipo_servicio })
-                });
-                let data = await res.json();
-                if(res.ok) {
-                    document.getElementById("diagnostico-mantenimiento").innerHTML = `
-                        <span style="color: green;">✔ ${data.mensaje}</span>
-                    `;
-                    historialLocal.unshift(`[${kmActualVal} km] ${tipo_servicio}`);
-                    if(historialLocal.length > 3) historialLocal.pop();
-                    document.getElementById("historial-servicios").innerHTML = historialLocal.join("<br>");
-
-                    actualizarKm();
                 }
             }
 
@@ -547,7 +504,6 @@ def home():
                     if(data && Object.keys(data).length > 0) {
                         document.getElementById("modelo").value = data.modelo || "";
                         document.getElementById("km").value = data.km_actual || 0;
-                        actualizarKm();
                     }
                 }
             }
@@ -612,24 +568,11 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     conn.commit()
     conn.close()
     
-    km_desde_servicio = v.km_actual - ultimo_servicio
-    
-    if km_desde_servicio > 2500:
-        alerta_color = "red"
-        mensaje_alerta = "¡Urgente! Cambio de aceite y revisión requeridos."
-    elif km_desde_servicio > 1800:
-        alerta_color = "orange"
-        mensaje_alerta = "Atención: Próximo a servicio preventivo."
-    else:
-        alerta_color = "green"
-        mensaje_alerta = "Componentes óptimos. Desgaste en rangos normales."
-
     return {
         "modelo": v.modelo,
         "km_actual": v.km_actual,
-        "km_desde_servicio": km_desde_servicio,
-        "alerta_color": alerta_color,
-        "mensaje_alerta": mensaje_alerta
+        "alerta_color": "green",
+        "mensaje_alerta": "Odómetro sincronizado correctamente."
     }
 
 @app.get("/vehiculo")
@@ -709,30 +652,11 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "mensaje_alerta": mensaje_alerta
     }
 
-@app.post("/mantenimiento")
-def registrar_mantenimiento(m: MantenimientoRegistro, authorization: str = Header(None)):
-    usuario = verificar_token(authorization)
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT id, km_actual FROM vehiculos WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    if not row:
-        raise HTTPException(status_code=400, detail="Debe registrar un vehículo primero en la sección 3")
-    
-    vehiculo_id, km_actual = row
-    cursor.execute("UPDATE vehiculos SET ultimo_servicio = ? WHERE id = ?", (km_actual, vehiculo_id))
-    cursor.execute("INSERT INTO mantenimientos (usuario, tipo_servicio, km_realizado) VALUES (?, ?, ?)",
-                   (usuario, m.tipo_servicio, km_actual))
-    conn.commit()
-    conn.close()
-
-    return {"mensaje": f"Servicio '{m.tipo_servicio}' registrado a los {km_actual} km. Ciclo de desgaste reiniciado."}
-
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
