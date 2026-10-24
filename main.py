@@ -146,9 +146,9 @@ def home():
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
-            <!-- CHECKLIST ACTUALIZADO CON TÉRMINOS TÉCNICOS Y BLOQUEO DE SEGURIDAD -->
+            <!-- CHECKLIST ACTUALIZADO CON MENSAJE MEJORADO Y COHERENTE -->
             <div class="checklist-box">
-                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">🚨 SEGURIDAD VITAL: Verifique y cambie el estatus de todos los componentes a "Operativo (OK)" para desbloquear el Bloque 1.</p>
+                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Atención: Confirme que cada punto esté en "Operativo (OK)" para desbloquear el control de combustible y rutas.</p>
                 <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Obligatoria:</p>
                 <div class="checklist-grid">
                     <div class="check-item">
@@ -231,7 +231,7 @@ def home():
                 document.getElementById("anulador_cadena").value = "revision";
                 document.getElementById("anulador_llantas").value = "revision";
                 document.getElementById("anulador_luces").value = "revision";
-                bloquearSistema(true, "🔒 Bloqueo de seguridad: Verifique y cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
+                bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
                 ultimoDiagnostico = "";
             }
 
@@ -263,10 +263,10 @@ def home():
                 let l = document.getElementById("anulador_luces").value;
 
                 if (f === "revision" || c === "revision" || ll === "revision" || l === "revision") {
-                    bloquearSistema(true, "🚨 SEGURIDAD VITAL: Hay componentes en 'Requiere Revisión'. El Bloque 1 permanece bloqueado hasta confirmar que todos los puntos estén en 'Operativo (OK)'.");
+                    bloquearSistema(true, "⚠️ Precaución: Hay elementos pendientes de revisión. El Bloque 1 se habilitará cuando todos los puntos estén en 'Operativo (OK)'.");
                     ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
                 } else {
-                    bloquearSistema(false, "✔ Inspección de Seguridad OK: Moto verificada y Bloque 1 habilitado para operar.");
+                    bloquearSistema(false, "✔ Inspección aprobada: Moto lista y segura para operar en ruta.");
                     ultimoDiagnostico = "Estado Operativo: Habilitado y Seguro (OK)";
                 }
             }
@@ -382,7 +382,7 @@ def home():
 
             async function cargarCombustible() {
                 if (sistemaBloqueado) {
-                    alert("⚠️ ACCIÓN BLOQUEADA POR SEGURIDAD: Debe cambiar el estatus de todos los componentes del checklist a 'Operativo (OK)' en el Bloque 2 para usar el control de combustible.");
+                    alert("⚠️ Acción bloqueada: Debe confirmar que todos los puntos del checklist estén en 'Operativo (OK)' para usar el control de combustible.");
                     return;
                 }
                 let litros_cargados = parseFloat(document.getElementById("litros_carga").value);
@@ -406,7 +406,7 @@ def home():
 
             async function evaluarRuta() {
                 if (sistemaBloqueado) {
-                    alert("⚠️ ACCIÓN BLOQUEADA POR SEGURIDAD: Debe cambiar el estatus de todos los componentes del checklist a 'Operativo (OK)' en el Bloque 2 para evaluar rutas.");
+                    alert("⚠️ Acción bloqueada: Debe confirmar que todos los puntos del checklist estén en 'Operativo (OK)' para evaluar rutas.");
                     return;
                 }
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
@@ -645,6 +645,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
