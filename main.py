@@ -169,10 +169,7 @@ def home():
             </div>
             <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             
-            <!-- CONTENEDOR DE VISTA PREVIA -->
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
-            
-            <!-- CONTENEDOR OFICIAL PERMANENTE (RENDIMIENTO DEL DÍA) -->
             <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
 
             <hr>
@@ -676,11 +673,13 @@ def home():
                     gastoTotalAcumuladoGlobal = 0.0;
                     document.getElementById("litros_carga").value = "";
                     document.getElementById("km_ruta").value = "";
-                    document.getElementById("diagnostico-combustible").innerHTML = "";
+                    document.getElementById("diagnostico-combustible").innerHTML = `
+                        <p style="color: #047857; font-weight: bold;">✔ Acción realizada con éxito:</p>
+                        <p><b>Tanque y Contadores de Telemetría:</b> Reiniciados a 0 correctamente.</p>
+                    `;
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.innerHTML = "";
                     panelOficial.style.display = "none";
-                    alert("✔ Tanque y contadores de telemetría reiniciados correctamente.");
                 } else {
                     alert("Error al reiniciar.");
                 }
@@ -722,14 +721,13 @@ def home():
                         colorIntensidad = "orange";
                     }
 
-                    // Limpiar vista previa y mostrar de forma permanente en el panel oficial
                     document.getElementById("diagnostico-combustible").innerHTML = "";
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.style.display = "block";
                     panelOficial.innerHTML = `
                         <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento del Día (Rendimiento Oficial Registrado):</p>
-                        <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p><b>Costo Operativo:</b> ${data.costo_por_km} MXN / km</p>
+                        <p><b>Último consumo de ruta registrado:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
+                        <p><b>Último costo operativo registrado:</b> ${data.costo_por_km} MXN / km</p>
                         <p><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
                         <hr style="border: 0; border-top: 1px dashed #bbf7d0; margin: 6px 0;">
@@ -1067,6 +1065,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
