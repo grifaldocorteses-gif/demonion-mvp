@@ -145,44 +145,40 @@ def home():
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
-            <!-- CHECKLIST RECOMENDATIVO EN NARANJA -->
+            <!-- CHECKLIST OPTIMIZADO: SUGERENCIA ARRIBA Y OPCIONES EN REVISIÓN POR DEFECTO -->
             <div class="checklist-box">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Sugerida (Frenos, Cadena, Aceite, Luces):</p>
+                <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #d97706;">⏳ Sugerencia: Complete la revisión de todos los componentes antes de iniciar el viaje.</p>
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Sugerida:</p>
                 <div class="checklist-grid">
                     <div class="check-item">
                         <span>🛑 Frenos</span>
                         <select id="anulador_frenos" onchange="verificarAnuladores()">
-                            <option value="pendiente">-- Seleccionar --</option>
+                            <option value="revision" selected>Requiere Revisión</option>
                             <option value="ok">Operativo (OK)</option>
-                            <option value="revision">Requiere Revisión</option>
                         </select>
                     </div>
                     <div class="check-item">
                         <span>⛓ Cadena / Arrastre</span>
                         <select id="anulador_cadena" onchange="verificarAnuladores()">
-                            <option value="pendiente">-- Seleccionar --</option>
+                            <option value="revision" selected>Requiere Revisión</option>
                             <option value="ok">Operativo (OK)</option>
-                            <option value="revision">Requiere Revisión</option>
                         </select>
                     </div>
                     <div class="check-item">
                         <span>🛢 Nivel de Aceite</span>
                         <select id="anulador_aceite" onchange="verificarAnuladores()">
-                            <option value="pendiente">-- Seleccionar --</option>
+                            <option value="revision" selected>Requiere Revisión</option>
                             <option value="ok">Operativo (OK)</option>
-                            <option value="revision">Requiere Revisión</option>
                         </select>
                     </div>
                     <div class="check-item">
                         <span>💡 Sistema Eléctrico</span>
                         <select id="anulador_luces" onchange="verificarAnuladores()">
-                            <option value="pendiente">-- Seleccionar --</option>
+                            <option value="revision" selected>Requiere Revisión</option>
                             <option value="ok">Operativo (OK)</option>
-                            <option value="revision">Requiere Revisión</option>
                         </select>
                     </div>
                 </div>
-                <div id="diagnostico-anulador" style="margin-top: 8px; font-weight: bold; font-size: 13px;"></div>
             </div>
 
             <!-- REGISTRO DE SERVICIO ABAJO -->
@@ -229,11 +225,11 @@ def home():
                 document.getElementById("diagnostico").innerHTML = "";
                 document.getElementById("diagnostico-combustible").innerHTML = "";
                 document.getElementById("diagnostico-mantenimiento").innerHTML = "";
-                document.getElementById("diagnostico-anulador").innerHTML = "";
-                document.getElementById("anulador_frenos").value = "pendiente";
-                document.getElementById("anulador_cadena").value = "pendiente";
-                document.getElementById("anulador_aceite").value = "pendiente";
-                document.getElementById("anulador_luces").value = "pendiente";
+                document.getElementById("anulador_frenos").value = "revision";
+                document.getElementById("anulador_cadena").value = "revision";
+                document.getElementById("anulador_aceite").value = "revision";
+                document.getElementById("anulador_luces").value = "revision";
+                verificarAnuladores();
                 ultimoDiagnostico = "";
             }
 
@@ -244,11 +240,6 @@ def home():
                 let l = document.getElementById("anulador_luces").value;
 
                 let div = document.getElementById("diagnostico-anulador");
-
-                if (f === "pendiente" || c === "pendiente" || a === "pendiente" || l === "pendiente") {
-                    div.innerHTML = "<span style='color: #d97706;'>⏳ Sugerencia: Complete la revisión de todos los componentes antes de iniciar el viaje.</span>";
-                    return;
-                }
 
                 if (f === "revision" || c === "revision" || a === "revision" || l === "revision") {
                     div.innerHTML = "<span style='color: #ea580c;'>💡 Recomendación Preventiva: Se detectaron componentes que requieren inspección (frenos, cadena, aceite o luces) antes de iniciar el viaje. Verifique su estado.</span>";
@@ -332,6 +323,7 @@ def home():
                     document.getElementById("auth").style.display = "none";
                     document.getElementById("app").style.display = "block";
                     cargarEstadoVehiculo();
+                    verificarAnuladores();
                 } else {
                     alert("Credenciales inválidas");
                 }
@@ -624,6 +616,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
