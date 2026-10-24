@@ -187,7 +187,7 @@ def home():
             <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 10px;">
                 <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📊 Vida Útil del Componente / Alerta de Inversión:</p>
                 <div style="font-size: 12px; display: flex; justify-content: space-between;">
-                    <span id="label-componente">Desgaste general</span>
+                    <span id="label-componente">Desgaste general por Kilometraje</span>
                     <span id="porcentaje-vida">100% Vida Restante</span>
                 </div>
                 <div class="progress-container">
@@ -196,13 +196,13 @@ def home():
                 <div id="alerta-inversion" style="font-size: 12px; margin-top: 4px; font-weight: bold; color: #16a34a;">Estado óptimo. Sin gastos imprevistos próximos.</div>
             </div>
 
+            <!-- SELECTOR EXCLUSIVO PARA COMPONENTES CUANTIFICABLES POR KILOMETRAJE -->
             <select id="tipo_serv">
                 <option value="Cambio de Aceite">Cambio de Aceite</option>
-                <option value="Kit de Arrastre / Cadena">Kit de Arrastre / Cadena</option>
+                <option value="Kit de Arrastre / Piñones">Kit de Arrastre / Piñones</option>
                 <option value="Pastillas de Freno">Pastillas de Freno</option>
-                <option value="Afinacion General">Afinación General</option>
             </select>
-            <button onclick="registrarMantenimiento()" style="background:#d97706;">Registrar Servicio Realizado</button>
+            <button onclick="registrarMantenimiento()" style="background:#d97706;">Registrar Mantenimiento Realizado</button>
             <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
 
             <hr>
@@ -218,7 +218,6 @@ def home():
             <button onclick="actualizarKm()">Actualizar Odómetro y Calcular Desgaste</button>
             <div id="diagnostico"></div>
 
-            <!-- BITÁCORA / HISTORIAL RÁPIDO INTEGRADO AL BLOQUE 3 -->
             <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px;">
                 <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📋 Historial de Servicios Registrados:</p>
                 <div id="historial-servicios" style="font-size: 12px; color: #475569;">Sin registros recientes en esta sesión.</div>
@@ -400,7 +399,6 @@ def home():
                         <p style="color: ${data.alerta_color};"><b>Diagnóstico:</b> ${data.mensaje_alerta}</p>
                     `;
 
-                    // Cálculo visual de barra de progreso (asumiendo ciclo de 2500 km por servicio)
                     let kmServicio = data.km_desde_servicio;
                     let vidaRestante = Math.max(0, Math.min(100, 100 - (kmServicio / 2500) * 100));
                     let barra = document.getElementById("barra-vida");
@@ -493,7 +491,6 @@ def home():
                     document.getElementById("diagnostico-mantenimiento").innerHTML = `
                         <span style="color: green;">✔ ${data.mensaje}</span>
                     `;
-                    // Actualizar bitácora local en Bloque 3
                     historialLocal.unshift(`[${kmActualVal} km] ${tipo_servicio}`);
                     if(historialLocal.length > 3) historialLocal.pop();
                     document.getElementById("historial-servicios").innerHTML = historialLocal.join("<br>");
@@ -697,6 +694,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
