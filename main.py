@@ -145,15 +145,16 @@ def home():
             </div>
             <button id="btn_cargar" class="bloqueado" onclick="cargarCombustible()">Registrar Carga y Reiniciar Tanque (Bloqueado)</button>
 
+            <!-- CAMPOS CON SIMULACIÓN PREVIA EN TIEMPO REAL -->
             <div class="flex-row" style="margin-top: 10px;">
-                <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)">
+                <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)" oninput="simularRuta()">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
             </div>
             <div class="flex-row">
-                <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0">
+                <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
-            <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Bloqueado)</button>
+            <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
 
             <hr>
@@ -258,6 +259,7 @@ def home():
             let authToken = "";
             let ultimoDiagnostico = "";
             let sistemaBloqueado = true;
+            let litrosActualesTanque = 0.0; // Variable local para la simulación previa
             let kmComponentes = {
                 "Cambio de Aceite": 0,
                 "Kit de Arrastre / Piñones": 0,
@@ -279,6 +281,7 @@ def home():
                 document.getElementById("anulador_epp").value = "revision";
                 document.getElementById("anulador_docs").value = "revision";
                 document.getElementById("lista-bitacora").innerHTML = "Sin registros analíticos en esta sesión.";
+                litrosActualesTanque = 0.0;
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 bitacoraLocal = [];
                 bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
@@ -321,6 +324,49 @@ def home():
                     bloquearSistema(false, "✔ Inspección aprobada: Moto, EPP y documentos listos para operar con seguridad.");
                     ultimoDiagnostico = "Estado Operativo: Habilitado y Seguro (OK)";
                 }
+            }
+
+            // FUNCIÓN DE SIMULACIÓN PREVIA (SIN AFECTAR LA BASE DE DATOS TODAVÍA)
+            function simularRuta() {
+                let kmRutaVal = parseFloat(document.getElementById("km_ruta").value);
+                let precioGasVal = parseFloat(document.getElementById("precio_gas").value) || 24.0;
+                let divDiag = document.getElementById("diagnostico-combustible");
+
+                if (!kmRutaVal || kmRutaVal <= 0) {
+                    divDiag.innerHTML = "";
+                    return;
+                }
+
+                let rendimientoEstandar = 30.0;
+                let litrosConsumidos = round(kmRutaVal / rendimientoEstandar, 2);
+                let costoViaje = round(litrosConsumidos * precioGasVal, 2);
+                let costoPorKm = round(costoViaje / kmRutaVal, 2);
+                let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
+                let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
+
+                let alertaColor = "green";
+                let mensajeAlerta = `Ruta viable para aceptar. Gasto estimado: $${costoViaje} MXN.`;
+
+                if (litrosRestantesSimulados < 1.0) {
+                    alertaColor = "red";
+                    mensajeAlerta = `⚠️ Alerta: Combustible insuficiente para completar este viaje (Faltarían litros).`;
+                } else if (litrosRestantesSimulados < 3.0) {
+                    alertaColor = "orange";
+                    mensajeAlerta = `⚠️ Precaución: El tanque quedará muy bajo tras este servicio.`;
+                }
+
+                divDiag.innerHTML = `
+                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
+                    <p><b>Consumo Ruta (Sim):</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
+                    <p><b>Costo Operativo:</b> $${costoPorKm} MXN / km</p>
+                    <p><b>Autonomía Proyectada:</b> ${autonomiaRestanteKm} km restantes</p>
+                    <p><b>Litros Restantes Estimados:</b> ${litrosRestantesSimulados} L</p>
+                    <p style="color: ${alertaColor};"><b>Análisis Telemetría:</b> ${mensajeAlerta}</p>
+                `;
+            }
+
+            function round(value, decimals) {
+                return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
             }
 
             function sincronizarVistaComponente() {
@@ -399,6 +445,9 @@ def home():
                         texto = texto.replace(/[^0-9.]/g, '');
                     }
                     document.getElementById(inputId).value = texto;
+                    if (inputId === 'km_ruta' || inputId === 'precio_gas') {
+                        simularRuta();
+                    }
                 };
 
                 recognition.onerror = function(event) {
@@ -509,14 +558,17 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
+                    litrosActualesTanque = data.litros_tanque;
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p style="color: green;"><b>✔ Tanque Reiniciado:</b> ${data.litros_tanque} L</p>
                     `;
+                    simularRuta();
                 } else {
                     alert(data.detail);
                 }
             }
 
+            // BOTÓN OFICIAL: REGISTRA Y DESCUENTA EN LA BASE DE DATOS
             async function evaluarRuta() {
                 if (sistemaBloqueado) {
                     alert("⚠️ Acción bloqueada: Debe confirmar el checklist para evaluar rutas.");
@@ -534,12 +586,14 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
+                    litrosActualesTanque = data.litros_restantes;
                     for (let comp in kmComponentes) {
                         kmComponentes[comp] += km_recorridos;
                     }
                     sincronizarVistaComponente();
 
                     document.getElementById("diagnostico-combustible").innerHTML = `
+                        <p style="color: #047857; font-weight: bold;">✔ Ruta Oficial Registrada y Descontada:</p>
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Costo Operativo:</b> $${data.costo_por_km} MXN / km</p>
                         <p><b>Autonomía Proyectada:</b> ${data.autonomia_restante_km} km restantes</p>
@@ -567,6 +621,14 @@ def home():
                     }
                 }
                 
+                let resTanque = await fetch(API + "/tanque/estado", {
+                    headers: { "Authorization": "Bearer " + authToken }
+                });
+                if(resTanque.ok) {
+                    let dataTanque = await resTanque.json();
+                    litrosActualesTanque = dataTanque.litros_tanque || 0.0;
+                }
+
                 let resMantenimiento = await fetch(API + "/mantenimiento/estado", {
                     headers: { "Authorization": "Bearer " + authToken }
                 });
@@ -630,6 +692,16 @@ def login(user: User):
     token = secrets.token_hex(32)
     active_sessions[token] = user.username
     return {"token": token}
+
+@app.get("/tanque/estado")
+def obtener_estado_tanque(authorization: str = Header(None)):
+    usuario = verificar_token(authorization)
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
+    row = cursor.fetchone()
+    conn.close()
+    return {"litros_tanque": row[0] if row and row[0] is not None else 0.0}
 
 @app.post("/vehiculo")
 def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
@@ -766,7 +838,6 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
     litros_restantes = round(litros_tanque - litros_consumidos, 2)
     
-    # Nuevas variables de telemetría analítica (Opción 2 y 3)
     costo_por_km = round(costo_viaje / e.km_recorridos, 2)
     autonomia_restante_km = round(max(0.0, litros_restantes) * rendimiento_estandar, 1)
 
@@ -804,6 +875,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
