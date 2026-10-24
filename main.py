@@ -239,11 +239,11 @@ def home():
                 if (f === "bloqueo" || c === "bloqueo" || a === "bloqueo" || l === "bloqueo") {
                     sistemaBloqueado = true;
                     div.innerHTML = "<span style='color: red;'>❌ ALERTA CRÍTICA: Hay componentes con fallo. Salida a ruta BLOQUEADA hasta realizar mantenimiento.</span>";
-                    ultimoDiagnostico += "\nEstado Operativo: BLOQUEADO POR FALLA MECÁNICA";
+                    ultimoDiagnostico = "Estado Operativo: BLOQUEADO POR FALLA MECÁNICA";
                 } else {
                     sistemaBloqueado = false;
                     div.innerHTML = "<span style='color: green;'>✔ Sistema Operativo: Todos los componentes habilitados para ruta.</span>";
-                    ultimoDiagnostico += "\nEstado Operativo: Habilitado (OK)";
+                    ultimoDiagnostico = "Estado Operativo: Habilitado (OK)";
                 }
             }
 
@@ -348,7 +348,6 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    ultimoDiagnostico = `Estado Odómetro: ${data.km_actual} km\nKm desde servicio: ${data.km_desde_servicio} km\nDiagnóstico Desgaste: ${data.mensaje_alerta}`;
                     document.getElementById("diagnostico").innerHTML = `
                         <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
                         <p><b>Km desde último servicio:</b> ${data.km_desde_servicio} km</p>
@@ -398,7 +397,6 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    ultimoDiagnostico += `\nRuta (${km_recorridos} km): Gasto $${data.costo_viaje} MXN | Restantes: ${data.litros_restantes} L`;
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
@@ -623,6 +621,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
