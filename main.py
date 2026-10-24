@@ -120,8 +120,10 @@ def home():
             .btn-share { background: #25d366; font-weight: bold; margin-top: 10px; }
             .btn-backup { background: #475569; font-weight: bold; margin-top: 5px; }
             .btn-mantenimiento { background: #d97706; font-weight: bold; margin-top: 6px; }
+            .btn-reset-tanque { background: #e11d48; font-weight: bold; font-size: 12px; padding: 8px; width: 30%; }
+            .btn-main-carga { width: 68%; }
             #app, #auth { display: none; }
-            .flex-row { display: flex; gap: 5px; }
+            .flex-row { display: flex; gap: 5px; align-items: center; }
             .checklist-box { background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fcd34d; margin-top: 10px; margin-bottom: 10px; }
             .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
             .check-item { background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
@@ -148,17 +150,21 @@ def home():
             <h4>1. Control de Combustible y Autonomía</h4>
             <div class="flex-row">
                 <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
+                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
             </div>
-            <button id="btn_cargar" class="bloqueado" onclick="cargarCombustible()">Registrar Carga y Acumular Tanque (Bloqueado)</button>
+            
+            <div class="flex-row">
+                <button id="btn_cargar" class="bloqueado btn-main-carga" onclick="cargarCombustible()">Registrar Carga y Acumular Tanque (Bloqueado)</button>
+                <button id="btn_reset" class="bloqueado btn-reset-tanque" onclick="reiniciarTanqueYTelemetria()">🔄 Reiniciar Tanque/Telemetría</button>
+            </div>
 
             <div class="flex-row" style="margin-top: 10px;">
                 <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)" oninput="simularRuta()">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
+                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
             </div>
             <div class="flex-row">
                 <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
+                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
             <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
@@ -238,11 +244,11 @@ def home():
             <h4>3. Telemetría de Precisión y Bitácora Analítica</h4>
             <div class="flex-row">
                 <input type="text" id="modelo" placeholder="Modelo (Ej. Pulsar NS 200)">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('modelo')">🎤 Voz</button>
+                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('modelo')">🎤 Voz</button>
             </div>
             <div class="flex-row">
                 <input type="number" id="km" placeholder="Kilometraje Actual (Odómetro)">
-                <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km')">🎤 Voz</button>
+                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('km')">🎤 Voz</button>
             </div>
             <button onclick="actualizarKm()">Sincronizar Odómetro y Auditar Telemetría</button>
             <div id="diagnostico"></div>
@@ -300,6 +306,7 @@ def home():
 
             function bloquearSistema(bloquear, mensaje) {
                 let btnCargar = document.getElementById("btn_cargar");
+                let btnReset = document.getElementById("btn_reset");
                 let btnEvaluar = document.getElementById("btn_evaluar");
                 let div = document.getElementById("diagnostico-anulador");
 
@@ -309,13 +316,17 @@ def home():
                 if (bloquear) {
                     btnCargar.classList.add("bloqueado");
                     btnCargar.style.background = "#94a3b8";
+                    btnReset.classList.add("bloqueado");
+                    btnReset.style.background = "#94a3b8";
                     btnEvaluar.classList.add("bloqueado");
                     btnEvaluar.style.background = "#94a3b8";
                 } else {
                     btnCargar.classList.remove("bloqueado");
-                    btnCargar.style.background = "#059669";
+                    btnCargar.style.background = "#0284c7";
+                    btnReset.classList.remove("bloqueado");
+                    btnReset.style.background = "#e11d48";
                     btnEvaluar.classList.remove("bloqueado");
-                    btnEvaluar.style.background = "#0284c7";
+                    btnEvaluar.style.background = "#059669";
                 }
             }
 
@@ -336,7 +347,6 @@ def home():
                 }
             }
 
-            // SIMULACIÓN PREVIA CON PROYECCIÓN DE ACUMULADOS Y EVALUACIÓN DE USO (PULSAR NS 200)
             function simularRuta() {
                 let kmRutaVal = parseFloat(document.getElementById("km_ruta").value);
                 let precioGasVal = parseFloat(document.getElementById("precio_gas").value) || 24.0;
@@ -354,15 +364,13 @@ def home():
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
 
-                // Proyección de acumulados si se acepta el viaje
                 let kmTotalesProyectados = round(kmTotalesAcumuladosGlobal + kmRutaVal, 1);
                 let gastoTotalProyectado = round(gastoTotalAcumuladoGlobal + costoViaje, 2);
 
-                // Evaluación de intensidad de uso para una Pulsar NS 200 (Referencia óptima diaria recomendada: ~100 km)
                 let intensidadUso = "Óptima / Moderada";
                 let colorIntensidad = "green";
                 if (kmTotalesProyectados > 150) {
-                    intensidadUso = "⚠️ Alta Exigencia / Jornada Pesada (Desgaste acelerado de componentes)";
+                    intensidadUso = "⚠️ Alta Exigencia / Jornada Pesada (Desgaste acelerado)";
                     colorIntensidad = "red";
                 } else if (kmTotalesProyectados > 90) {
                     intensidadUso = "⚡ Exigencia Estándar / Operación Normal";
@@ -381,7 +389,7 @@ def home():
                 }
 
                 divDiag.innerHTML = `
-                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje y Acumulados Proyectados]</i></p>
+                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje y Proyección]</i></p>
                     <p><b>Consumo Ruta (Sim):</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
                     <p><b>Costo Operativo:</b> $${costoPorKm} MXN / km</p>
                     <p><b>Autonomía Proyectada:</b> ${autonomiaRestanteKm} km restantes</p>
@@ -389,7 +397,7 @@ def home():
                     <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 6px 0;">
                     <p style="color: #1e3a8a; font-weight: bold;">📊 Proyección Post-Viaje (Acumulados):</p>
                     <p><b>Km Totales Proyectados:</b> ${kmTotalesProyectados} km</p>
-                    <p><b>Gasto Total Proyectado en Gasolina:</b> $${gastoTotalProyectado} MXN</p>
+                    <p><b>Gasto Total Proyectado:</b> $${gastoTotalProyectado} MXN</p>
                     <p style="color: ${colorIntensidad};"><b>Evaluación de Uso (Pulsar NS 200):</b> ${intensidadUso}</p>
                     <p style="color: ${alertaColor};"><b>Estado:</b> ${mensajeAlerta}</p>
                 `;
@@ -589,12 +597,47 @@ def home():
                 let data = await res.json();
                 if(res.ok) {
                     litrosActualesTanque = data.litros_tanque;
+                    let rendimientoEstandar = 30.0;
+                    let autonomiaTanque = round(litrosActualesTanque * rendimientoEstandar, 1);
+
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: green;"><b>✔ Tanque Actualizado y Acumulado:</b> Total en tanque: <b>${data.litros_tanque} L</b></p>
+                        <p style="color: #047857; font-weight: bold;">✔ Carga Registrada y Tanque Acumulado:</p>
+                        <p><b>Litros Totales en Tanque:</b> ${litrosActualesTanque} L</p>
+                        <p><b>Autonomía Disponible (Pulsar NS 200):</b> ${autonomiaTanque} km</p>
                     `;
                     simularRuta();
                 } else {
                     alert(data.detail);
+                }
+            }
+
+            async function reiniciarTanqueYTelemetria() {
+                if (sistemaBloqueado) {
+                    alert("⚠️ Acción bloqueada: El sistema está bloqueado por seguridad.");
+                    return;
+                }
+                if (!confirm("¿Estás seguro de reiniciar el tanque a 0 L y borrar todos los acumulados de telemetría de rutas?")) {
+                    return;
+                }
+                let res = await fetch(API + "/combustible/reiniciar-telemetria", {
+                    method: "POST",
+                    headers: { 
+                        "Authorization": "Bearer " + authToken
+                    }
+                });
+                let data = await res.json();
+                if(res.ok) {
+                    litrosActualesTanque = 0.0;
+                    kmTotalesAcumuladosGlobal = 0.0;
+                    gastoTotalAcumuladoGlobal = 0.0;
+                    document.getElementById("litros_carga").value = "";
+                    document.getElementById("km_ruta").value = "";
+                    document.getElementById("diagnostico-combustible").innerHTML = `
+                        <p style="color: #047857; font-weight: bold;">✔ Acción realizada con éxito:</p>
+                        <p><b>Tanque y Contadores de Telemetría:</b> Reiniciados a 0 correctamente.</p>
+                    `;
+                } else {
+                    alert("Error al reiniciar.");
                 }
             }
 
@@ -624,7 +667,6 @@ def home():
                     }
                     sincronizarVistaComponente();
 
-                    // Evaluación oficial de uso tras registrar
                     let intensidadUso = "Óptima / Moderada";
                     let colorIntensidad = "green";
                     if (kmTotalesAcumuladosGlobal > 150) {
@@ -638,7 +680,7 @@ def home():
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p style="color: #047857; font-weight: bold;">✔ Ruta Oficial Registrada y Descontada:</p>
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p><b>Costo Operativo:</b> $${data.costo_por_km} MXN / km</p>
+                        <p><b>Costo Operativo:</b> ${data.costo_por_km} MXN / km</p>
                         <p><b>Autonomía Proyectada:</b> ${data.autonomia_restante_km} km restantes</p>
                         <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
                         <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 6px 0;">
@@ -772,6 +814,17 @@ def obtener_estadisticas_rutas(authorization: str = Header(None)):
     if row:
         return dict(row)
     return {"km_totales_acumulados": 0.0, "gasto_total_acumulado": 0.0}
+
+@app.post("/combustible/reiniciar-telemetria")
+def reiniciar_tanque_y_telemetria(authorization: str = Header(None)):
+    usuario = verificar_token(authorization)
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE tanque_usuario SET litros_tanque = 0.0 WHERE usuario = ?", (usuario,))
+    cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0 WHERE usuario = ?", (usuario,))
+    conn.commit()
+    conn.close()
+    return {"mensaje": "Tanque y contadores de telemetría reiniciados con éxito."}
 
 @app.post("/vehiculo")
 def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
@@ -966,6 +1019,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
