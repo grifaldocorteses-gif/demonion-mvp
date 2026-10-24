@@ -157,8 +157,8 @@ def home():
             </div>
             
             <div class="flex-row">
-                <button id="btn_cargar" class="bloqueado btn-main-carga" onclick="cargarCombustible()">Registrar Carga y Acumular Tanque (Bloqueado)</button>
-                <button id="btn_reset" class="bloqueado btn-reset-tanque" onclick="reiniciarTanqueYTelemetria()">🔄 Reiniciar Tanque/Telemetría</button>
+                <button id="btn_cargar" class="btn-main-carga" onclick="cargarCombustible()">Registrar Carga y Acumular Tanque</button>
+                <button id="btn_reset" class="btn-reset-tanque" onclick="reiniciarTanqueYTelemetria()">🔄 Reiniciar Tanque/Telemetría</button>
             </div>
 
             <div class="flex-row" style="margin-top: 10px;">
@@ -169,7 +169,7 @@ def home():
                 <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
-            <button id="btn_evaluar" class="bloqueado" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
+            <button id="btn_evaluar" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
             <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
@@ -177,9 +177,10 @@ def home():
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
-            <div id="contenedor-inspeccion">
-                <div id="checklist-contenedor" class="checklist-box" style="display:none;">
-                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Jornada alta detectada: Confirme los 6 puntos críticos de seguridad para desbloquear el sistema.</p>
+            <!-- CHECKLIST DE SEGURIDAD CONDICIONAL (SOLO PARA JORNADAS PESADAS > 90 KM) -->
+            <div id="contenedor-inspeccion" style="display:none;">
+                <div id="checklist-contenedor" class="checklist-box">
+                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Jornada alta detectada (>90 km): Confirme los 6 puntos críticos de seguridad para operar.</p>
                     <div class="checklist-grid">
                         <div class="check-item">
                             <span>🛑 Frenos / Suspensión</span>
@@ -226,6 +227,7 @@ def home():
                     </div>
                 </div>
 
+                <!-- PROTOCOLO SUPERPUESTO QUE REEMPLAZA EL CHECKLIST AL COMPLETARSE -->
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                     <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
                     <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección debido a la alta exigencia de tu jornada. Cumple estrictamente la reglamentación oficial:</p>
@@ -238,6 +240,7 @@ def home():
                 </div>
             </div>
 
+            <!-- SECCIÓN FIJA DE MANTENIMIENTO PREVENTIVO -->
             <select id="tipo_serv" onchange="sincronizarVistaComponente()" style="margin-top: 10px;">
                 <option value="Cambio de Aceite" data-ciclo="2500">Cambio de Aceite (Ciclo: 2,500 km)</option>
                 <option value="Kit de Arrastre / Piñones" data-ciclo="15000">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
@@ -288,7 +291,7 @@ def home():
             const API = window.location.origin;
             let authToken = "";
             let ultimoDiagnostico = "";
-            let sistemaBloqueado = true;
+            let sistemaBloqueado = false;
             let litrosActualesTanque = 0.0;
             let kmTotalesAcumuladosGlobal = 0.0;
             let gastoTotalAcumuladoGlobal = 0.0;
@@ -331,10 +334,13 @@ def home():
             }
 
             function verificarJornadaYDiagnostico() {
+                let contenedorInspeccion = document.getElementById("contenedor-inspeccion");
                 let checklistElem = document.getElementById("checklist-contenedor");
                 let protocoloElem = document.getElementById("protocolo-normativo");
 
                 if (kmTotalesAcumuladosGlobal >= 90.0) {
+                    if(contenedorInspeccion) contenedorInspeccion.style.display = "block";
+
                     if (!protocoloConfirmadoLeido) {
                         let f = document.getElementById("anulador_frenos").value;
                         let c = document.getElementById("anulador_cadena").value;
@@ -361,8 +367,7 @@ def home():
                     }
                 } else {
                     protocoloConfirmadoLeido = false;
-                    if(checklistElem) checklistElem.style.display = "none";
-                    if(protocoloElem) protocoloElem.style.display = "none";
+                    if(contenedorInspeccion) contenedorInspeccion.style.display = "none";
                     bloquearSistema(false, "✔ Jornada Óptima / Inicial: Sistema Operativo Habilitado Directamente.");
                 }
             }
@@ -596,14 +601,12 @@ def home():
                     let data = await res.json();
                     authToken = data.token;
                     
-                    // Limpieza segura previa a la carga de datos del usuario autenticado
                     limpiarVariablesLocales();
                     
                     document.getElementById("current-user").innerText = u;
                     document.getElementById("auth").style.display = "none";
                     document.getElementById("app").style.display = "block";
                     
-                    // Carga sincrónica/secuencial de todo el estado antes de pintar la UI de jornada
                     await cargarEstadoVehiculo();
                     sincronizarVistaComponente();
                     verificarJornadaYDiagnostico();
@@ -643,10 +646,6 @@ def home():
             }
 
             async function cargarCombustible() {
-                if (sistemaBloqueado) {
-                    alert("⚠️ Acción bloqueada: Debe confirmar el checklist para usar el control de combustible.");
-                    return;
-                }
                 let litros_cargados = parseFloat(document.getElementById("litros_carga").value);
                 if (!litros_cargados || litros_cargados <= 0) {
                     alert("⚠️ Ingrese una cantidad válida de litros.");
@@ -679,10 +678,6 @@ def home():
             }
 
             async function reiniciarTanqueYTelemetria() {
-                if (sistemaBloqueado) {
-                    alert("⚠️ Acción bloqueada: El sistema está bloqueado por seguridad.");
-                    return;
-                }
                 if (!confirm("¿Estás seguro de reiniciar el tanque a 0 L y borrar todos los acumulados de telemetría de rutas?")) {
                     return;
                 }
@@ -715,7 +710,7 @@ def home():
 
             async function evaluarRuta() {
                 if (sistemaBloqueado) {
-                    alert("⚠️ Acción bloqueada: Debe confirmar el checklist para evaluar rutas.");
+                    alert("⚠️ Acción bloqueada: Debe confirmar el checklist de seguridad obligatorio.");
                     return;
                 }
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
@@ -1093,6 +1088,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
