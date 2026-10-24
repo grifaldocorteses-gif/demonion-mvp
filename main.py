@@ -118,9 +118,9 @@ def home():
         <style>
             body { font-family: sans-serif; margin: 15px; background: #f4f4f9; color: #333; }
             .card { background: white; padding: 15px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            input, select, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; }
+            input, select, button { padding: 8px; margin: 3px 0; width: 100%; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
             button { background: #0284c7; color: white; border: none; font-weight: bold; cursor: pointer; }
-            .btn-voice { background: #8b5cf6; margin-bottom: 8px; }
+            .btn-voice { background: #8b5cf6; width: auto; padding: 6px 10px; font-size: 11px; margin: 0; }
             .btn-share { background: #25d366; font-weight: bold; margin-top: 10px; }
             .btn-backup { background: #475569; font-weight: bold; margin-top: 5px; }
             .btn-mantenimiento { background: #d97706; font-weight: bold; margin-top: 6px; }
@@ -129,6 +129,10 @@ def home():
             .btn-leido { background: #16a34a; font-weight: bold; margin-top: 10px; }
             #app, #auth { display: none; }
             .flex-row { display: flex; gap: 5px; align-items: center; }
+            .telemetria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px; }
+            .telemetria-item { display: flex; flex-direction: column; gap: 2px; }
+            .telemetria-item label { font-size: 11px; font-weight: bold; color: #475569; }
+            .input-voz-group { display: flex; gap: 4px; align-items: center; }
             .checklist-box { background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fcd34d; margin-top: 10px; margin-bottom: 10px; }
             .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
             .check-item { background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
@@ -157,21 +161,21 @@ def home():
             <h4>1. Control de Combustible y Autonomía</h4>
             <div class="flex-row">
                 <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
-                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
+                <button type="button" class="btn-voice" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
             </div>
             
             <div class="flex-row">
                 <button id="btn_cargar" class="btn-main-carga" onclick="cargarCombustible()">Registrar Carga y Acumular Tanque</button>
-                <button id="btn_reset" class="btn-reset-tanque" onclick="reiniciarTanqueYTelemetria()">🔄 Reiniciar Tanque/Telemetría</button>
+                <button id="btn_reset" class="btn-reset-tanque" onclick="reiniciarTanqueYTelemetria()">🔄 Reiniciar</button>
             </div>
 
             <div class="flex-row" style="margin-top: 10px;">
                 <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)" oninput="simularRuta()">
-                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
+                <button type="button" class="btn-voice" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
             </div>
             <div class="flex-row">
                 <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
-                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
+                <button type="button" class="btn-voice" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
             <button id="btn_evaluar" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             
@@ -234,9 +238,9 @@ def home():
                     <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
                     <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple estrictamente la reglamentación oficial:</p>
                     <ul style="margin: 4px 0 8px 15px; padding: 0;">
-                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en avenidas secundarias y <b>80 km/h</b> en vías de acceso controlado. Reduzca a <b>30 km/h</b> en zonas escolares.</li>
-                        <li><b>Equipo de Protección (EPP):</b> Uso obligatorio de casco certificado (DOT / ECE) y chaleco reflejante nocturno.</li>
-                        <li><b>Cero Invasión:</b> Prohibido circular en banquetas, ciclovías o carriles confinados de transporte masivo.</li>
+                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en secundarias y <b>80 km/h</b> en acceso controlado. <b>30 km/h</b> en zonas escolares.</li>
+                        <li><b>Equipo de Protección (EPP):</b> Casco certificado (DOT / ECE) y chaleco reflejante nocturno.</li>
+                        <li><b>Cero Invasión:</b> Prohibido circular en banquetas, ciclovías o carriles confinados.</li>
                     </ul>
                     <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                 </div>
@@ -264,22 +268,38 @@ def home():
 
             <hr>
             <h4>3. Telemetría de Precisión y Bitácora Analítica</h4>
-            <div class="flex-row">
-                <input type="text" id="marca" placeholder="Marca (Ej. Bajaj)">
-                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('marca')">🎤 Voz</button>
+            
+            <div class="telemetria-grid">
+                <div class="telemetria-item">
+                    <label>Marca</label>
+                    <div class="input-voz-group">
+                        <input type="text" id="marca" placeholder="Ej. Bajaj">
+                        <button type="button" class="btn-voice" onclick="escucharVoz('marca')">🎤</button>
+                    </div>
+                </div>
+                <div class="telemetria-item">
+                    <label>Modelo</label>
+                    <div class="input-voz-group">
+                        <input type="text" id="modelo" placeholder="Ej. Pulsar NS 200">
+                        <button type="button" class="btn-voice" onclick="escucharVoz('modelo')">🎤</button>
+                    </div>
+                </div>
+                <div class="telemetria-item">
+                    <label>Año</label>
+                    <div class="input-voz-group">
+                        <input type="text" id="anio" placeholder="Ej. 2024">
+                        <button type="button" class="btn-voice" onclick="escucharVoz('anio')">🎤</button>
+                    </div>
+                </div>
+                <div class="telemetria-item">
+                    <label>Odómetro (km)</label>
+                    <div class="input-voz-group">
+                        <input type="number" id="km" placeholder="Km Actual">
+                        <button type="button" class="btn-voice" onclick="escucharVoz('km')">🎤</button>
+                    </div>
+                </div>
             </div>
-            <div class="flex-row">
-                <input type="text" id="modelo" placeholder="Modelo (Ej. Pulsar NS 200)">
-                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('modelo')">🎤 Voz</button>
-            </div>
-            <div class="flex-row">
-                <input type="text" id="anio" placeholder="Año (Ej. 2024)">
-                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('anio')">🎤 Voz</button>
-            </div>
-            <div class="flex-row">
-                <input type="number" id="km" placeholder="Odómetro / Km Actual">
-                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('km')">🎤 Voz</button>
-            </div>
+
             <button onclick="actualizarKm()">Sincronizar Odómetro y Auditar Telemetría</button>
             <div id="diagnostico"></div>
 
@@ -617,20 +637,17 @@ def home():
                     let estatusKilometraje = "Kilometraje Estándar (Óptimo)";
                     let colorKm = "green";
                     if (km_actual > 20000 || (antiguedadAnios > 0 && (km_actual / antiguedadAnios) > 15000)) {
-                        estatusKilometraje = "⚠️ Kilometraje Elevado (>15k-20k km anuales castiga hasta 30% el valor)";
+                        estatusKilometraje = "⚠️ Kilometraje Elevado (>15k-20k km anuales)";
                         colorKm = "red";
                     } else if (km_actual > 10000) {
-                        estatusKilometraje = "⚡ Kilometraje Moderado / Alto uso comercial";
+                        estatusKilometraje = "⚡ Kilometraje Moderado / Alto uso";
                         colorKm = "orange";
                     }
 
                     let retencionEstimada = Math.max(30, 100 - (18 + deprecioAntiguedadPct));
-
-                    // Estimación base de valor de mercado para Pulsar NS 200 (~$45,000 MXN de referencia original o ajustable)
                     let valorOriginalReferencia = 45000.0;
                     let valorMonetarioEstimado = Math.round(valorOriginalReferencia * (retencionEstimada / 100.0));
 
-                    // Determinar el mantenimiento más próximo basándonos en los contadores del Bloque 2
                     let mantenimientoProximo = "Ninguno / Óptimo";
                     let minKmRestantes = 999999;
 
@@ -648,11 +665,10 @@ def home():
                     }
 
                     document.getElementById("diagnostico").innerHTML = `
-                        <p style="color: #047857; font-weight: bold;">💰 Valor Comercial Estimado Aprox: $${valorMonetarioEstimado.toLocaleString()} MXN (~${retencionEstimada}% retención)</p>
-                        <p style="color: #d97706; font-weight: bold;">🔧 Próximo Mantenimiento Crítico: ${mantenimientoProximo}</p>
+                        <p style="color: #047857; font-weight: bold; margin-top: 5px;">💰 Valor Comercial Estimado: $${valorMonetarioEstimado.toLocaleString()} MXN (~${retencionEstimada}%)</p>
+                        <p style="color: #d97706; font-weight: bold;">🔧 Próximo Mantenimiento: ${mantenimientoProximo}</p>
                         <p><b>Antigüedad:</b> ${antiguedadAnios} año(s) | <b>Odómetro:</b> ${data.km_actual} km</p>
-                        <p style="color: ${colorKm};"><b>Análisis de Kilometraje:</b> ${estatusKilometraje}</p>
-                        <p style="color: ${data.alerta_color};"><b>Telemetría:</b> ${data.mensaje_alerta}</p>
+                        <p style="color: ${colorKm}; font-size: 12px;"><b>Análisis de Kilometraje:</b> ${estatusKilometraje}</p>
                     `;
                     ultimoDiagnostico = `Unidad: ${data.marca} ${data.modelo} ${data.anio} | Valor Est: $${valorMonetarioEstimado} MXN | Prox Mantenimiento: ${mantenimientoProximo}`;
                 }
@@ -775,10 +791,6 @@ def home():
                         document.getElementById("modelo").value = data.modelo || "";
                         document.getElementById("anio").value = data.anio || "";
                         document.getElementById("km").value = data.km_actual || 0;
-                        document.getElementById("diagnostico").innerHTML = `
-                            <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
-                            <p><b>Distancia desde último servicio:</b> ${data.km_desde_servicio || 0} km</p>
-                        `;
                     }
                 }
                 
@@ -1080,57 +1092,3 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    
-
-
-
-
-
-
-
