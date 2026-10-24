@@ -183,11 +183,18 @@ def home():
                 </div>
             </div>
 
-            <!-- BARRA DE PROGRESO DE DESGASTE E INVERSIÓN PREVENTIVA -->
-            <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 10px;">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📊 Vida Útil del Componente / Alerta de Inversión:</p>
+            <!-- SELECTOR DINÁMICO DE COMPONENTES VINCULADO A LA BARRA DE PROGRESO -->
+            <select id="tipo_serv" onchange="actualizarBarraProgreso()">
+                <option value="Cambio de Aceite">Cambio de Aceite (Ciclo: 2,500 km)</option>
+                <option value="Kit de Arrastre / Piñones">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
+                <option value="Pastillas de Freno">Pastillas de Freno (Ciclo: 5,000 km)</option>
+            </select>
+
+            <!-- BARRA DE PROGRESO CONECTADA AL COMPONENTE SELECCIONADO -->
+            <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 8px; margin-bottom: 10px;">
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📊 Vida Útil del Componente Seleccionado:</p>
                 <div style="font-size: 12px; display: flex; justify-content: space-between;">
-                    <span id="label-componente">Desgaste general por Kilometraje</span>
+                    <span id="label-componente-activo">Desgaste específico</span>
                     <span id="porcentaje-vida">100% Vida Restante</span>
                 </div>
                 <div class="progress-container">
@@ -196,12 +203,6 @@ def home():
                 <div id="alerta-inversion" style="font-size: 12px; margin-top: 4px; font-weight: bold; color: #16a34a;">Estado óptimo. Sin gastos imprevistos próximos.</div>
             </div>
 
-            <!-- SELECTOR EXCLUSIVO PARA COMPONENTES CUANTIFICABLES POR KILOMETRAJE -->
-            <select id="tipo_serv">
-                <option value="Cambio de Aceite">Cambio de Aceite</option>
-                <option value="Kit de Arrastre / Piñones">Kit de Arrastre / Piñones</option>
-                <option value="Pastillas de Freno">Pastillas de Freno</option>
-            </select>
             <button onclick="registrarMantenimiento()" style="background:#d97706;">Registrar Mantenimiento Realizado</button>
             <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
 
@@ -237,6 +238,8 @@ def home():
             let ultimoDiagnostico = "";
             let sistemaBloqueado = true;
             let historialLocal = [];
+            let kmActualGlobal = 0;
+            let ultimoServicioKm = 0;
 
             function limpiarInterfaz() {
                 document.getElementById("modelo").value = "";
@@ -252,6 +255,8 @@ def home():
                 document.getElementById("anulador_luces").value = "revision";
                 document.getElementById("historial-servicios").innerHTML = "Sin registros recientes en esta sesión.";
                 historialLocal = [];
+                kmActualGlobal = 0;
+                ultimoServicioKm = 0;
                 bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
                 ultimoDiagnostico = "";
             }
@@ -289,6 +294,41 @@ def home():
                 } else {
                     bloquearSistema(false, "✔ Inspección aprobada: Moto lista y segura para operar en ruta.");
                     ultimoDiagnostico = "Estado Operativo: Habilitado y Seguro (OK)";
+                }
+            }
+
+            function actualizarBarraProgreso() {
+                let tipoServicio = document.getElementById("tipo_serv").value;
+                let labelComp = document.getElementById("label-componente-activo");
+                labelComp.innerText = tipoServicio;
+
+                // Definir ciclo de vida en km según el componente seleccionado
+                let cicloMax = 2500; // Aceite por defecto
+                if (tipoServicio.includes("Arrastre")) cicloMax = 15000;
+                else if (tipoServicio.includes("Freno")) cicloMax = 5000;
+
+                let kmDesdeServicio = Math.max(0, kmActualGlobal - ultimoServicioKm);
+                let vidaRestante = Math.max(0, Math.min(100, 100 - (kmDesdeServicio / cicloMax) * 100));
+                
+                let barra = document.getElementById("barra-vida");
+                let txtVida = document.getElementById("porcentaje-vida");
+                let alertaInv = document.getElementById("alerta-inversion");
+
+                barra.style.width = vidaRestante + "%";
+                txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante";
+
+                if (vidaRestante > 40) {
+                    barra.style.background = "#22c55e";
+                    alertaInv.style.color = "#16a34a";
+                    alertaInv.innerText = `Estado óptimo para ${tipoServicio}. Sin gastos imprevistos próximos.`;
+                } else if (vidaRestante > 15) {
+                    barra.style.background = "#eab308";
+                    alertaInv.style.color = "#ca8a04";
+                    alertaInv.innerText = `⚠️ Precaución: Considere apartar presupuesto para el cambio de ${tipoServicio}.`;
+                } else {
+                    barra.style.background = "#ef4444";
+                    alertaInv.style.color = "#dc2626";
+                    alertaInv.innerText = `🚨 Alerta de Inversión: Gasto inminente requerido en ${tipoServicio} para evitar fallas.`;
                 }
             }
 
@@ -393,34 +433,16 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
+                    kmActualGlobal = data.km_actual;
+                    ultimoServicioKm = data.km_actual - data.km_desde_servicio;
+
                     document.getElementById("diagnostico").innerHTML = `
                         <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
                         <p><b>Km desde último servicio:</b> ${data.km_desde_servicio} km</p>
                         <p style="color: ${data.alerta_color};"><b>Diagnóstico:</b> ${data.mensaje_alerta}</p>
                     `;
 
-                    let kmServicio = data.km_desde_servicio;
-                    let vidaRestante = Math.max(0, Math.min(100, 100 - (kmServicio / 2500) * 100));
-                    let barra = document.getElementById("barra-vida");
-                    let txtVida = document.getElementById("porcentaje-vida");
-                    let alertaInv = document.getElementById("alerta-inversion");
-
-                    barra.style.width = vidaRestante + "%";
-                    txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante";
-
-                    if (vidaRestante > 40) {
-                        barra.style.background = "#22c55e";
-                        alertaInv.style.color = "#16a34a";
-                        alertaInv.innerText = "Estado óptimo. Sin gastos imprevistos próximos.";
-                    } else if (vidaRestante > 15) {
-                        barra.style.background = "#eab308";
-                        alertaInv.style.color = "#ca8a04";
-                        alertaInv.innerText = "⚠️ Precaución: Considere apartar presupuesto para mantenimiento próximo.";
-                    } else {
-                        barra.style.background = "#ef4444";
-                        alertaInv.style.color = "#dc2626";
-                        alertaInv.innerText = "🚨 Alerta de Inversión: Gasto inminente requerido para evitar fallas graves.";
-                    }
+                    actualizarBarraProgreso();
                 }
             }
 
@@ -577,10 +599,10 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     
     if km_desde_servicio > 2500:
         alerta_color = "red"
-        mensaje_alerta = "¡Urgente! Cambio de aceite y revisión de kit de arrastre requeridos."
+        mensaje_alerta = "¡Urgente! Cambio de aceite y revisión requeridos."
     elif km_desde_servicio > 1800:
         alerta_color = "orange"
-        mensaje_alerta = "Atención: Próximo a servicio preventivo (revisar pastillas de freno)."
+        mensaje_alerta = "Atención: Próximo a servicio preventivo."
     else:
         alerta_color = "green"
         mensaje_alerta = "Componentes óptimos. Desgaste en rangos normales."
@@ -688,12 +710,13 @@ def registrar_mantenimiento(m: MantenimientoRegistro, authorization: str = Heade
     conn.commit()
     conn.close()
 
-    return {"mensaje": f"Servicio '{m.tipo_servicio}' registrado a los {km_actual} km. Contador de desgaste reiniciado."}
+    return {"mensaje": f"Servicio '{m.tipo_servicio}' registrado a los {km_actual} km. Ciclo de desgaste reiniciado."}
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
