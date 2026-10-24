@@ -44,11 +44,13 @@ def init_db():
             rendimiento REAL
         )
     """)
-    # Tabla para llevar el acumulado de km recorridos en rutas para la vida útil
+    # Tabla para llevar el control de los km acumulados por cada componente específico
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS km_acumulados_componentes (
-            usuario TEXT PRIMARY KEY,
-            km_totales_recorridos REAL DEFAULT 0.0
+        CREATE TABLE IF NOT EXISTS mantenimiento_componentes (
+            usuario TEXT,
+            componente TEXT,
+            km_acumulados REAL DEFAULT 0.0,
+            PRIMARY KEY (usuario, componente)
         )
     """)
     conn.commit()
@@ -73,6 +75,9 @@ class CargarCombustible(BaseModel):
 class EvaluarRuta(BaseModel):
     km_recorridos: float
     precio_gasolina: float
+
+class RegistrarMantenimiento(BaseModel):
+    componente: str
 
 def verificar_token(authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
@@ -99,6 +104,7 @@ def home():
             .btn-voice { background: #8b5cf6; margin-bottom: 8px; }
             .btn-share { background: #25d366; font-weight: bold; margin-top: 10px; }
             .btn-backup { background: #475569; font-weight: bold; margin-top: 5px; }
+            .btn-mantenimiento { background: #d97706; font-weight: bold; margin-top: 6px; }
             #app, #auth { display: none; }
             .flex-row { display: flex; gap: 5px; }
             .checklist-box { background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fcd34d; margin-top: 10px; margin-bottom: 10px; }
@@ -193,14 +199,14 @@ def home():
                 </div>
             </div>
 
-            <!-- SELECTOR DINÁMICO DE COMPONENTES VINCULADO AUTOMÁTICAMENTE A LOS KM DEL BLOQUE 1 -->
-            <select id="tipo_serv" onchange="actualizarBarraProgreso()">
+            <!-- SELECTOR DINÁMICO DE COMPONENTES -->
+            <select id="tipo_serv" onchange="sincronizarVistaComponente()">
                 <option value="Cambio de Aceite" data-ciclo="2500">Cambio de Aceite (Ciclo: 2,500 km)</option>
                 <option value="Kit de Arrastre / Piñones" data-ciclo="15000">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
                 <option value="Pastillas de Freno" data-ciclo="5000">Pastillas de Freno (Ciclo: 5,000 km)</option>
             </select>
 
-            <!-- BARRA DE PROGRESO CONECTADA A LOS KM ACUMULADOS DE RUTA -->
+            <!-- BARRA DE PROGRESO E INVERSIÓN CON BOTÓN DE REINICIO -->
             <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 8px; margin-bottom: 10px;">
                 <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📊 Vida Útil del Componente Seleccionado:</p>
                 <div style="font-size: 12px; display: flex; justify-content: space-between;">
@@ -211,6 +217,9 @@ def home():
                     <div id="barra-vida" class="progress-bar" style="width: 100%;"></div>
                 </div>
                 <div id="alerta-inversion" style="font-size: 12px; margin-top: 4px; font-weight: bold; color: #16a34a;">Estado óptimo. Sin gastos imprevistos próximos.</div>
+                
+                <!-- BOTÓN DE REINICIO DE CICLO AL 100% -->
+                <button class="btn-mantenimiento" onclick="registrarMantenimientoRealizado()">🔧 Registrar Mantenimiento Realizado (Reiniciar al 100%)</button>
             </div>
 
             <hr>
@@ -239,7 +248,11 @@ def home():
             let authToken = "";
             let ultimoDiagnostico = "";
             let sistemaBloqueado = true;
-            let kmAcumuladosRutas = 0;
+            let kmComponentes = {
+                "Cambio de Aceite": 0,
+                "Kit de Arrastre / Piñones": 0,
+                "Pastillas de Freno": 0
+            };
 
             function limpiarInterfaz() {
                 document.getElementById("modelo").value = "";
@@ -254,7 +267,7 @@ def home():
                 document.getElementById("anulador_luces").value = "revision";
                 document.getElementById("anulador_epp").value = "revision";
                 document.getElementById("anulador_docs").value = "revision";
-                kmAcumuladosRutas = 0;
+                kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
                 ultimoDiagnostico = "";
             }
@@ -297,25 +310,22 @@ def home():
                 }
             }
 
-            function actualizarBarraProgreso() {
+            function sincronizarVistaComponente() {
                 let selectElem = document.getElementById("tipo_serv");
                 let tipoServicio = selectElem.value;
                 let cicloMax = parseFloat(selectElem.options[selectElem.selectedIndex].getAttribute("data-ciclo"));
                 
                 document.getElementById("label-componente-activo").innerText = tipoServicio;
 
-                // El desgaste baja en función de los kilómetros acumulados en las rutas del Bloque 1
-                let kmRecorridosEnRutas = kmAcumuladosRutas % cicloMax; 
-                let ciclosCompletos = Math.floor(kmAcumuladosRutas / cicloMax);
-                
-                let vidaRestante = Math.max(0, Math.min(100, 100 - (kmRecorridosEnRutas / cicloMax) * 100));
+                let kmAcumulados = kmComponentes[tipoServicio] || 0;
+                let vidaRestante = Math.max(0, Math.min(100, 100 - (kmAcumulados / cicloMax) * 100));
                 
                 let barra = document.getElementById("barra-vida");
                 let txtVida = document.getElementById("porcentaje-vida");
                 let alertaInv = document.getElementById("alerta-inversion");
 
                 barra.style.width = vidaRestante + "%";
-                txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante (Ciclos cumplidos: " + ciclosCompletos + ")";
+                txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante (" + kmAcumulados + " / " + cicloMax + " km)";
 
                 if (vidaRestante > 40) {
                     barra.style.background = "#22c55e";
@@ -324,11 +334,33 @@ def home():
                 } else if (vidaRestante > 15) {
                     barra.style.background = "#eab308";
                     alertaInv.style.color = "#ca8a04";
-                    alertaInv.innerText = `⚠️ Precaución: Considere apartar presupuesto para el cambio de ${tipoServicio}.`;
+                    alertaInv.innerText = `⚠️ Precaución: El componente ${tipoServicio} se acerca al límite de su ciclo. Considere realizar el cambio pronto.`;
                 } else {
                     barra.style.background = "#ef4444";
                     alertaInv.style.color = "#dc2626";
-                    alertaInv.innerText = `🚨 Alerta de Inversión: Es tiempo recomendado de cambiar el componente (${tipoServicio}) debido al kilometraje acumulado en ruta.`;
+                    alertaInv.innerText = `🚨 Alerta de Inversión: Es tiempo obligatorio de cambiar ${tipoServicio}. Realice el mantenimiento y presione el botón de reinicio.`;
+                }
+            }
+
+            async function registrarMantenimientoRealizado() {
+                let selectElem = document.getElementById("tipo_serv");
+                let tipoServicio = selectElem.value;
+                
+                let res = await fetch(API + "/mantenimiento/reiniciar", {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + authToken
+                    },
+                    body: JSON.stringify({ componente: tipoServicio })
+                });
+                let data = await res.json();
+                if(res.ok) {
+                    kmComponentes[tipoServicio] = 0;
+                    sincronizarVistaComponente();
+                    alert("✔ " + data.mensaje);
+                } else {
+                    alert(data.detail);
                 }
             }
 
@@ -405,13 +437,14 @@ def home():
                     document.getElementById("auth").style.display = "none";
                     document.getElementById("app").style.display = "block";
                     cargarEstadoVehiculo();
+                    sincronizarVistaComponente();
                     verificarAnuladores();
                 } else {
                     alert("Credenciales inválidas");
                 }
             }
 
-            function logout() {
+            async function logout() {
                 authToken = "";
                 limpiarInterfaz();
                 document.getElementById("user").value = "";
@@ -481,9 +514,11 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    // Acumulamos los km de esta ruta evaluada para actualizar la vida útil en tiempo real
-                    kmAcumuladosRutas += km_recorridos;
-                    actualizarBarraProgreso();
+                    // Acumulamos los km de la ruta en todos los componentes para actualizar su desgaste
+                    for (let comp in kmComponentes) {
+                        kmComponentes[comp] += km_recorridos;
+                    }
+                    sincronizarVistaComponente();
 
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p><b>Consumo Ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
@@ -505,6 +540,20 @@ def home():
                         document.getElementById("modelo").value = data.modelo || "";
                         document.getElementById("km").value = data.km_actual || 0;
                     }
+                }
+                
+                // Cargar estado de mantenimientos del usuario
+                let resMantenimiento = await fetch(API + "/mantenimiento/estado", {
+                    headers: { "Authorization": "Bearer " + authToken }
+                });
+                if(resMantenimiento.ok) {
+                    let dataMaint = await resMantenimiento.json();
+                    dataMaint.forEach(item => {
+                        if(kmComponentes.hasOwnProperty(item.componente)) {
+                            kmComponentes[item.componente] = item.km_acumulados;
+                        }
+                    });
+                    sincronizarVistaComponente();
                 }
             }
         </script>
@@ -552,18 +601,14 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT id FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     
     if row:
-        vehiculo_id, km_previo, ultimo_servicio = row
-        if ultimo_servicio is None:
-            ultimo_servicio = 0.0
-        cursor.execute("UPDATE vehiculos SET modelo = ?, km_actual = ? WHERE id = ?", (v.modelo, v.km_actual, vehiculo_id))
+        cursor.execute("UPDATE vehiculos SET modelo = ?, km_actual = ? WHERE usuario = ?", (v.modelo, v.km_actual, usuario))
     else:
-        ultimo_servicio = 0.0
-        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio) VALUES (?, ?, ?, ?)", 
-                       (usuario, v.modelo, v.km_actual, ultimo_servicio))
+        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio) VALUES (?, ?, ?, 0.0)", 
+                       (usuario, v.modelo, v.km_actual))
     
     conn.commit()
     conn.close()
@@ -586,6 +631,30 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn.close()
     return dict(row) if row else {}
 
+@app.get("/mantenimiento/estado")
+def obtener_estado_mantenimiento(authorization: str = Header(None)):
+    usuario = verificar_token(authorization)
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT componente, km_acumulados FROM mantenimiento_componentes WHERE usuario = ?", (usuario,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+@app.post("/mantenimiento/reiniciar")
+def reiniciar_mantenimiento(m: RegistrarMantenimiento, authorization: str = Header(None)):
+    usuario = verificar_token(authorization)
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados) VALUES (?, ?, 0.0)
+        ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = 0.0
+    """, (usuario, m.componente))
+    conn.commit()
+    conn.close()
+    return {"mensaje": f"Ciclo de '{m.componente}' reiniciado al 100% correctamente."}
+
 @app.post("/combustible/cargar")
 def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
@@ -594,16 +663,13 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    
     nuevo_total = round(c.litros_cargados, 2)
     cursor.execute("""
         INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
         ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?
     """, (usuario, nuevo_total, nuevo_total))
-        
     conn.commit()
     conn.close()
-
     return {"litros_tanque": nuevo_total}
 
 @app.post("/combustible/evaluar")
@@ -614,9 +680,17 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    
+    # Actualizar km acumulados en BD para cada componente
+    for comp in ["Cambio de Aceite", "Kit de Arrastre / Piñones", "Pastillas de Freno"]:
+        cursor.execute("""
+            INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados) 
+            VALUES (?, ?, ?)
+            ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = km_acumulados + ?
+        """, (usuario, comp, e.km_recorridos, e.km_recorridos))
+
     cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
-    
     litros_tanque = row[0] if row and row[0] is not None else 0.0
 
     rendimiento_estandar = 30.0
@@ -624,10 +698,10 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
     litros_restantes = round(litros_tanque - litros_consumidos, 2)
 
-    if row:
-        cursor.execute("UPDATE tanque_usuario SET litros_tanque = ? WHERE usuario = ?", (max(0.0, litros_restantes), usuario))
-    else:
-        cursor.execute("INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)", (usuario, max(0.0, litros_restantes)))
+    cursor.execute("""
+        INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
+        ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?
+    """, (usuario, max(0.0, litros_restantes), max(0.0, litros_restantes)))
 
     cursor.execute("INSERT INTO combustible (usuario, km_recorridos, litros_consumidos, rendimiento) VALUES (?, ?, ?, ?)",
                    (usuario, e.km_recorridos, litros_consumidos, rendimiento_estandar))
@@ -656,6 +730,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
