@@ -154,7 +154,7 @@ def home():
             <h3>Panel Operativo (<span id="current-user"></span>)</h3>
             <hr>
             
-            <h4>1. Control de Combustible y Autonomía[span_0](start_span)[span_0](end_span)</h4>
+            <h4>1. Control de Combustible y Autonomía</h4>
             <div class="flex-row">
                 <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
@@ -173,17 +173,17 @@ def home():
                 <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
-            <button id="btn_evaluar" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)[span_1](start_span)[span_1](end_span)</button>
+            <button id="btn_evaluar" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
             <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
 
             <hr>
-            <h4>2. Mantenimiento Preventivo y Checklist de Inspección[span_2](start_span)[span_2](end_span)[span_3](start_span)[span_3](end_span)</h4>
+            <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
             <div id="contenedor-inspeccion">
                 <div id="checklist-contenedor" class="checklist-box">
-                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad[span_4](start_span)[span_4](end_span).</p>
+                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
                     <div class="checklist-grid">
                         <div class="check-item">
                             <span>🛑 Frenos / Suspensión</span>
@@ -231,12 +231,12 @@ def home():
                 </div>
 
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
-                    <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL[span_5](start_span)[span_5](end_span)</p>
-                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección[span_6](start_span)[span_6](end_span). Cumple estrictamente la reglamentación oficial:</p>
+                    <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
+                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple estrictamente la reglamentación oficial:</p>
                     <ul style="margin: 4px 0 8px 15px; padding: 0;">
-                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en avenidas secundarias y <b>80 km/h</b> en vías de acceso controlado[span_7](start_span)[span_7](end_span). Reduzca a <b>30 km/h</b> en zonas escolares[span_8](start_span)[span_8](end_span).</li>
-                        <li><b>Equipo de Protección (EPP):</b> Uso obligatorio de casco certificado (DOT / ECE) y chaleco reflejante nocturno[span_9](start_span)[span_9](end_span).</li>
-                        <li><b>Cero Invasión:</b> Prohibido circular en banquetas, ciclovías o carriles confinados de transporte masivo[span_10](start_span)[span_10](end_span).</li>
+                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en avenidas secundarias y <b>80 km/h</b> en vías de acceso controlado. Reduzca a <b>30 km/h</b> en zonas escolares.</li>
+                        <li><b>Equipo de Protección (EPP):</b> Uso obligatorio de casco certificado (DOT / ECE) y chaleco reflejante nocturno.</li>
+                        <li><b>Cero Invasión:</b> Prohibido circular en banquetas, ciclovías o carriles confinados de transporte masivo.</li>
                     </ul>
                     <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                 </div>
@@ -263,7 +263,7 @@ def home():
             </div>
 
             <hr>
-            <h4>3. Telemetría de Precisión y Bitácora Analítica[span_11](start_span)[span_11](end_span)</h4>
+            <h4>3. Telemetría de Precisión y Bitácora Analítica</h4>
             <div class="flex-row">
                 <input type="text" id="marca" placeholder="Marca (Ej. Bajaj)">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('marca')">🎤 Voz</button>
@@ -284,13 +284,13 @@ def home():
             <div id="diagnostico"></div>
 
             <div class="bitacora-box">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #1e293b;">📋 Auditoría y Bitácora Analítica[span_12](start_span)[span_12](end_span):</p>
-                <div id="lista-bitacora">Sin registros analíticos en esta sesión[span_13](start_span)[span_13](end_span).</div>
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #1e293b;">📋 Auditoría y Bitácora Analítica:</p>
+                <div id="lista-bitacora">Sin registros analíticos en esta sesión.</div>
             </div>
 
             <hr>
-            <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)[span_14](start_span)[span_14](end_span)[span_15](start_span)[span_15](end_span)</button>
-            <button class="btn-backup" onclick="descargarRespaldo()">💾 Descargar Copia de Seguridad (DB)[span_16](start_span)[span_16](end_span)[span_17](start_span)[span_17](end_span)</button>
+            <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)</button>
+            <button class="btn-backup" onclick="descargarRespaldo()">💾 Descargar Copia de Seguridad (DB)</button>
             
             <hr>
             <button onclick="logout()" style="background:#6b7280; margin-top: 10px;">Cerrar Sesión</button>
@@ -509,7 +509,7 @@ def home():
 
                 recognition.onresult = function(event) {
                     let texto = event.results[0][0].transcript;
-                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta' || inputId === 'precio_gas') {
+                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta' || inputId === 'precio_gas' || inputId === 'anio') {
                         texto = texto.replace(/[^0-9.]/g, '');
                     }
                     document.getElementById(inputId).value = texto;
@@ -527,7 +527,7 @@ def home():
 
             function compartirReporte() {
                 if (!ultimoDiagnostico) {
-                    alert("Realiza una evaluación primero[span_18](start_span)[span_18](end_span).");
+                    alert("Realiza una evaluación primero.");
                     return;
                 }
                 const textoReporte = "*REPORTE TELEMETRÍA DEMONION MVP*\\n" + ultimoDiagnostico + "\\n\\nBitácora Reciente:\\n" + (bitacoraLocal.length > 0 ? bitacoraLocal[0] : "Sin registros recientes");
@@ -597,8 +597,8 @@ def home():
             async function actualizarKm() {
                 let marca = document.getElementById("marca").value;
                 let modelo = document.getElementById("modelo").value;
-                let anio = document.getElementById("anio").value;
-                let km_actual = parseFloat(document.getElementById("km").value);
+                let anio = parseInt(document.getElementById("anio").value) || 2024;
+                let km_actual = parseFloat(document.getElementById("km").value) || 0;
                 
                 let res = await fetch(API + "/vehiculo", {
                     method: "POST",
@@ -606,16 +606,36 @@ def home():
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ marca, modelo, anio, km_actual })
+                    body: JSON.stringify({ marca, modelo, anio: anio.toString(), km_actual })
                 });
                 let data = await res.json();
                 if(res.ok) {
+                    // Motor estadístico basado en las imágenes de mercado (Libro Azul / BBVA México / Motofeel)
+                    let anioActual = 2026;
+                    let antiguedadAnios = Math.max(0, anioActual - anio);
+                    let deprecioAntiguedadPct = antiguedadAnios * 10.0; // 10% anual acumulado
+                    
+                    let estatusKilometraje = "Kilometraje Estándar (Óptimo)";
+                    let colorKm = "green";
+                    if (km_actual > 20000 || (antiguedadAnios > 0 && (km_actual / antiguedadAnios) > 15000)) {
+                        estatusKilometraje = "⚠️ Kilometraje Elevado (>15k-20k km anuales castiga hasta 30% el valor)";
+                        colorKm = "red";
+                    } else if (km_actual > 10000) {
+                        estatusKilometraje = "⚡ Kilometraje Moderado / Alto uso comercial";
+                        colorKm = "orange";
+                    }
+
+                    let retencionEstimada = Math.max(30, 100 - (18 + deprecioAntiguedadPct));
+
                     document.getElementById("diagnostico").innerHTML = `
                         <p><b>Unidad:</b> ${data.marca} ${data.modelo} (${data.anio})</p>
                         <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
-                        <p><b>Distancia desde último servicio:</b> ${data.km_desde_servicio} km</p>
+                        <p><b>Antigüedad estimada:</b> ${antiguedadAnios} año(s) (Año actual: 2026)</p>
+                        <p style="color: ${colorKm};"><b>Análisis de Kilometraje:</b> ${estatusKilometraje}</p>
+                        <p style="color: #1e3a8a;"><b>📊 Valor de Retención Estimado (Mercado):</b> ~${retencionEstimada}% del valor original de lista.</p>
                         <p style="color: ${data.alerta_color};"><b>Telemetría:</b> ${data.mensaje_alerta}</p>
                     `;
+                    ultimoDiagnostico = `Unidad: ${data.marca} ${data.modelo} ${data.anio} | Km: ${data.km_actual} | Retención estimada: ~${retencionEstimada}%`;
                 }
             }
 
@@ -710,13 +730,13 @@ def home():
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.style.display = "block";
                     panelOficial.innerHTML = `
-                        <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado[span_19](start_span)[span_19](end_span):</p>
+                        <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado:</p>
                         <p><b>Consumo de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Costo por km:</b> ${data.costo_por_km} MXN / km</p>
                         <p><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
                         <p><b>Litros en Tanque:</b> ${data.litros_restantes} L</p>
                         <hr style="border: 0; border-top: 1px dashed #bbf7d0; margin: 6px 0;">
-                        <p style="color: #1e3a8a; font-weight: bold;">📊 Acumulados Globales[span_20](start_span)[span_20](end_span):</p>
+                        <p style="color: #1e3a8a; font-weight: bold;">📊 Acumulados Globales:</p>
                         <p><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km</p>
                         <p><b>Gasto Total:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
                     `;
@@ -1042,6 +1062,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
