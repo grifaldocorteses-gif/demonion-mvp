@@ -177,10 +177,10 @@ def home():
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
-            <!-- CHECKLIST DE SEGURIDAD CONDICIONAL (SOLO PARA JORNADAS PESADAS > 90 KM) -->
-            <div id="contenedor-inspeccion" style="display:none;">
+            <!-- CHECKLIST DE SEGURIDAD INTEGRADO EN EL BLOQUE 2 -->
+            <div id="contenedor-inspeccion">
                 <div id="checklist-contenedor" class="checklist-box">
-                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Jornada alta detectada (>90 km): Confirme los 6 puntos críticos de seguridad para operar.</p>
+                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
                     <div class="checklist-grid">
                         <div class="check-item">
                             <span>🛑 Frenos / Suspensión</span>
@@ -230,7 +230,7 @@ def home():
                 <!-- PROTOCOLO SUPERPUESTO QUE REEMPLAZA EL CHECKLIST AL COMPLETARSE -->
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                     <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
-                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección debido a la alta exigencia de tu jornada. Cumple estrictamente la reglamentación oficial:</p>
+                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple estrictamente la reglamentación oficial:</p>
                     <ul style="margin: 4px 0 8px 15px; padding: 0;">
                         <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en avenidas secundarias y <b>80 km/h</b> en vías de acceso controlado. Reduzca a <b>30 km/h</b> en zonas escolares.</li>
                         <li><b>Equipo de Protección (EPP):</b> Uso obligatorio de casco certificado (DOT / ECE) y chaleco reflejante nocturno.</li>
@@ -334,41 +334,32 @@ def home():
             }
 
             function verificarJornadaYDiagnostico() {
-                let contenedorInspeccion = document.getElementById("contenedor-inspeccion");
                 let checklistElem = document.getElementById("checklist-contenedor");
                 let protocoloElem = document.getElementById("protocolo-normativo");
 
-                if (kmTotalesAcumuladosGlobal >= 90.0) {
-                    if(contenedorInspeccion) contenedorInspeccion.style.display = "block";
+                if (!protocoloConfirmadoLeido) {
+                    let f = document.getElementById("anulador_frenos").value;
+                    let c = document.getElementById("anulador_cadena").value;
+                    let ll = document.getElementById("anulador_llantas").value;
+                    let l = document.getElementById("anulador_luces").value;
+                    let epp = document.getElementById("anulador_epp").value;
+                    let docs = document.getElementById("anulador_docs").value;
 
-                    if (!protocoloConfirmadoLeido) {
-                        let f = document.getElementById("anulador_frenos").value;
-                        let c = document.getElementById("anulador_cadena").value;
-                        let ll = document.getElementById("anulador_llantas").value;
-                        let l = document.getElementById("anulador_luces").value;
-                        let epp = document.getElementById("anulador_epp").value;
-                        let docs = document.getElementById("anulador_docs").value;
-
-                        if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
-                            bloquearSistema(true, "⚠️ Jornada Alta (>90 km): Hay elementos críticos pendientes de revisión obligatoria.");
-                            if(checklistElem) checklistElem.style.display = "block";
-                            if(protocoloElem) protocoloElem.style.display = "none";
-                            ultimoDiagnostico = "Estado Operativo: Bloqueado por Jornada Pesada";
-                        } else {
-                            bloquearSistema(false, "✔ Inspección aprobada para jornada pesada.");
-                            if(checklistElem) checklistElem.style.display = "none";
-                            if(protocoloElem) protocoloElem.style.display = "block";
-                            ultimoDiagnostico = "Estado Operativo: Protocolo Vial Activo y Habilitado";
-                        }
-                    } else {
+                    if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
+                        bloquearSistema(true, "⚠️ Verificación de seguridad: Complete o confirme todos los puntos en 'Operativo (OK)'.");
                         if(checklistElem) checklistElem.style.display = "block";
                         if(protocoloElem) protocoloElem.style.display = "none";
-                        bloquearSistema(false, "✔ Jornada pesada auditada y protocolo vial confirmado.");
+                        ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
+                    } else {
+                        bloquearSistema(false, "✔ Inspección aprobada con éxito.");
+                        if(checklistElem) checklistElem.style.display = "none";
+                        if(protocoloElem) protocoloElem.style.display = "block";
+                        ultimoDiagnostico = "Estado Operativo: Protocolo Vial Activo y Habilitado";
                     }
                 } else {
-                    protocoloConfirmadoLeido = false;
-                    if(contenedorInspeccion) contenedorInspeccion.style.display = "none";
-                    bloquearSistema(false, "✔ Jornada Óptima / Inicial: Sistema Operativo Habilitado Directamente.");
+                    if(checklistElem) checklistElem.style.display = "block";
+                    if(protocoloElem) protocoloElem.style.display = "none";
+                    bloquearSistema(false, "✔ Puntos de inspección confirmados y operativos.");
                 }
             }
 
@@ -1088,6 +1079,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
