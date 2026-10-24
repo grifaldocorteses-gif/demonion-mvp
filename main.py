@@ -24,7 +24,9 @@ def init_db():
         CREATE TABLE IF NOT EXISTS vehiculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             usuario TEXT,
+            marca TEXT,
             modelo TEXT,
+            anio TEXT,
             km_actual REAL,
             ultimo_servicio REAL
         )
@@ -81,7 +83,9 @@ class User(BaseModel):
     password: str
 
 class VehiculoUpdate(BaseModel):
+    marca: str
     modelo: str
+    anio: str
     km_actual: float
 
 class CargarCombustible(BaseModel):
@@ -150,7 +154,7 @@ def home():
             <h3>Panel Operativo (<span id="current-user"></span>)</h3>
             <hr>
             
-            <h4>1. Control de Combustible y Autonomía[span_3](start_span)[span_3](end_span)</h4>
+            <h4>1. Control de Combustible y Autonomía[span_0](start_span)[span_0](end_span)</h4>
             <div class="flex-row">
                 <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
@@ -169,17 +173,17 @@ def home():
                 <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
-            <button id="btn_evaluar" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)[span_4](start_span)[span_4](end_span)</button>
+            <button id="btn_evaluar" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)[span_1](start_span)[span_1](end_span)</button>
             
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
             <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
 
             <hr>
-            <h4>2. Mantenimiento Preventivo y Checklist de Inspección[span_5](start_span)[span_5](end_span)[span_6](start_span)[span_6](end_span)</h4>
+            <h4>2. Mantenimiento Preventivo y Checklist de Inspección[span_2](start_span)[span_2](end_span)[span_3](start_span)[span_3](end_span)</h4>
             
             <div id="contenedor-inspeccion">
                 <div id="checklist-contenedor" class="checklist-box">
-                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad[span_7](start_span)[span_7](end_span).</p>
+                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad[span_4](start_span)[span_4](end_span).</p>
                     <div class="checklist-grid">
                         <div class="check-item">
                             <span>🛑 Frenos / Suspensión</span>
@@ -227,12 +231,12 @@ def home():
                 </div>
 
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
-                    <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL[span_8](start_span)[span_8](end_span)</p>
-                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección[span_9](start_span)[span_9](end_span). Cumple estrictamente la reglamentación oficial:</p>
+                    <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL[span_5](start_span)[span_5](end_span)</p>
+                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección[span_6](start_span)[span_6](end_span). Cumple estrictamente la reglamentación oficial:</p>
                     <ul style="margin: 4px 0 8px 15px; padding: 0;">
-                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en avenidas secundarias y <b>80 km/h</b> en vías de acceso controlado[span_10](start_span)[span_10](end_span). Reduzca a <b>30 km/h</b> en zonas escolares[span_11](start_span)[span_11](end_span).</li>
-                        <li><b>Equipo de Protección (EPP):</b> Uso obligatorio de casco certificado (DOT / ECE) y chaleco reflejante nocturno[span_12](start_span)[span_12](end_span).</li>
-                        <li><b>Cero Invasión:</b> Prohibido circular en banquetas, ciclovías o carriles confinados de transporte masivo[span_13](start_span)[span_13](end_span).</li>
+                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en avenidas secundarias y <b>80 km/h</b> en vías de acceso controlado[span_7](start_span)[span_7](end_span). Reduzca a <b>30 km/h</b> en zonas escolares[span_8](start_span)[span_8](end_span).</li>
+                        <li><b>Equipo de Protección (EPP):</b> Uso obligatorio de casco certificado (DOT / ECE) y chaleco reflejante nocturno[span_9](start_span)[span_9](end_span).</li>
+                        <li><b>Cero Invasión:</b> Prohibido circular en banquetas, ciclovías o carriles confinados de transporte masivo[span_10](start_span)[span_10](end_span).</li>
                     </ul>
                     <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                 </div>
@@ -259,26 +263,34 @@ def home():
             </div>
 
             <hr>
-            <h4>3. Telemetría de Precisión y Bitácora Analítica[span_14](start_span)[span_14](end_span)</h4>
+            <h4>3. Telemetría de Precisión y Bitácora Analítica[span_11](start_span)[span_11](end_span)</h4>
+            <div class="flex-row">
+                <input type="text" id="marca" placeholder="Marca (Ej. Bajaj)">
+                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('marca')">🎤 Voz</button>
+            </div>
             <div class="flex-row">
                 <input type="text" id="modelo" placeholder="Modelo (Ej. Pulsar NS 200)">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('modelo')">🎤 Voz</button>
             </div>
             <div class="flex-row">
-                <input type="number" id="km" placeholder="Kilometraje Actual (Odómetro)">
+                <input type="text" id="anio" placeholder="Año (Ej. 2024)">
+                <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('anio')">🎤 Voz</button>
+            </div>
+            <div class="flex-row">
+                <input type="number" id="km" placeholder="Odómetro / Km Actual">
                 <button type="button" class="btn-voice" style="width:30%; margin:0;" onclick="escucharVoz('km')">🎤 Voz</button>
             </div>
             <button onclick="actualizarKm()">Sincronizar Odómetro y Auditar Telemetría</button>
             <div id="diagnostico"></div>
 
             <div class="bitacora-box">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #1e293b;">📋 Auditoría y Bitácora Analítica[span_15](start_span)[span_15](end_span):</p>
-                <div id="lista-bitacora">Sin registros analíticos en esta sesión[span_16](start_span)[span_16](end_span).</div>
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #1e293b;">📋 Auditoría y Bitácora Analítica[span_12](start_span)[span_12](end_span):</p>
+                <div id="lista-bitacora">Sin registros analíticos en esta sesión[span_13](start_span)[span_13](end_span).</div>
             </div>
 
             <hr>
-            <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)[span_17](start_span)[span_17](end_span)[span_18](start_span)[span_18](end_span)</button>
-            <button class="btn-backup" onclick="descargarRespaldo()">💾 Descargar Copia de Seguridad (DB)[span_19](start_span)[span_19](end_span)[span_20](start_span)[span_20](end_span)</button>
+            <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)[span_14](start_span)[span_14](end_span)[span_15](start_span)[span_15](end_span)</button>
+            <button class="btn-backup" onclick="descargarRespaldo()">💾 Descargar Copia de Seguridad (DB)[span_16](start_span)[span_16](end_span)[span_17](start_span)[span_17](end_span)</button>
             
             <hr>
             <button onclick="logout()" style="background:#6b7280; margin-top: 10px;">Cerrar Sesión</button>
@@ -389,7 +401,7 @@ def home():
                 divDiag.innerHTML = `
                     <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Carga]</i></p>
                     <p><b>Litros en Tanque (Post-Carga):</b> ${totalSimulado} L (${litrosActualesTanque} L actuales + ${litrosEntrada} L nuevos)</p>
-                    <p><b>Autonomía Estimada (Pulsar NS 200):</b> ${autonomiaProyectada} km</p>
+                    <p><b>Autonomía Estimada:</b> ${autonomiaProyectada} km</p>
                 `;
             }
 
@@ -414,42 +426,12 @@ def home():
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
 
-                let kmTotalesProyectados = round(kmTotalesAcumuladosGlobal + kmRutaVal, 1);
-                let gastoTotalProyectado = round(gastoTotalAcumuladoGlobal + costoViaje, 2);
-
-                let intensidadUso = "Óptima / Moderada";
-                let colorIntensidad = "green";
-                if (kmTotalesProyectados > 150) {
-                    intensidadUso = "⚠️ Alta Exigencia / Jornada Pesada (Desgaste acelerado)";
-                    colorIntensidad = "red";
-                } else if (kmTotalesProyectados > 90) {
-                    intensidadUso = "⚡ Exigencia Estándar / Operación Normal";
-                    colorIntensidad = "orange";
-                }
-
-                let alertaColor = "green";
-                let mensajeAlerta = `Ruta viable para aceptar.`;
-
-                if (litrosRestantesSimulados < 1.0) {
-                    alertaColor = "red";
-                    mensajeAlerta = `⚠️ Alerta: Combustible insuficiente para completar este viaje.`;
-                } else if (litrosRestantesSimulados < 3.0) {
-                    alertaColor = "orange";
-                    mensajeAlerta = `⚠️ Precaución: El tanque quedará muy bajo tras este servicio.`;
-                }
-
                 divDiag.innerHTML = `
-                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje y Proyección]</i></p>
+                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
                     <p><b>Consumo Ruta (Sim):</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
                     <p><b>Costo Operativo:</b> $${costoPorKm} MXN / km</p>
                     <p><b>Autonomía Proyectada:</b> ${autonomiaRestanteKm} km restantes</p>
                     <p><b>Litros Restantes Estimados:</b> ${litrosRestantesSimulados} L</p>
-                    <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 6px 0;">
-                    <p style="color: #1e3a8a; font-weight: bold;">📊 Proyección Post-Viaje (Acumulados):</p>
-                    <p><b>Km Totales Proyectados:</b> ${kmTotalesProyectados} km</p>
-                    <p><b>Gasto Total Proyectado:</b> $${gastoTotalProyectado} MXN</p>
-                    <p style="color: ${colorIntensidad};"><b>Evaluación de Uso (Pulsar NS 200):</b> ${intensidadUso}</p>
-                    <p style="color: ${alertaColor};"><b>Estado:</b> ${mensajeAlerta}</p>
                 `;
             }
 
@@ -477,13 +459,13 @@ def home():
 
                 if (vidaRestante > 40) {
                     if(barra) barra.style.background = "#22c55e";
-                    if(alertaInv) { alertaInv.style.color = "#16a34a"; alertaInv.innerText = `Estado óptimo para ${tipoServicio}. Sin gastos imprevistos próximos.`; }
+                    if(alertaInv) { alertaInv.style.color = "#16a34a"; alertaInv.innerText = `Estado óptimo para ${tipoServicio}. Sin gastos imprevistos.`; }
                 } else if (vidaRestante > 15) {
                     if(barra) barra.style.background = "#eab308";
-                    if(alertaInv) { alertaInv.style.color = "#ca8a04"; alertaInv.innerText = `⚠️ Precaución: El componente ${tipoServicio} se acerca al límite de su ciclo.`; }
+                    if(alertaInv) { alertaInv.style.color = "#ca8a04"; alertaInv.innerText = `⚠️ Precaución: El componente ${tipoServicio} se acerca al límite.`; }
                 } else {
                     if(barra) barra.style.background = "#ef4444";
-                    if(alertaInv) { alertaInv.style.color = "#dc2626"; alertaInv.innerText = `🚨 Alerta de Inversión: Es tiempo obligatorio de cambiar ${tipoServicio}.`; }
+                    if(alertaInv) { alertaInv.style.color = "#dc2626"; alertaInv.innerText = `🚨 Alerta: Es tiempo obligatorio de cambiar ${tipoServicio}.`; }
                 }
             }
 
@@ -545,7 +527,7 @@ def home():
 
             function compartirReporte() {
                 if (!ultimoDiagnostico) {
-                    alert("Realiza una evaluación primero[span_21](start_span)[span_21](end_span).");
+                    alert("Realiza una evaluación primero[span_18](start_span)[span_18](end_span).");
                     return;
                 }
                 const textoReporte = "*REPORTE TELEMETRÍA DEMONION MVP*\\n" + ultimoDiagnostico + "\\n\\nBitácora Reciente:\\n" + (bitacoraLocal.length > 0 ? bitacoraLocal[0] : "Sin registros recientes");
@@ -613,19 +595,23 @@ def home():
             }
 
             async function actualizarKm() {
+                let marca = document.getElementById("marca").value;
                 let modelo = document.getElementById("modelo").value;
+                let anio = document.getElementById("anio").value;
                 let km_actual = parseFloat(document.getElementById("km").value);
+                
                 let res = await fetch(API + "/vehiculo", {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ modelo, km_actual })
+                    body: JSON.stringify({ marca, modelo, anio, km_actual })
                 });
                 let data = await res.json();
                 if(res.ok) {
                     document.getElementById("diagnostico").innerHTML = `
+                        <p><b>Unidad:</b> ${data.marca} ${data.modelo} (${data.anio})</p>
                         <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
                         <p><b>Distancia desde último servicio:</b> ${data.km_desde_servicio} km</p>
                         <p style="color: ${data.alerta_color};"><b>Telemetría:</b> ${data.mensaje_alerta}</p>
@@ -657,7 +643,7 @@ def home():
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p style="color: #047857; font-weight: bold;">✔ Carga Registrada y Tanque Acumulado:</p>
                         <p><b>Litros Totales en Tanque:</b> ${litrosActualesTanque} L</p>
-                        <p><b>Autonomía Disponible (Pulsar NS 200):</b> ${autonomiaTanque} km</p>
+                        <p><b>Autonomía Disponible:</b> ${autonomiaTanque} km</p>
                     `;
                     document.getElementById("litros_carga").value = "";
                 } else {
@@ -666,14 +652,12 @@ def home():
             }
 
             async function reiniciarTanqueYTelemetria() {
-                if (!confirm("¿Estás seguro de reiniciar el tanque a 0 L y borrar todos los acumulados de telemetría de rutas?")) {
+                if (!confirm("¿Estás seguro de reiniciar el tanque a 0 L y borrar los acumulados?")) {
                     return;
                 }
                 let res = await fetch(API + "/combustible/reiniciar-telemetria", {
                     method: "POST",
-                    headers: { 
-                        "Authorization": "Bearer " + authToken
-                    }
+                    headers: { "Authorization": "Bearer " + authToken }
                 });
                 let data = await res.json();
                 if(res.ok) {
@@ -684,8 +668,7 @@ def home():
                     document.getElementById("litros_carga").value = "";
                     document.getElementById("km_ruta").value = "";
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: #047857; font-weight: bold;">✔ Acción realizada con éxito:</p>
-                        <p><b>Tanque y Contadores de Telemetría:</b> Reiniciados a 0 correctamente.</p>
+                        <p style="color: #047857; font-weight: bold;">✔ Acción realizada con éxito.</p>
                     `;
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.innerHTML = "";
@@ -723,30 +706,19 @@ def home():
                     sincronizarVistaComponente();
                     verificarJornadaYDiagnostico();
 
-                    let intensidadUso = "Óptima / Moderada";
-                    let colorIntensidad = "green";
-                    if (kmTotalesAcumuladosGlobal > 150) {
-                        intensidadUso = "⚠️ Alta Exigencia / Jornada Pesada";
-                        colorIntensidad = "red";
-                    } else if (kmTotalesAcumuladosGlobal > 90) {
-                        intensidadUso = "⚡ Exigencia Estándar / Operación Normal";
-                        colorIntensidad = "orange";
-                    }
-
                     document.getElementById("diagnostico-combustible").innerHTML = "";
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.style.display = "block";
                     panelOficial.innerHTML = `
-                        <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento del Día (Rendimiento Oficial Registrado)[span_22](start_span)[span_22](end_span):</p>
-                        <p><b>Último consumo de ruta registrado:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p><b>Último costo operativo registrado:</b> ${data.costo_por_km} MXN / km</p>
+                        <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado[span_19](start_span)[span_19](end_span):</p>
+                        <p><b>Consumo de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
+                        <p><b>Costo por km:</b> ${data.costo_por_km} MXN / km</p>
                         <p><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
-                        <p><b>Litros Restantes en Tanque:</b> ${data.litros_restantes} L</p>
+                        <p><b>Litros en Tanque:</b> ${data.litros_restantes} L</p>
                         <hr style="border: 0; border-top: 1px dashed #bbf7d0; margin: 6px 0;">
-                        <p style="color: #1e3a8a; font-weight: bold;">📊 Acumulados Globales[span_23](start_span)[span_23](end_span):</p>
-                        <p><b>Km Totales Recorridos:</b> ${kmTotalesAcumuladosGlobal} km</p>
-                        <p><b>Gasto Total Acumulado:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
-                        <p style="color: ${colorIntensidad};"><b>Evaluación de Uso:</b> ${intensidadUso}</p>
+                        <p style="color: #1e3a8a; font-weight: bold;">📊 Acumulados Globales[span_20](start_span)[span_20](end_span):</p>
+                        <p><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km</p>
+                        <p><b>Gasto Total:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
                     `;
                 } else {
                     alert(data.detail);
@@ -760,9 +732,12 @@ def home():
                 if(res.ok) {
                     let data = await res.json();
                     if(data && Object.keys(data).length > 0) {
+                        document.getElementById("marca").value = data.marca || "";
                         document.getElementById("modelo").value = data.modelo || "";
+                        document.getElementById("anio").value = data.anio || "";
                         document.getElementById("km").value = data.km_actual || 0;
                         document.getElementById("diagnostico").innerHTML = `
+                            <p><b>Unidad:</b> ${data.marca || ''} ${data.modelo || ''} (${data.anio || ''})</p>
                             <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
                             <p><b>Distancia desde último servicio:</b> ${data.km_desde_servicio || 0} km</p>
                         `;
@@ -895,11 +870,12 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
         vehiculo_id, km_previo, ultimo_servicio = row
         if ultimo_servicio is None:
             ultimo_servicio = 0.0
-        cursor.execute("UPDATE vehiculos SET modelo = ?, km_actual = ? WHERE id = ?", (v.modelo, v.km_actual, vehiculo_id))
+        cursor.execute("UPDATE vehiculos SET marca = ?, modelo = ?, anio = ?, km_actual = ? WHERE id = ?", 
+                       (v.marca, v.modelo, v.anio, v.km_actual, vehiculo_id))
     else:
         ultimo_servicio = v.km_actual
-        cursor.execute("INSERT INTO vehiculos (usuario, modelo, km_actual, ultimo_servicio) VALUES (?, ?, ?, ?)", 
-                       (usuario, v.modelo, v.km_actual, ultimo_servicio))
+        cursor.execute("INSERT INTO vehiculos (usuario, marca, modelo, anio, km_actual, ultimo_servicio) VALUES (?, ?, ?, ?, ?, ?)", 
+                       (usuario, v.marca, v.modelo, v.anio, v.km_actual, ultimo_servicio))
     
     conn.commit()
     conn.close()
@@ -907,11 +883,13 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     km_desde_servicio = max(0.0, v.km_actual - (ultimo_servicio if ultimo_servicio else 0.0))
 
     return {
+        "marca": v.marca,
         "modelo": v.modelo,
+        "anio": v.anio,
         "km_actual": v.km_actual,
         "km_desde_servicio": km_desde_servicio,
         "alerta_color": "green",
-        "mensaje_alerta": "Odómetro sincronizado y telemetría de precisión activa."
+        "mensaje_alerta": "Odómetro sincronizado y ficha técnica actualizada."
     }
 
 @app.get("/vehiculo")
@@ -920,7 +898,7 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT modelo, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT marca, modelo, anio, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     conn.close()
     
@@ -1050,16 +1028,6 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     conn.commit()
     conn.close()
 
-    if litros_restantes < 1.0:
-        alerta_color = "red"
-        mensaje_alerta = f"¡Alerta Crítica! Gasto estimado: ${costo_viaje}."
-    elif litros_restantes < 3.0:
-        alerta_color = "orange"
-        mensaje_alerta = f"Precaución: Gasto estimado ${costo_viaje}."
-    else:
-        alerta_color = "green"
-        mensaje_alerta = f"Ruta rentable. Gasto estimado: ${costo_viaje} MXN."
-
     return {
         "litros_consumidos": litros_consumidos,
         "costo_viaje": costo_viaje,
@@ -1067,15 +1035,14 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "autonomia_restante_km": autonomia_restante_km,
         "litros_restantes": max(0.0, litros_restantes),
         "km_totales_acumulados": km_totales_acumulados,
-        "gasto_total_acumulado": gasto_total_acumulado,
-        "alerta_color": alerta_color,
-        "mensaje_alerta": mensaje_alerta
+        "gasto_total_acumulado": gasto_total_acumulado
     }
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
