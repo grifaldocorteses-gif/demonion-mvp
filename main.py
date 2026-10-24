@@ -610,10 +610,9 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    // Motor estadístico basado en las imágenes de mercado (Libro Azul / BBVA México / Motofeel)
                     let anioActual = 2026;
                     let antiguedadAnios = Math.max(0, anioActual - anio);
-                    let deprecioAntiguedadPct = antiguedadAnios * 10.0; // 10% anual acumulado
+                    let deprecioAntiguedadPct = antiguedadAnios * 10.0;
                     
                     let estatusKilometraje = "Kilometraje Estándar (Óptimo)";
                     let colorKm = "green";
@@ -627,15 +626,35 @@ def home():
 
                     let retencionEstimada = Math.max(30, 100 - (18 + deprecioAntiguedadPct));
 
+                    // Estimación base de valor de mercado para Pulsar NS 200 (~$45,000 MXN de referencia original o ajustable)
+                    let valorOriginalReferencia = 45000.0;
+                    let valorMonetarioEstimado = Math.round(valorOriginalReferencia * (retencionEstimada / 100.0));
+
+                    // Determinar el mantenimiento más próximo basándonos en los contadores del Bloque 2
+                    let mantenimientoProximo = "Ninguno / Óptimo";
+                    let minKmRestantes = 999999;
+
+                    for (let comp in kmComponentes) {
+                        let cicloMax = 2500;
+                        if (comp === "Kit de Arrastre / Piñones") cicloMax = 15000;
+                        if (comp === "Pastillas de Freno") cicloMax = 5000;
+
+                        let kmUsadosComp = kmComponentes[comp];
+                        let kmRestantesComp = Math.max(0, cicloMax - kmUsadosComp);
+                        if (kmRestantesComp < minKmRestantes) {
+                            minKmRestantes = kmRestantesComp;
+                            mantenimientoProximo = `${comp} (Faltan ~${kmRestantesComp} km)`;
+                        }
+                    }
+
                     document.getElementById("diagnostico").innerHTML = `
-                        <p><b>Unidad:</b> ${data.marca} ${data.modelo} (${data.anio})</p>
-                        <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
-                        <p><b>Antigüedad estimada:</b> ${antiguedadAnios} año(s) (Año actual: 2026)</p>
+                        <p style="color: #047857; font-weight: bold;">💰 Valor Comercial Estimado Aprox: $${valorMonetarioEstimado.toLocaleString()} MXN (~${retencionEstimada}% retención)</p>
+                        <p style="color: #d97706; font-weight: bold;">🔧 Próximo Mantenimiento Crítico: ${mantenimientoProximo}</p>
+                        <p><b>Antigüedad:</b> ${antiguedadAnios} año(s) | <b>Odómetro:</b> ${data.km_actual} km</p>
                         <p style="color: ${colorKm};"><b>Análisis de Kilometraje:</b> ${estatusKilometraje}</p>
-                        <p style="color: #1e3a8a;"><b>📊 Valor de Retención Estimado (Mercado):</b> ~${retencionEstimada}% del valor original de lista.</p>
                         <p style="color: ${data.alerta_color};"><b>Telemetría:</b> ${data.mensaje_alerta}</p>
                     `;
-                    ultimoDiagnostico = `Unidad: ${data.marca} ${data.modelo} ${data.anio} | Km: ${data.km_actual} | Retención estimada: ~${retencionEstimada}%`;
+                    ultimoDiagnostico = `Unidad: ${data.marca} ${data.modelo} ${data.anio} | Valor Est: $${valorMonetarioEstimado} MXN | Prox Mantenimiento: ${mantenimientoProximo}`;
                 }
             }
 
@@ -757,7 +776,6 @@ def home():
                         document.getElementById("anio").value = data.anio || "";
                         document.getElementById("km").value = data.km_actual || 0;
                         document.getElementById("diagnostico").innerHTML = `
-                            <p><b>Unidad:</b> ${data.marca || ''} ${data.modelo || ''} (${data.anio || ''})</p>
                             <p><b>Odómetro Sincronizado:</b> ${data.km_actual} km</p>
                             <p><b>Distancia desde último servicio:</b> ${data.km_desde_servicio || 0} km</p>
                         `;
@@ -1062,6 +1080,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
