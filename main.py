@@ -150,7 +150,7 @@ def home():
             
             <div class="checklist-box">
                 <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Atención: Confirme que cada punto esté en "Operativo (OK)" para desbloquear el control de combustible y rutas.</p>
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Obligatoria:</p>
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Integral Obligatoria:</p>
                 <div class="checklist-grid">
                     <div class="check-item">
                         <span>🛑 Frenos / Suspensión</span>
@@ -176,6 +176,20 @@ def home():
                     <div class="check-item">
                         <span>💡 Sistema Eléctrico / Intermitentes</span>
                         <select id="anulador_luces" onchange="verificarAnuladores()">
+                            <option value="revision" selected>Requiere Revisión</option>
+                            <option value="ok">Operativo (OK)</option>
+                        </select>
+                    </div>
+                    <div class="check-item">
+                        <span>🪖 Casco / Indumentaria (EPP)</span>
+                        <select id="anulador_epp" onchange="verificarAnuladores()">
+                            <option value="revision" selected>Requiere Revisión</option>
+                            <option value="ok">Operativo (OK)</option>
+                        </select>
+                    </div>
+                    <div class="check-item">
+                        <span>📄 Licencia / Póliza Vigente</span>
+                        <select id="anulador_docs" onchange="verificarAnuladores()">
                             <option value="revision" selected>Requiere Revisión</option>
                             <option value="ok">Operativo (OK)</option>
                         </select>
@@ -253,11 +267,13 @@ def home():
                 document.getElementById("anulador_cadena").value = "revision";
                 document.getElementById("anulador_llantas").value = "revision";
                 document.getElementById("anulador_luces").value = "revision";
+                document.getElementById("anulador_epp").value = "revision";
+                document.getElementById("anulador_docs").value = "revision";
                 document.getElementById("historial-servicios").innerHTML = "Sin registros recientes en esta sesión.";
                 historialLocal = [];
                 kmActualGlobal = 0;
                 ultimoServicioKm = 0;
-                bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
+                bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de todos los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
                 ultimoDiagnostico = "";
             }
 
@@ -287,12 +303,14 @@ def home():
                 let c = document.getElementById("anulador_cadena").value;
                 let ll = document.getElementById("anulador_llantas").value;
                 let l = document.getElementById("anulador_luces").value;
+                let epp = document.getElementById("anulador_epp").value;
+                let docs = document.getElementById("anulador_docs").value;
 
-                if (f === "revision" || c === "revision" || ll === "revision" || l === "revision") {
+                if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
                     bloquearSistema(true, "⚠️ Precaución: Hay elementos pendientes de revisión. El Bloque 1 se habilitará cuando todos los puntos estén en 'Operativo (OK)'.");
-                    ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
+                    ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva Integral";
                 } else {
-                    bloquearSistema(false, "✔ Inspección aprobada: Moto lista y segura para operar en ruta.");
+                    bloquearSistema(false, "✔ Inspección aprobada: Moto, EPP y documentos listos para operar con seguridad.");
                     ultimoDiagnostico = "Estado Operativo: Habilitado y Seguro (OK)";
                 }
             }
@@ -302,7 +320,6 @@ def home():
                 let labelComp = document.getElementById("label-componente-activo");
                 labelComp.innerText = tipoServicio;
 
-                // Definir ciclo de vida en km según el componente seleccionado
                 let cicloMax = 2500; // Aceite por defecto
                 if (tipoServicio.includes("Arrastre")) cicloMax = 15000;
                 else if (tipoServicio.includes("Freno")) cicloMax = 5000;
@@ -716,6 +733,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
