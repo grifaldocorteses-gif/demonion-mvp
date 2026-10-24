@@ -110,6 +110,8 @@ def home():
             .check-item { background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
             .check-item select { padding: 5px; font-size: 12px; margin: 0; }
             .bloqueado { background: #94a3b8 !important; cursor: not-allowed !important; }
+            .progress-container { background: #e2e8f0; border-radius: 4px; height: 10px; width: 100%; margin: 5px 0; overflow: hidden; }
+            .progress-bar { height: 100%; width: 0%; background: #22c55e; transition: width 0.3s ease; }
         </style>
     </head>
     <body>
@@ -146,7 +148,6 @@ def home():
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
-            <!-- CHECKLIST ACTUALIZADO CON MENSAJE MEJORADO Y COHERENTE -->
             <div class="checklist-box">
                 <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Atención: Confirme que cada punto esté en "Operativo (OK)" para desbloquear el control de combustible y rutas.</p>
                 <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #b45309;">🔍 Inspección Preventiva Obligatoria:</p>
@@ -182,7 +183,19 @@ def home():
                 </div>
             </div>
 
-            <!-- REGISTRO DE SERVICIO ABAJO -->
+            <!-- BARRA DE PROGRESO DE DESGASTE E INVERSIÓN PREVENTIVA -->
+            <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 10px;">
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📊 Vida Útil del Componente / Alerta de Inversión:</p>
+                <div style="font-size: 12px; display: flex; justify-content: space-between;">
+                    <span id="label-componente">Desgaste general</span>
+                    <span id="porcentaje-vida">100% Vida Restante</span>
+                </div>
+                <div class="progress-container">
+                    <div id="barra-vida" class="progress-bar" style="width: 100%;"></div>
+                </div>
+                <div id="alerta-inversion" style="font-size: 12px; margin-top: 4px; font-weight: bold; color: #16a34a;">Estado óptimo. Sin gastos imprevistos próximos.</div>
+            </div>
+
             <select id="tipo_serv">
                 <option value="Cambio de Aceite">Cambio de Aceite</option>
                 <option value="Kit de Arrastre / Cadena">Kit de Arrastre / Cadena</option>
@@ -193,7 +206,7 @@ def home():
             <div id="diagnostico-mantenimiento" style="margin-top: 8px; font-weight: bold;"></div>
 
             <hr>
-            <h4>3. Registrar Kilometraje (Desgaste Dinámico)</h4>
+            <h4>3. Registrar Kilometraje y Bitácora</h4>
             <div class="flex-row">
                 <input type="text" id="modelo" placeholder="Modelo (Ej. Pulsar NS 200)">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('modelo')">🎤 Voz</button>
@@ -202,8 +215,14 @@ def home():
                 <input type="number" id="km" placeholder="Kilometraje Actual">
                 <button type="button" class="btn-voice" style="width:30%;" onclick="escucharVoz('km')">🎤 Voz</button>
             </div>
-            <button onclick="actualizarKm()">Actualizar y Sincronizar Odómetro</button>
+            <button onclick="actualizarKm()">Actualizar Odómetro y Calcular Desgaste</button>
             <div id="diagnostico"></div>
+
+            <!-- BITÁCORA / HISTORIAL RÁPIDO INTEGRADO AL BLOQUE 3 -->
+            <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px;">
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📋 Historial de Servicios Registrados:</p>
+                <div id="historial-servicios" style="font-size: 12px; color: #475569;">Sin registros recientes en esta sesión.</div>
+            </div>
 
             <hr>
             <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)</button>
@@ -218,6 +237,7 @@ def home():
             let authToken = "";
             let ultimoDiagnostico = "";
             let sistemaBloqueado = true;
+            let historialLocal = [];
 
             function limpiarInterfaz() {
                 document.getElementById("modelo").value = "";
@@ -231,6 +251,8 @@ def home():
                 document.getElementById("anulador_cadena").value = "revision";
                 document.getElementById("anulador_llantas").value = "revision";
                 document.getElementById("anulador_luces").value = "revision";
+                document.getElementById("historial-servicios").innerHTML = "Sin registros recientes en esta sesión.";
+                historialLocal = [];
                 bloquearSistema(true, "🔒 Verificación pendiente: Cambie el estatus de los componentes a 'Operativo (OK)' para habilitar el Bloque 1.");
                 ultimoDiagnostico = "";
             }
@@ -377,6 +399,30 @@ def home():
                         <p><b>Km desde último servicio:</b> ${data.km_desde_servicio} km</p>
                         <p style="color: ${data.alerta_color};"><b>Diagnóstico:</b> ${data.mensaje_alerta}</p>
                     `;
+
+                    // Cálculo visual de barra de progreso (asumiendo ciclo de 2500 km por servicio)
+                    let kmServicio = data.km_desde_servicio;
+                    let vidaRestante = Math.max(0, Math.min(100, 100 - (kmServicio / 2500) * 100));
+                    let barra = document.getElementById("barra-vida");
+                    let txtVida = document.getElementById("porcentaje-vida");
+                    let alertaInv = document.getElementById("alerta-inversion");
+
+                    barra.style.width = vidaRestante + "%";
+                    txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante";
+
+                    if (vidaRestante > 40) {
+                        barra.style.background = "#22c55e";
+                        alertaInv.style.color = "#16a34a";
+                        alertaInv.innerText = "Estado óptimo. Sin gastos imprevistos próximos.";
+                    } else if (vidaRestante > 15) {
+                        barra.style.background = "#eab308";
+                        alertaInv.style.color = "#ca8a04";
+                        alertaInv.innerText = "⚠️ Precaución: Considere apartar presupuesto para mantenimiento próximo.";
+                    } else {
+                        barra.style.background = "#ef4444";
+                        alertaInv.style.color = "#dc2626";
+                        alertaInv.innerText = "🚨 Alerta de Inversión: Gasto inminente requerido para evitar fallas graves.";
+                    }
                 }
             }
 
@@ -433,6 +479,7 @@ def home():
 
             async function registrarMantenimiento() {
                 let tipo_servicio = document.getElementById("tipo_serv").value;
+                let kmActualVal = document.getElementById("km").value || "0";
                 let res = await fetch(API + "/mantenimiento", {
                     method: "POST",
                     headers: { 
@@ -446,6 +493,11 @@ def home():
                     document.getElementById("diagnostico-mantenimiento").innerHTML = `
                         <span style="color: green;">✔ ${data.mensaje}</span>
                     `;
+                    // Actualizar bitácora local en Bloque 3
+                    historialLocal.unshift(`[${kmActualVal} km] ${tipo_servicio}`);
+                    if(historialLocal.length > 3) historialLocal.pop();
+                    document.getElementById("historial-servicios").innerHTML = historialLocal.join("<br>");
+
                     actualizarKm();
                 }
             }
@@ -645,6 +697,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
