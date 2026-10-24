@@ -133,6 +133,7 @@ def home():
             .progress-bar { height: 100%; width: 100%; background: #22c55e; transition: width 0.3s ease; }
             .bitacora-box { background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px; font-size: 12px; color: #334155; }
             .panel-oficial { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; margin-top: 8px; }
+            .alerta-normativa { background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px; border-radius: 4px; font-size: 12px; color: #1e3a8a; margin-top: 10px; }
         </style>
     </head>
     <body>
@@ -223,7 +224,10 @@ def home():
                 </div>
             </div>
 
-            <select id="tipo_serv" onchange="sincronizarVistaComponente()">
+            <!-- MENSAJE DE NORMATIVA Y PROTOCOLO DE SEGURIDAD VIAL -->
+            <div id="protocolo-normativo" class="alerta-normativa" style="display:none;"></div>
+
+            <select id="tipo_serv" onchange="sincronizarVistaComponente()" style="margin-top: 10px;">
                 <option value="Cambio de Aceite" data-ciclo="2500">Cambio de Aceite (Ciclo: 2,500 km)</option>
                 <option value="Kit de Arrastre / Piñones" data-ciclo="15000">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
                 <option value="Pastillas de Freno" data-ciclo="5000">Pastillas de Freno (Ciclo: 5,000 km)</option>
@@ -294,6 +298,7 @@ def home():
                 let panelOficial = document.getElementById("diagnostico-oficial");
                 panelOficial.innerHTML = "";
                 panelOficial.style.display = "none";
+                document.getElementById("protocolo-normativo").style.display = "none";
                 document.getElementById("anulador_frenos").value = "revision";
                 document.getElementById("anulador_cadena").value = "revision";
                 document.getElementById("anulador_llantas").value = "revision";
@@ -343,13 +348,28 @@ def home():
                 let l = document.getElementById("anulador_luces").value;
                 let epp = document.getElementById("anulador_epp").value;
                 let docs = document.getElementById("anulador_docs").value;
+                let panelNormativo = document.getElementById("protocolo-normativo");
 
                 if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
                     bloquearSistema(true, "⚠️ Precaución: Hay elementos pendientes de revisión. El Bloque 1 se habilitará cuando todos los puntos estén en 'Operativo (OK)'.");
                     ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva Integral";
+                    panelNormativo.style.display = "none";
                 } else {
                     bloquearSistema(false, "✔ Inspección aprobada: Moto, EPP y documentos listos para operar con seguridad.");
                     ultimoDiagnostico = "Estado Operativo: Habilitado y Seguro (OK)";
+                    
+                    // MENSAJE DE SEGURIDAD VIAL Y NORMATIVA GUBERNAMENTAL
+                    panelNormativo.style.display = "block";
+                    panelNormativo.innerHTML = `
+                        <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
+                        <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Para garantizar cero incidentes y proteger tu integridad en ruta, cumple estrictamente la Reglamentación Oficial de Tránsito:</p>
+                        <ul style="margin: 4px 0 0 15px; padding: 0;">
+                            <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en avenidas primarias/secundarias y <b>80 km/h</b> en vías de acceso controlado (e.g., periféricos/autopistas urbanas). Reduzca a <b>30 km/h</b> en zonas escolares y residenciales.</li>
+                            <li><b>Equipo Protección Personal (EPP):</b> Uso obligatorio de casco certificado (DOT / ECE 22.05), chamarra con protecciones y elemento reflejante obligatorio en horario nocturno (18:00 a 06:00 hrs).</li>
+                            <li><b>Preferencia y Posición:</b> Prohibido circular sobre banquetas, áreas peatonales o ciclovías. El adelantamiento se realiza exclusivamente por el carril izquierdo.</li>
+                            <li><b>Cero Invasión:</b> Prohibido circular en carriles confinados de transporte masivo o adelantar entre filas de vehículos en movimiento a más de 30 km/h.</li>
+                        </ul>
+                    `;
                 }
             }
 
@@ -1065,6 +1085,7 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
 
 
 
