@@ -368,7 +368,7 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 2: Sello de Seguridad Obligatorio (Desplegable con Título Dinámico) -->
+            <!-- BLOQUE 2: Sello de Seguridad Obligatorio (Menú desplegable único para los 6 puntos críticos) -->
             <div id="contenedor-inspeccion" class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-2', 'arrow-bloque-2')">
                     <span id="titulo-bloque-2" style="font-size:14px; font-weight:600; color:var(--accent-amber);">⚠️ 2. Mantenimiento Preventivo y Checklist (⚠️ Registrar puntos críticos obligatorios antes de usar Bloque 1)</span>
@@ -378,99 +378,72 @@ def home():
                     <div id="checklist-contenedor" class="checklist-box">
                         <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: 600; font-size: 12px; color: var(--accent-amber);">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
                         
+                        <!-- ÚNICO MENÚ DESPLEGABLE PARA LOS 6 PUNTOS CRÍTICOS -->
                         <div class="check-accordion-card">
-                            <div class="check-accordion-header" onclick="toggleAcordeon('body-frenos', 'arrow-frenos')">
-                                <span style="font-size:12px; font-weight:600;">🛑 1. Frenos / Suspensión</span>
-                                <span id="arrow-frenos" style="font-size:10px; font-weight:600;">▼</span>
+                            <div class="check-accordion-header" onclick="toggleAcordeon('body-seis-puntos', 'arrow-seis-puntos')">
+                                <span style="font-size:12px; font-weight:600; color:var(--accent-amber);">📋 Menú Desplegable: Ver y Confirmar los 6 Puntos Críticos</span>
+                                <span id="arrow-seis-puntos" style="font-size:10px; font-weight:600;">▼</span>
                             </div>
-                            <div id="body-frenos" class="check-accordion-body">
-                                <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Pastillas de freno, líquido de frenos DOT 4, retenes de horquilla.</p>
-                                <p style="margin:0 0 4px 0;"><b>Costo Aprox:</b> $350 - $900 MXN</p>
-                                <p style="margin:0 0 6px 0; color:var(--accent-red);"><b>Consecuencias de omisión:</b> Pérdida de poder de frenado, distancia de frenado prolongada, daño a discos y riesgo de colisión.</p>
-                                <select id="anulador_frenos" onchange="verificarAnuladores()">
-                                    <option value="revision" selected>Requiere Revisión</option>
-                                    <option value="ok">Operativo (OK)</option>
-                                </select>
-                            </div>
-                        </div>
+                            <div id="body-seis-puntos" class="check-accordion-body">
+                                <div style="margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+                                    <p style="margin:0 0 2px 0; font-weight:600;">🛑 1. Frenos / Suspensión</p>
+                                    <p style="margin:0 0 2px 0;"><b>Refacciones:</b> Pastillas, líquido DOT 4, retenes. | <b>Costo:</b> $350-$900 MXN</p>
+                                    <p style="margin:0 0 4px 0; color:var(--accent-red);"><b>Omisión:</b> Pérdida de frenado y riesgo de colisión.</p>
+                                    <select id="anulador_frenos" onchange="verificarAnuladores()">
+                                        <option value="revision" selected>Requiere Revisión</option>
+                                        <option value="ok">Operativo (OK)</option>
+                                    </select>
+                                </div>
 
-                        <div class="check-accordion-card">
-                            <div class="check-accordion-header" onclick="toggleAcordeon('body-cadena', 'arrow-cadena')">
-                                <span style="font-size:12px; font-weight:600;">⛓ 2. Kit Arrastre / Piñones</span>
-                                <span id="arrow-cadena" style="font-size:10px; font-weight:600;">▼</span>
-                            </div>
-                            <div id="body-cadena" class="check-accordion-body">
-                                <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Cadena de transmisión, sprocket (corona) y piñón de ataque.</p>
-                                <p style="margin:0 0 4px 0;"><b>Costo Aprox:</b> $1,200 - $2,500 MXN</p>
-                                <p style="margin:0 0 6px 0; color:var(--accent-red);"><b>Consecuencias de omisión:</b> Ruptura de cadena en marcha, bloqueo de rueda trasera o daño severo al cárter del motor.</p>
-                                <select id="anulador_cadena" onchange="verificarAnuladores()">
-                                    <option value="revision" selected>Requiere Revisión</option>
-                                    <option value="ok">Operativo (OK)</option>
-                                </select>
-                            </div>
-                        </div>
+                                <div style="margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+                                    <p style="margin:0 0 2px 0; font-weight:600;">⛓ 2. Kit Arrastre / Piñones</p>
+                                    <p style="margin:0 0 2px 0;"><b>Refacciones:</b> Cadena, sprocket, piñón. | <b>Costo:</b> $1,200-$2,500 MXN</p>
+                                    <p style="margin:0 0 4px 0; color:var(--accent-red);"><b>Omisión:</b> Ruptura en marcha y bloqueo de rueda.</p>
+                                    <select id="anulador_cadena" onchange="verificarAnuladores()">
+                                        <option value="revision" selected>Requiere Revisión</option>
+                                        <option value="ok">Operativo (OK)</option>
+                                    </select>
+                                </div>
 
-                        <div class="check-accordion-card">
-                            <div class="check-accordion-header" onclick="toggleAcordeon('body-llantas', 'arrow-llantas')">
-                                <span style="font-size:12px; font-weight:600;">🛞 3. Llantas / Presión</span>
-                                <span id="arrow-llantas" style="font-size:10px; font-weight:600;">▼</span>
-                            </div>
-                            <div id="body-llantas" class="check-accordion-body">
-                                <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Neumáticos delantero y trasero, válvulas y parches/cámaras.</p>
-                                <p style="margin:0 0 4px 0;"><b>Costo Aprox:</b> $800 - $2,200 MXN c/u</p>
-                                <p style="margin:0 0 6px 0; color:var(--accent-red);"><b>Consecuencias de omisión:</b> Pérdida de tracción en curvas, deslizamiento en piso mojado, mayor consumo de combustible y pinchazos súbitos.</p>
-                                <select id="anulador_llantas" onchange="verificarAnuladores()">
-                                    <option value="revision" selected>Requiere Revisión</option>
-                                    <option value="ok">Operativo (OK)</option>
-                                </select>
-                            </div>
-                        </div>
+                                <div style="margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+                                    <p style="margin:0 0 2px 0; font-weight:600;">🛞 3. Llantas / Presión</p>
+                                    <p style="margin:0 0 2px 0;"><b>Refacciones:</b> Neumáticos, válvulas, cámaras. | <b>Costo:</b> $800-$2,200 MXN</p>
+                                    <p style="margin:0 0 4px 0; color:var(--accent-red);"><b>Omisión:</b> Pérdida de tracción y pinchazos súbitos.</p>
+                                    <select id="anulador_llantas" onchange="verificarAnuladores()">
+                                        <option value="revision" selected>Requiere Revisión</option>
+                                        <option value="ok">Operativo (OK)</option>
+                                    </select>
+                                </div>
 
-                        <div class="check-accordion-card">
-                            <div class="check-accordion-header" onclick="toggleAcordeon('body-luces', 'arrow-luces')">
-                                <span style="font-size:12px; font-weight:600;">💡 4. Sistema Eléctrico / Intermitentes</span>
-                                <span id="arrow-luces" style="font-size:10px; font-weight:600;">▼</span>
-                            </div>
-                            <div id="body-luces" class="check-accordion-body">
-                                <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Focos LED/halógenos, batería, fusibles y relay de direccionales.</p>
-                                <p style="margin:0 0 4px 0;"><b>Costo Aprox:</b> $100 - $1,200 MXN</p>
-                                <p style="margin:0 0 6px 0; color:var(--accent-red);"><b>Consecuencias de omisión:</b> Nula visibilidad nocturna, incapacidad de señalar giros (riesgo de atropellamiento) y fallo de arranque.</p>
-                                <select id="anulador_luces" onchange="verificarAnuladores()">
-                                    <option value="revision" selected>Requiere Revisión</option>
-                                    <option value="ok">Operativo (OK)</option>
-                                </select>
-                            </div>
-                        </div>
+                                <div style="margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+                                    <p style="margin:0 0 2px 0; font-weight:600;">💡 4. Sistema Eléctrico / Intermitentes</p>
+                                    <p style="margin:0 0 2px 0;"><b>Refacciones:</b> Luces LED/halógenas, batería, fusibles. | <b>Costo:</b> $100-$1,200 MXN</p>
+                                    <p style="margin:0 0 4px 0; color:var(--accent-red);"><b>Omisión:</b> Nula visibilidad nocturna y fallo de giro.</p>
+                                    <select id="anulador_luces" onchange="verificarAnuladores()">
+                                        <option value="revision" selected>Requiere Revisión</option>
+                                        <option value="ok">Operativo (OK)</option>
+                                    </select>
+                                </div>
 
-                        <div class="check-accordion-card">
-                            <div class="check-accordion-header" onclick="toggleAcordeon('body-epp', 'arrow-epp')">
-                                <span style="font-size:12px; font-weight:600;">🪖 5. Casco / Indumentaria (EPP)</span>
-                                <span id="arrow-epp" style="font-size:10px; font-weight:600;">▼</span>
-                            </div>
-                            <div id="body-epp" class="check-accordion-body">
-                                <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Mica de repuesto, barboquejo, guantes con protección y chaleco.</p>
-                                <p style="margin:0 0 4px 0;"><b>Costo Aprox:</b> $400 - $3,000 MXN</p>
-                                <p style="margin:0 0 6px 0; color:var(--accent-red);"><b>Consecuencias de omisión:</b> Lesiones graves en caso de impacto cefálico, multas de tránsito y falta de visibilidad ante otros conductores.</p>
-                                <select id="anulador_epp" onchange="verificarAnuladores()">
-                                    <option value="revision" selected>Requiere Revisión</option>
-                                    <option value="ok">Operativo (OK)</option>
-                                </select>
-                            </div>
-                        </div>
+                                <div style="margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+                                    <p style="margin:0 0 2px 0; font-weight:600;">🪖 5. Casco / Indumentaria (EPP)</p>
+                                    <p style="margin:0 0 2px 0;"><b>Refacciones:</b> Mica, guantes, chaleco. | <b>Costo:</b> $400-$3,000 MXN</p>
+                                    <p style="margin:0 0 4px 0; color:var(--accent-red);"><b>Omisión:</b> Lesiones graves en impacto y multas.</p>
+                                    <select id="anulador_epp" onchange="verificarAnuladores()">
+                                        <option value="revision" selected>Requiere Revisión</option>
+                                        <option value="ok">Operativo (OK)</option>
+                                    </select>
+                                </div>
 
-                        <div class="check-accordion-card">
-                            <div class="check-accordion-header" onclick="toggleAcordeon('body-docs', 'arrow-docs')">
-                                <span style="font-size:12px; font-weight:600;">📄 6. Licencia / Póliza Vigente</span>
-                                <span id="arrow-docs" style="font-size:10px; font-weight:600;">▼</span>
-                            </div>
-                            <div id="body-docs" class="check-accordion-body">
-                                <p style="margin:0 0 4px 0;"><b>Refacciones / Trámites Asociados:</b> Renovación de licencia de conducir tipo A/C, póliza de seguro anual.</p>
-                                <p style="margin:0 0 4px 0;"><b>Costo Aprox:</b> $800 - $3,500 MXN</p>
-                                <p style="margin:0 0 6px 0; color:var(--accent-red);"><b>Consecuencias de omisión:</b> Remisión de la motocicleta al corralón, multas elevadas y desprotección financiera ante accidentes viales.</p>
-                                <select id="anulador_docs" onchange="verificarAnuladores()">
-                                    <option value="revision" selected>Requiere Revisión</option>
-                                    <option value="ok">Operativo (OK)</option>
-                                </select>
+                                <div style="margin-bottom: 4px;">
+                                    <p style="margin:0 0 2px 0; font-weight:600;">📄 6. Licencia / Póliza Vigente</p>
+                                    <p style="margin:0 0 2px 0;"><b>Trámites:</b> Licencia tipo A/C, póliza de seguro. | <b>Costo:</b> $800-$3,500 MXN</p>
+                                    <p style="margin:0 0 4px 0; color:var(--accent-red);"><b>Omisión:</b> Corralón y desprotección financiera.</p>
+                                    <select id="anulador_docs" onchange="verificarAnuladores()">
+                                        <option value="revision" selected>Requiere Revisión</option>
+                                        <option value="ok">Operativo (OK)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
