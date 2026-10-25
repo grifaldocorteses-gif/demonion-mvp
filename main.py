@@ -46,6 +46,17 @@ def init_db():
         )
     """)
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS bitacora_rutas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario TEXT,
+            nombre_ruta TEXT,
+            km_recorridos REAL,
+            costo_viaje REAL,
+            tiempo_viaje TEXT,
+            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS combustible (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             usuario TEXT,
@@ -93,6 +104,7 @@ class CargarCombustible(BaseModel):
     litros_cargados: float
 
 class EvaluarRuta(BaseModel):
+    nombre_ruta: str = "Ruta General"
     km_recorridos: float
     precio_gasolina: float
 
@@ -285,6 +297,12 @@ def home():
 
             <div class="flex-row" style="margin-top: 10px;">
                 <div class="input-voz-group">
+                    <input type="text" id="nombre_ruta" placeholder="Nombre de Ruta / Pedido (Opcional, ej. Pedido #1)">
+                    <button type="button" class="btn-voice" onclick="escucharVoz('nombre_ruta')">🎤 Voz</button>
+                </div>
+            </div>
+            <div class="flex-row" style="margin-top: 4px;">
+                <div class="input-voz-group">
                     <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)" oninput="simularRuta()">
                     <button type="button" class="btn-voice" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
                 </div>
@@ -307,7 +325,6 @@ def home():
                 <div id="checklist-contenedor" class="checklist-box">
                     <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 12px; color: var(--accent-amber);">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
                     
-                    <!-- PUNTO 1 -->
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-frenos', 'arrow-frenos')">
                             <span style="font-size:12px; font-weight:bold;">🛑 1. Frenos / Suspensión</span>
@@ -324,7 +341,6 @@ def home():
                         </div>
                     </div>
 
-                    <!-- PUNTO 2 -->
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-cadena', 'arrow-cadena')">
                             <span style="font-size:12px; font-weight:bold;">⛓ 2. Kit Arrastre / Piñones</span>
@@ -341,7 +357,6 @@ def home():
                         </div>
                     </div>
 
-                    <!-- PUNTO 3 -->
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-llantas', 'arrow-llantas')">
                             <span style="font-size:12px; font-weight:bold;">🛞 3. Llantas / Presión</span>
@@ -358,7 +373,6 @@ def home():
                         </div>
                     </div>
 
-                    <!-- PUNTO 4 -->
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-luces', 'arrow-luces')">
                             <span style="font-size:12px; font-weight:bold;">💡 4. Sistema Eléctrico / Intermitentes</span>
@@ -375,7 +389,6 @@ def home():
                         </div>
                     </div>
 
-                    <!-- PUNTO 5 -->
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-epp', 'arrow-epp')">
                             <span style="font-size:12px; font-weight:bold;">🪖 5. Casco / Indumentaria (EPP)</span>
@@ -392,7 +405,6 @@ def home():
                         </div>
                     </div>
 
-                    <!-- PUNTO 6 -->
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-docs', 'arrow-docs')">
                             <span style="font-size:12px; font-weight:bold;">📄 6. Licencia / Póliza Vigente</span>
@@ -1096,6 +1108,7 @@ def home():
                     protocoloConfirmadoLeido = false;
                     document.getElementById("litros_carga").value = "";
                     document.getElementById("km_ruta").value = "";
+                    document.getElementById("nombre_ruta").value = "";
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p style="color: var(--accent-green); font-weight: bold;">✔ Acción realizada con éxito.</p>
                     `;
@@ -1113,15 +1126,17 @@ def home():
                     alert("⚠️ Acción bloqueada: Debe confirmar el checklist de seguridad obligatorio.");
                     return;
                 }
+                let nombre_ruta = document.getElementById("nombre_ruta").value.trim() || "Ruta General";
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
                 let precio_gasolina = parseFloat(document.getElementById("precio_gas").value);
+
                 let res = await fetch(API + "/combustible/evaluar", {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ km_recorridos, precio_gasolina })
+                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina })
                 });
                 let data = await res.json();
                 if(res.ok) {
@@ -1143,7 +1158,7 @@ def home():
                     let alertaTiempoAcumulado = data.tiempo_total_acumulado_min > 120 ? " 🚨 <b>[ALERTA: Fatiga operativa: Tiempo total acumulado > 2h]</b>" : "";
 
                     panelOficial.innerHTML = `
-                        <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado:</p>
+                        <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}]:</p>
                         <p style="margin:2px 0;"><b>Último registro de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p style="margin:2px 0;"><b>Último costo operativo:</b> ${data.costo_por_km} MXN / km</p>
                         <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje} (a 35 km/h prom.)</p>
@@ -1210,7 +1225,7 @@ def home():
                 if(resBitacora.ok) {
                     let dataBit = await resBitacora.json();
                     if(dataBit.length > 0) {
-                        bitacoraLocal = dataBit.map(b => `✔ [Odómetro: ${b.km_realizado} km] Auditoría: ${b.componente} registrado.`);
+                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] Odómetro: ${b.km_recorridos}km | $${b.costo_viaje} MXN | ${b.tiempo_viaje}`);
                         document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
                     }
                 }
@@ -1285,6 +1300,7 @@ def reiniciar_tanque_y_telemetria(authorization: str = Header(None)):
     cursor = conn.cursor()
     cursor.execute("UPDATE tanque_usuario SET litros_tanque = 0.0 WHERE usuario = ?", (usuario,))
     cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0, tiempo_total_acumulado_min = 0.0 WHERE usuario = ?", (usuario,))
+    cursor.execute("DELETE FROM bitacora_rutas WHERE usuario = ?", (usuario,))
     conn.commit()
     conn.close()
     return {"mensaje": "Tanque y contadores de telemetría reiniciados con éxito."}
@@ -1356,7 +1372,7 @@ def obtener_bitacora(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT componente, km_realizado FROM bitacora_servicios WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
+    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -1452,6 +1468,11 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
             tiempo_total_acumulado_min = tiempo_total_acumulado_min + ?
     """, (usuario, e.km_recorridos, costo_viaje, minutos_viaje, e.km_recorridos, costo_viaje, minutos_viaje))
 
+    cursor.execute("""
+        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje) 
+        VALUES (?, ?, ?, ?, ?)
+    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str))
+
     cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
     km_totales_acumulados = est_row[0]
@@ -1473,6 +1494,7 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     conn.close()
 
     return {
+        "nombre_ruta": e.nombre_ruta,
         "litros_consumidos": litros_consumidos,
         "costo_viaje": costo_viaje,
         "costo_por_km": costo_por_km,
