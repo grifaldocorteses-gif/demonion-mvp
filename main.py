@@ -58,6 +58,7 @@ def init_db():
             red_registro TEXT,
             trafico_registro TEXT,
             ubicacion_registro TEXT,
+            alerta_operativa TEXT,
             fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -117,6 +118,7 @@ class EvaluarRuta(BaseModel):
     red_registro: str = "N/D"
     trafico_registro: str = "N/D"
     ubicacion_registro: str = "N/D"
+    alerta_operativa: str = "N/D"
 
 class RegistrarMantenimiento(BaseModel):
     componente: str
@@ -556,7 +558,6 @@ def home():
                         let lat = position.coords.latitude;
                         let lon = position.coords.longitude;
                         
-                        // Geocodificación inversa ligera para zona aproximada
                         fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`, {
                             headers: { 'Accept-Language': 'es' }
                         })
@@ -670,12 +671,52 @@ def home():
                 
                 if (dia >= 1 && dia <= 5) {
                     if ((hora >= 7 && hora <= 9) || (hora >= 18 && hora <= 20)) {
-                        return { nivel: "Alto (Hora Pico Laboral)", multiplicador: 1.35 };
+                        return { nivel: "Alto (Hora Pico / Tráfico Denso)", multiplicador: 1.35, condicion: "⚠️ [Alerta: Zona de alto tráfico / Vías saturadas]" };
                     } else if ((hora >= 10 && hora <= 17)) {
-                        return { nivel: "Moderado (Tránsito Medio)", multiplicador: 1.15 };
+                        return { nivel: "Moderado (Tránsito Medio)", multiplicador: 1.15, condicion: "⚡ [Condición: Tránsito moderado]" };
                     }
                 }
-                return { nivel: "Fluido / Óptimo", multiplicador: 1.0 };
+                return { nivel: "Fluido / Vías Libres", multiplicador: 1.0, condicion: "✔ [Condición favorable: Vías libres]" };
+            }
+
+            function evaluarAlertasOperativas(kmRutaVal, minutosViaje, litrosConsumidos) {
+                let climaTexto = document.getElementById("info-clima").innerText;
+                let traficoObj = obtenerPrediccionTrafico();
+                let alertas = [];
+
+                if (climaTexto.includes("Lluvia") || climaTexto.includes("Tormenta") || climaTexto.includes("Neblina")) {
+                    alertas.push("🌧️ [Clima Adverso: Precaución por baja adherencia o visibilidad]");
+                } else {
+                    alertas.push("🌤️ [Clima Favorable]");
+                }
+
+                if (kmRutaVal > 30) {
+                    alertas.push("🛣️ [Ruta Larga detectada: Mayor desgaste general]");
+                } else {
+                    alertas.push("📍 [Trayecto corto / Estándar]");
+                }
+
+                if (minutosViaje > 120 || tiempoTotalAcumuladoGlobalMin > 120) {
+                    alertas.push("🚨 [Jornada Excesiva / Fatiga Operativa: Se recomienda descanso]");
+                } else if (minutosViaje > 60) {
+                    alertas.push("⚠️ [Jornada larga: Monitorear temperatura de motor]");
+                } else {
+                    alertas.push("✔ [Jornada dentro del rango seguro]");
+                }
+
+                alertas.push(traficoObj.condicion);
+
+                if (litrosConsumidos > 2.5) {
+                    alertas.push("⛽ [Alto consumo de gasolina por jornada]");
+                } else {
+                    alertas.push("💧 [Consumo de combustible eficiente]");
+                }
+
+                if (kmTotalesAcumuladosGlobal > 150 || minutosViaje > 90) {
+                    alertas.push("🔧 [Motor requiere descanso / Enfriamiento preventivo]");
+                }
+
+                return alertas.join(" | ");
             }
 
             function toggleDesplegable(idDetails, idArrow) {
@@ -829,6 +870,7 @@ def home():
                 let horaActual = document.getElementById("info-horario").innerText.replace("🕒 Hora: ", "");
                 let redActual = document.getElementById("info-red").innerText.replace("📶 Red: ", "");
                 let ubicacionActual = document.getElementById("info-ubicacion").innerText.replace("📍 ", "");
+                let alertasSimuladas = evaluarAlertasOperativas(kmRutaVal, minutosViaje, litrosConsumidos);
 
                 divDiag.innerHTML = `
                     <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Indicadores de Entorno y Ruta]</i></p>
@@ -838,6 +880,7 @@ def home():
                     <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
                     <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim}</p>
                     <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km (${litrosRestantesSimulados} L)</p>
+                    <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${alertasSimuladas}</p>
                 `;
             }
 
@@ -1225,6 +1268,12 @@ def home():
                 let red_registro = document.getElementById("info-red").innerText.replace("📶 Red: ", "");
                 let trafico_registro = obtenerPrediccionTrafico().nivel;
                 let ubicacion_registro = document.getElementById("info-ubicacion").innerText.replace("📍 ", "");
+                
+                let rendimientoEstandarEval = 30.0;
+                let litrosConsumidosEval = round(km_recorridos / rendimientoEstandarEval, 2);
+                let vel_promedio_eval = 35.0 / (obtenerPrediccionTrafico().multiplicador);
+                let minutosViajeEval = round((km_recorridos / vel_promedio_eval) * 60);
+                let alerta_operativa = evaluarAlertasOperativas(km_recorridos, minutosViajeEval, litrosConsumidosEval);
 
                 let res = await fetch(API + "/combustible/evaluar", {
                     method: "POST",
@@ -1232,7 +1281,7 @@ def home():
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro })
+                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa })
                 });
                 let data = await res.json();
                 if(res.ok) {
@@ -1259,6 +1308,7 @@ def home():
                         <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje}</p>
                         <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km (${data.litros_restantes} L)</p>
+                        <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${data.alerta_operativa}</p>
                         <hr style="border: 0; border-top: 1px dashed rgba(16, 185, 129, 0.3); margin: 6px 0;">
                         <p style="color: #60a5fa; font-weight: 600; margin:2px 0;">📊 Acumulados Globales:</p>
                         <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km | Gasto: $${gastoTotalAcumuladoGlobal} MXN</p>
@@ -1318,7 +1368,7 @@ def home():
                 if(resBitacora.ok) {
                     let dataBit = await resBitacora.json();
                     if(dataBit.length > 0) {
-                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] ${b.ubicacion_registro || ''} | ${b.hora_registro} | ${b.km_recorridos}km | $${b.costo_viaje} MXN`);
+                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] ${b.ubicacion_registro || ''} | ${b.km_recorridos}km | $${b.costo_viaje} MXN | ${b.alerta_operativa || ''}`);
                         document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
                     }
                 }
@@ -1465,7 +1515,7 @@ def obtener_bitacora(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
+    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -1563,9 +1613,9 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     """, (usuario, e.km_recorridos, costo_viaje, minutos_viaje, e.km_recorridos, costo_viaje, minutos_viaje))
 
     cursor.execute("""
-        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro))
+        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
 
     cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
@@ -1598,7 +1648,8 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "hora_registro": e.hora_registro,
         "red_registro": e.red_registro,
         "trafico_registro": e.trafico_registro,
-        "ubicacion_registro": e.ubicacion_registro
+        "ubicacion_registro": e.ubicacion_registro,
+        "alerta_operativa": e.alerta_operativa
     }
 
 if __name__ == "__main__":
