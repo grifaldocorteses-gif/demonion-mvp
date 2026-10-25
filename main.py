@@ -188,7 +188,10 @@ def home():
             .btn-main-carga { width: 68%; }
             .btn-leido { background: var(--accent-green); font-weight: bold; margin-top: 10px; }
 
-            #app, #auth { display: none; }
+            /* Control explicito de visibilidad inicial corregido */
+            #auth { display: block !important; }
+            #app { display: none; }
+
             .flex-row { display: flex; gap: 6px; align-items: center; }
             
             .telemetria-grid { 
@@ -218,7 +221,6 @@ def home():
                 gap: 6px; 
             }
             
-            /* Tarjetas Interactivas con Desplegable Estilo Cyber */
             .diagnostico-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
             .diag-card { 
                 background: #0b1120; 
@@ -229,7 +231,7 @@ def home():
                 transition: all 0.2s; 
             }
             .diag-card:hover { border-color: var(--accent-cyan); background: #131d31; }
-            .diag-header { display: flex; align-items: center; justify-content: space-width; width: 100%; justify-content: space-between; }
+            .diag-header { display: flex; align-items: center; justify-content: space-between; width: 100%; }
             .diag-header-left { display: flex; align-items: center; gap: 10px; }
             .diag-icon { font-size: 18px; line-height: 1; }
             .diag-title { font-weight: bold; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -255,7 +257,7 @@ def home():
         </style>
     </head>
     <body>
-        <div id="auth" class="card" style="display:block;">
+        <div id="auth" class="card">
             <h3>🛡️ ACCESO DEMONION MVP</h3>
             <input type="text" id="user" placeholder="Usuario">
             <input type="password" id="pass" placeholder="Contraseña">
@@ -595,7 +597,7 @@ def home():
             }
 
             function calcularTiempoFormateado(km) {
-                let vel_promedio = 35.0; // km/h
+                let vel_promedio = 35.0; 
                 let horasTotales = km / vel_promedio;
                 let h_int = Math.floor(horasTotales);
                 let m_int = Math.round((horasTotales - h_int) * 60);
@@ -752,7 +754,7 @@ def home():
                     alert("Realiza una evaluación primero.");
                     return;
                 }
-                const textoReporte = "*REPORTE TELEMETRÍA DEMONION MVP*\n" + ultimoDiagnostico + "\n\nBitácora Reciente:\n" + (bitacoraLocal.length > 0 ? bitacoraLocal[0] : "Sin registros recientes");
+                const textoReporte = "*REPORTE TELEMETRÍA DEMONION MVP*\\n" + ultimoDiagnostico + "\\n\\nBitácora Reciente:\\n" + (bitacoraLocal.length > 0 ? bitacoraLocal[0] : "Sin registros recientes");
 
                 if (navigator.share) {
                     navigator.share({
