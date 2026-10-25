@@ -456,7 +456,6 @@ def home():
 
                     </div>
 
-                    <!-- PROTOCOLO NORMATIVO / AVISO DE SEGURIDAD RECUPERADO -->
                     <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                         <p style="margin:0 0 4px 0; font-weight:600; color:#60a5fa; font-size:12px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
                         <p style="margin:0 0 4px 0;">Cumple estrictamente la reglamentación:</p>
@@ -466,91 +465,83 @@ def home():
                         <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                     </div>
 
-                    <!-- MENÚ DESPLEGABLE GENERAL: VIDA ÚTIL Y ESTADO SIMULTÁNEO DE COMPONENTES -->
-                    <div class="check-accordion-card" style="margin-top: 8px;">
-                        <div class="check-accordion-header" onclick="toggleAcordeon('body-grid-componentes', 'arrow-grid-componentes')">
-                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📊 Vida útil y estado simultáneo de los componentes (Aceite, Arrastre, Frenos)</span>
-                            <span id="arrow-grid-componentes" style="font-size:10px; font-weight:600;">▼</span>
-                        </div>
-                        <div id="body-grid-componentes" class="check-accordion-body" style="display: none;">
-                            <div class="componentes-grid">
-                                
-                                <!-- 1. Cambio de Aceite -->
-                                <div class="comp-card">
-                                    <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-aceite', 'arrow-comp-aceite')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
-                                        <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">🛢️ Cambio de Aceite (Ciclo: 2,500 km)</span>
-                                        <span id="arrow-comp-aceite" style="font-size:10px; font-weight:600;">▼</span>
-                                    </div>
-                                    <div id="body-comp-aceite" class="check-accordion-body" style="padding: 6px 0;">
-                                        <div style="font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px;">
-                                            <span>Progreso de Vida:</span>
-                                            <span id="vida-aceite-txt" style="color:var(--accent-green);">100%</span>
-                                        </div>
-                                        <div class="progress-container">
-                                            <div id="barra-aceite" class="progress-bar" style="width: 100%;"></div>
-                                        </div>
-                                        <div id="alerta-aceite-msg" style="font-size: 10px; color: var(--accent-green); margin-top: 3px; font-weight: 600;">
-                                            💡 <b>Sugerencia:</b> Revisar nivel semanalmente.
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; gap: 4px;">
-                                        <button class="btn-chequeo" onclick="confirmarChequeoComponente('Cambio de Aceite')">✔ Confirmar Chequeo</button>
-                                        <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Cambio de Aceite')">🔧 Registrar Mant.</button>
-                                    </div>
+                    <!-- CUADRÍCULA SIMULTÁNEA DE COMPONENTES CON MENÚ DESPLEGABLE, ALERTAS Y BLOQUEO INTELIGENTE DE RUTA -->
+                    <div class="componentes-grid">
+                        <p style="margin: 4px 0 2px 0; font-weight: 600; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL Y ESTADO SIMULTÁNEO DE COMPONENTES:</p>
+                        
+                        <!-- 1. Cambio de Aceite -->
+                        <div class="comp-card">
+                            <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-aceite', 'arrow-comp-aceite')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
+                                <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">🛢️ Cambio de Aceite (Ciclo: 2,500 km)</span>
+                                <span id="arrow-comp-aceite" style="font-size:10px; font-weight:600;">▼</span>
+                            </div>
+                            <div id="body-comp-aceite" class="check-accordion-body" style="padding: 6px 0;">
+                                <div style="font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px;">
+                                    <span>Progreso de Vida:</span>
+                                    <span id="vida-aceite-txt" style="color:var(--accent-green);">100%</span>
                                 </div>
-
-                                <!-- 2. Kit de Arrastre / Piñones -->
-                                <div class="comp-card">
-                                    <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-arrastre', 'arrow-comp-arrastre')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
-                                        <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">⛓️ Kit de Arrastre / Piñones (Ciclo: 15,000 km)</span>
-                                        <span id="arrow-comp-arrastre" style="font-size:10px; font-weight:600;">▼</span>
-                                    </div>
-                                    <div id="body-comp-arrastre" class="check-accordion-body" style="padding: 6px 0;">
-                                        <div style="font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px;">
-                                            <span>Progreso de Vida:</span>
-                                            <span id="vida-arrastre-txt" style="color:var(--accent-green);">100%</span>
-                                        </div>
-                                        <div class="progress-container">
-                                            <div id="barra-arrastre" class="progress-bar" style="width: 100%;"></div>
-                                        </div>
-                                        <div id="alerta-arrastre-msg" style="font-size: 10px; color: var(--accent-green); margin-top: 3px; font-weight: 600;">
-                                            💡 <b>Sugerencia:</b> Lubricar cadena cada 500 km.
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; gap: 4px;">
-                                        <button class="btn-chequeo" onclick="confirmarChequeoComponente('Kit de Arrastre / Piñones')">✔ Confirmar Chequeo</button>
-                                        <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Kit de Arrastre / Piñones')">🔧 Registrar Mant.</button>
-                                    </div>
+                                <div class="progress-container">
+                                    <div id="barra-aceite" class="progress-bar" style="width: 100%;"></div>
                                 </div>
-
-                                <!-- 3. Pastillas de Freno -->
-                                <div class="comp-card">
-                                    <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-frenos', 'arrow-comp-frenos')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
-                                        <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">🛑 Pastillas de Freno (Ciclo: 5,000 km)</span>
-                                        <span id="arrow-comp-frenos" style="font-size:10px; font-weight:600;">▼</span>
-                                    </div>
-                                    <div id="body-comp-frenos" class="check-accordion-body" style="padding: 6px 0;">
-                                        <div style="font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px;">
-                                            <span>Progreso de Vida:</span>
-                                            <span id="vida-frenos-txt" style="color:var(--accent-green);">100%</span>
-                                        </div>
-                                        <div class="progress-container">
-                                            <div id="barra-frenos" class="progress-bar" style="width: 100%;"></div>
-                                        </div>
-                                        <div id="alerta-frenos-msg" style="font-size: 10px; color: var(--accent-green); margin-top: 3px; font-weight: 600;">
-                                            💡 <b>Sugerencia:</b> Inspeccionar espesor de balatas periódicamente.
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; gap: 4px;">
-                                        <button class="btn-chequeo" onclick="confirmarChequeoComponente('Pastillas de Freno')">✔ Confirmar Chequeo</button>
-                                        <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Pastillas de Freno')">🔧 Registrar Mant.</button>
-                                    </div>
+                                <div id="alerta-aceite-msg" style="font-size: 10px; color: var(--accent-green); margin-top: 3px; font-weight: 600;">
+                                    💡 <b>Sugerencia:</b> Revisar nivel semanalmente.
                                 </div>
-
+                            </div>
+                            <div style="display: flex; gap: 4px;">
+                                <button class="btn-chequeo" onclick="confirmarChequeoComponente('Cambio de Aceite')">✔ Confirmar Chequeo</button>
+                                <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Cambio de Aceite')">🔧 Registrar Mant.</button>
                             </div>
                         </div>
-                    </div>
 
+                        <!-- 2. Kit de Arrastre / Piñones -->
+                        <div class="comp-card">
+                            <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-arrastre', 'arrow-comp-arrastre')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
+                                <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">⛓️ Kit de Arrastre / Piñones (Ciclo: 15,000 km)</span>
+                                <span id="arrow-comp-arrastre" style="font-size:10px; font-weight:600;">▼</span>
+                            </div>
+                            <div id="body-comp-arrastre" class="check-accordion-body" style="padding: 6px 0;">
+                                <div style="font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px;">
+                                    <span>Progreso de Vida:</span>
+                                    <span id="vida-arrastre-txt" style="color:var(--accent-green);">100%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div id="barra-arrastre" class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                                <div id="alerta-arrastre-msg" style="font-size: 10px; color: var(--accent-green); margin-top: 3px; font-weight: 600;">
+                                    💡 <b>Sugerencia:</b> Lubricar cadena cada 500 km.
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 4px;">
+                                <button class="btn-chequeo" onclick="confirmarChequeoComponente('Kit de Arrastre / Piñones')">✔ Confirmar Chequeo</button>
+                                <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Kit de Arrastre / Piñones')">🔧 Registrar Mant.</button>
+                            </div>
+                        </div>
+
+                        <!-- 3. Pastillas de Freno -->
+                        <div class="comp-card">
+                            <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-frenos', 'arrow-comp-frenos')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
+                                <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">🛑 Pastillas de Freno (Ciclo: 5,000 km)</span>
+                                <span id="arrow-comp-frenos" style="font-size:10px; font-weight:600;">▼</span>
+                            </div>
+                            <div id="body-comp-frenos" class="check-accordion-body" style="padding: 6px 0;">
+                                <div style="font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px;">
+                                    <span>Progreso de Vida:</span>
+                                    <span id="vida-frenos-txt" style="color:var(--accent-green);">100%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div id="barra-frenos" class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                                <div id="alerta-frenos-msg" style="font-size: 10px; color: var(--accent-green); margin-top: 3px; font-weight: 600;">
+                                    💡 <b>Sugerencia:</b> Inspeccionar espesor de balatas periódicamente.
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 4px;">
+                                <button class="btn-chequeo" onclick="confirmarChequeoComponente('Pastillas de Freno')">✔ Confirmar Chequeo</button>
+                                <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Pastillas de Freno')">🔧 Registrar Mant.</button>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
 
@@ -962,6 +953,7 @@ def home():
                 let checklistElem = document.getElementById("checklist-contenedor");
                 let protocoloElem = document.getElementById("protocolo-normativo");
 
+                // Validación inteligente de vida útil vs kit de ruta (ej. si faltan <100 km para el servicio y se planea viaje >10 km)
                 let kmRutaVal = parseFloat(document.getElementById("km_ruta").value) || 0;
                 let riesgoComponenteCritico = false;
                 let mensajeRiesgo = "";
@@ -977,6 +969,7 @@ def home():
                     let maxCiclo = ciclosMaximos[comp];
                     let kmRestantes = maxCiclo - kmAcum;
 
+                    // Si al componente le quedan menos de 100 km y la ruta planeada supera los 10 km
                     if (kmRestantes < 100 && kmRutaVal > 10) {
                         riesgoComponenteCritico = true;
                         mensajeRiesgo = `🚨 BLOQUEO DE SEGURIDAD: A '${comp}' le restan solo ${Math.round(kmRestantes)} km de vida y planeas una ruta de ${kmRutaVal} km (>10 km). Realice el mantenimiento o confirme el chequeo en el Bloque 2 para desbloquear.`;
@@ -992,20 +985,19 @@ def home():
                     }
                 }
 
-                let f = document.getElementById("anulador_frenos").value;
-                let c = document.getElementById("anulador_cadena").value;
-                let ll = document.getElementById("anulador_llantas").value;
-                let l = document.getElementById("anulador_luces").value;
-                let epp = document.getElementById("anulador_epp").value;
-                let docs = document.getElementById("anulador_docs").value;
-                let todosOk = (f === "ok" && c === "ok" && ll === "ok" && l === "ok" && epp === "ok" && docs === "ok");
+                if (!protocoloConfirmadoLeido || alertaGraveActiva || riesgoComponenteCritico) {
+                    let f = document.getElementById("anulador_frenos").value;
+                    let c = document.getElementById("anulador_cadena").value;
+                    let ll = document.getElementById("anulador_llantas").value;
+                    let l = document.getElementById("anulador_luces").value;
+                    let epp = document.getElementById("anulador_epp").value;
+                    let docs = document.getElementById("anulador_docs").value;
 
-                if (!todosOk || !protocoloConfirmadoLeido || alertaGraveActiva || riesgoComponenteCritico) {
                     if (riesgoComponenteCritico) {
                         bloquearSistema(true, mensajeRiesgo);
                     } else if (alertaGraveActiva) {
                         bloquearSistema(true, "🚨 ALERTA GRAVE: Superados los km sin chequeo obligatorio. Bloque 1 suspendido hasta confirmar chequeo.");
-                    } else if (!todosOk) {
+                    } else if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
                         bloquearSistema(true, "⚠️ Verificación de seguridad requerida: Complete o confirme todos los puntos en 'Operativo (OK)'.");
                     } else {
                         bloquearSistema(false, "✔ Inspección aprobada con éxito.");
@@ -1015,10 +1007,9 @@ def home():
                     if(protocoloElem) protocoloElem.style.display = "none";
                     ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
                 } else {
-                    // Cuando todos los 6 puntos están en OK y se confirma, se oculta el checklist de puntos y se muestra el protocolo/aviso normativo
-                    bloquearSistema(false, "✔ Puntos de inspección confirmados y operativos.");
                     if(checklistElem) checklistElem.style.display = "none";
                     if(protocoloElem) protocoloElem.style.display = "block";
+                    bloquearSistema(false, "✔ Puntos de inspección confirmados y operativos.");
                 }
             }
 
@@ -1062,6 +1053,7 @@ def home():
                 let presupuestoVal = parseFloat(document.getElementById("presupuesto_ruta").value) || 0.0;
                 let divDiag = document.getElementById("diagnostico-combustible");
 
+                // Validar bloqueo en tiempo real al escribir km de ruta si pone en riesgo el motor
                 verificarJornadaYDiagnostico();
 
                 if (!kmRutaVal || kmRutaVal <= 0) {
