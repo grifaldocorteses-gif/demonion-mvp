@@ -558,6 +558,9 @@ def home():
                                     let code = data.current_weather.weathercode;
                                     let climaDesc = interpretarClimaWMO(code, temp);
                                     document.getElementById("info-clima").innerText = `🌤️ Clima: ${climaDesc}`;
+                                    if (document.getElementById("km_ruta").value > 0) {
+                                        simularRuta();
+                                    }
                                 }
                             })
                             .catch(() => {
@@ -601,6 +604,9 @@ def home():
                 let ahora = new Date();
                 let horaStr = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 document.getElementById("info-horario").innerText = `🕒 Hora: ${horaStr}`;
+                if (document.getElementById("km_ruta").value > 0) {
+                    simularRuta();
+                }
             }
 
             function actualizarEstadoRedDetallado() {
@@ -631,12 +637,15 @@ def home():
                     elemRed.innerText = "📶 Red: Online (Estable)";
                     elemRed.style.color = "var(--accent-green)";
                 }
+                if (document.getElementById("km_ruta").value > 0) {
+                    simularRuta();
+                }
             }
 
             function obtenerPrediccionTrafico() {
                 let ahora = new Date();
                 let hora = ahora.getHours();
-                let dia = ahora.getDay(); // 0 = Domingo, 6 = Sábado
+                let dia = ahora.getDay();
                 
                 if (dia >= 1 && dia <= 5) {
                     if ((hora >= 7 && hora <= 9) || (hora >= 18 && hora <= 20)) {
@@ -795,16 +804,17 @@ def home():
                 let m_int = Math.round(minutosViaje % 60);
                 let tiempoEstimadoSim = h_int > 0 ? `${h_int}h ${m_int}m` : `${m_int} min`;
 
-                let alertaTrafico = traficoInfo.multiplicador > 1.0 ? ` ⚠️ <b>[Tráfico: ${traficoInfo.nivel}]</b>` : "";
-                let alertaTiempo = minutosViaje > 60 ? " ⚠️ <b>[ALERTA: Trayecto > 1h]</b>" : "";
-                let alertaTanque = litrosRestantesSimulados < 1.0 ? " 🚨 <b>[Tanque crítico < 1L]</b>" : "";
+                let climaActual = document.getElementById("info-clima").innerText.replace("🌤️ Clima: ", "");
+                let horaActual = document.getElementById("info-horario").innerText.replace("🕒 Hora: ", "");
+                let redActual = document.getElementById("info-red").innerText.replace("📶 Red: ", "");
 
                 divDiag.innerHTML = `
-                    <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
-                    <p style="margin:2px 0;"><b>Tráfico Estimado:</b> ${traficoInfo.nivel}${alertaTrafico}</p>
-                    <p style="margin:2px 0;"><b>Último registro de ruta:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
-                    <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim}${alertaTiempo}</p>
-                    <p style="margin:2px 0;"><b>Gasolina Restante:</b> ${litrosRestantesSimulados} L${alertaTanque}</p>
+                    <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Indicadores de Entorno y Ruta]</i></p>
+                    <p style="margin:2px 0;"><b>Entorno Actual:</b> ${horaActual} | ${climaActual}</p>
+                    <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${redActual} | Tráfico: ${traficoInfo.nivel}</p>
+                    <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
+                    <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim}</p>
+                    <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km (${litrosRestantesSimulados} L)</p>
                 `;
             }
 
@@ -1218,7 +1228,7 @@ def home():
                     panelOficial.style.display = "block";
 
                     panelOficial.innerHTML = `
-                        <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}]:</p>
+                        <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}] <span style="font-size:10px; color:var(--text-muted); font-weight:normal;">(Últimos registros del sistema de ruta)</span>:</p>
                         <p style="margin:2px 0;"><b>Entorno:</b> ${data.hora_registro} | ${data.clima_registro}</p>
                         <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${data.red_registro} | Tráfico: ${data.trafico_registro}</p>
                         <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
