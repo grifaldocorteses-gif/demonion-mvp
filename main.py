@@ -332,6 +332,17 @@ def home():
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
             <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
 
+            <!-- Nuevo Menú Desplegable de Viajes Registrados en la Jornada (Bloque 1) -->
+            <div id="contenedor-acordeon-viajes" class="check-accordion-card" style="display:none; margin-top: 10px;">
+                <div class="check-accordion-header" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">
+                    <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📁 Viajes Registrados en la Jornada (<span id="contador-viajes">0</span>)</span>
+                    <span id="arrow-viajes" style="font-size:10px; font-weight:600;">▼</span>
+                </div>
+                <div id="body-viajes" class="check-accordion-body">
+                    <div id="lista-viajes-acordeon" style="display: flex; flex-direction: column; gap: 6px;"></div>
+                </div>
+            </div>
+
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
             
@@ -541,6 +552,7 @@ def home():
                 "Pastillas de Freno": 0
             };
             let bitacoraLocal = [];
+            let viajesJornadaList = [];
 
             function iniciarTelemetriaNativa() {
                 if (navigator.getBattery) {
@@ -743,6 +755,53 @@ def home():
                 }
             }
 
+            function actualizarAcordeonViajes() {
+                let contenedor = document.getElementById("contenedor-acordeon-viajes");
+                let lista = document.getElementById("lista-viajes-acordeon");
+                let contador = document.getElementById("contador-viajes");
+
+                if (!viajesJornadaList || viajesJornadaList.length === 0) {
+                    contenedor.style.display = "none";
+                    return;
+                }
+
+                contenedor.style.display = "block";
+                contador.innerText = viajesJornadaList.length;
+
+                let htmlContent = "";
+                viajesJornadaList.forEach((viaje, index) => {
+                    htmlContent += `
+                        <div style="background: #0b1120; border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onclick="seleccionarViajeAcordeon(${index})">
+                            <div style="display: flex; justify-content: space-between; font-weight: 600; color: #38bdf8; font-size: 11px;">
+                                <span>📌 ${viaje.nombre_ruta}</span>
+                                <span style="color: var(--accent-green);">$${viaje.costo_viaje} MXN</span>
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+                                🕒 ${viaje.hora_registro} | 🛣️ ${viaje.km_recorridos} km | ⏱️ ${viaje.tiempo_viaje}
+                            </div>
+                        </div>
+                    `;
+                });
+                lista.innerHTML = htmlContent;
+            }
+
+            function seleccionarViajeAcordeon(index) {
+                let viaje = viajesJornadaList[index];
+                if (!viaje) return;
+
+                let panelOficial = document.getElementById("diagnostico-oficial");
+                panelOficial.style.display = "block";
+                panelOficial.innerHTML = `
+                    <p style="color: var(--accent-cyan); font-weight: 600; margin: 0 0 5px 0;">🔍 [Consulta de Viaje Seleccionado: ${viaje.nombre_ruta}]:</p>
+                    <p style="margin:2px 0;"><b>${viaje.ubicacion_registro || 'N/D'}</b></p>
+                    <p style="margin:2px 0;"><b>Entorno:</b> ${viaje.hora_registro} | ${viaje.clima_registro}</p>
+                    <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${viaje.red_registro} | Tráfico: ${viaje.trafico_registro}</p>
+                    <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${viaje.litros_consumidos} L (<b>$${viaje.costo_viaje} MXN</b>)</p>
+                    <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${viaje.tiempo_viaje}</p>
+                    <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${viaje.alerta_operativa || 'N/D'}</p>
+                `;
+            }
+
             function limpiarVariablesLocales() {
                 litrosActualesTanque = 0.0;
                 kmTotalesAcumuladosGlobal = 0.0;
@@ -751,7 +810,9 @@ def home():
                 protocoloConfirmadoLeido = false;
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 bitacoraLocal = [];
+                viajesJornadaList = [];
                 ultimoDiagnostico = "";
+                document.getElementById("contenedor-acordeon-viajes").style.display = "none";
             }
 
             function bloquearSistema(bloquear, mensaje) {
@@ -1234,11 +1295,7 @@ def home():
                 });
                 let data = await res.json();
                 if(res.ok) {
-                    litrosActualesTanque = 0.0;
-                    kmTotalesAcumuladosGlobal = 0.0;
-                    gastoTotalAcumuladoGlobal = 0.0;
-                    tiempoTotalAcumuladoGlobalMin = 0.0;
-                    protocoloConfirmadoLeido = false;
+                    limpiarVariablesLocales();
                     document.getElementById("litros_carga").value = "";
                     document.getElementById("km_ruta").value = "";
                     document.getElementById("nombre_ruta").value = "";
@@ -1295,6 +1352,21 @@ def home():
                     }
                     sincronizarVistaComponente();
                     verificarJornadaYDiagnostico();
+
+                    viajesJornadaList.unshift({
+                        nombre_ruta: data.nombre_ruta,
+                        costo_viaje: data.costo_viaje,
+                        litros_consumidos: data.litros_consumidos,
+                        tiempo_viaje: data.tiempo_viaje,
+                        km_recorridos: km_recorridos,
+                        hora_registro: data.hora_registro,
+                        clima_registro: data.clima_registro,
+                        red_registro: data.red_registro,
+                        trafico_registro: data.trafico_registro,
+                        ubicacion_registro: data.ubicacion_registro,
+                        alerta_operativa: data.alerta_operativa
+                    });
+                    actualizarAcordeonViajes();
 
                     document.getElementById("diagnostico-combustible").innerHTML = "";
                     let panelOficial = document.getElementById("diagnostico-oficial");
@@ -1368,6 +1440,21 @@ def home():
                 if(resBitacora.ok) {
                     let dataBit = await resBitacora.json();
                     if(dataBit.length > 0) {
+                        viajesJornadaList = dataBit.map(b => ({
+                            nombre_ruta: b.nombre_ruta,
+                            costo_viaje: b.costo_viaje,
+                            litros_consumidos: round(b.km_recorridos / 30.0, 2),
+                            tiempo_viaje: b.tiempo_viaje,
+                            km_recorridos: b.km_recorridos,
+                            hora_registro: b.hora_registro,
+                            clima_registro: b.clima_registro,
+                            red_registro: b.red_registro,
+                            trafico_registro: b.trafico_registro,
+                            ubicacion_registro: b.ubicacion_registro,
+                            alerta_operativa: b.alerta_operativa
+                        }));
+                        actualizarAcordeonViajes();
+
                         bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] ${b.ubicacion_registro || ''} | ${b.km_recorridos}km | $${b.costo_viaje} MXN | ${b.alerta_operativa || ''}`);
                         document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
                     }
