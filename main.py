@@ -136,6 +136,7 @@ def home():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>DEMONION MVP - Cyber Dashboard</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <style>
             :root {
                 --bg-main: #090d16;
@@ -151,7 +152,7 @@ def home():
             }
 
             body { 
-                font-family: system-ui, -apple-system, sans-serif; 
+                font-family: 'Outfit', system-ui, -apple-system, sans-serif; 
                 margin: 0; 
                 padding: 10px; 
                 background: var(--bg-main); 
@@ -167,8 +168,8 @@ def home():
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); 
             }
 
-            h3 { margin-top: 0; color: #38bdf8; font-size: 18px; letter-spacing: 0.5px; }
-            h4 { color: #e2e8f0; font-size: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin: 15px 0 10px 0; }
+            h3 { margin-top: 0; color: #38bdf8; font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+            h4 { color: #e2e8f0; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin: 15px 0 10px 0; }
             hr { border: 0; border-top: 1px solid var(--border-color); margin: 15px 0; }
 
             input, select, button { 
@@ -179,6 +180,7 @@ def home():
                 border-radius: 6px; 
                 border: 1px solid var(--border-color); 
                 font-size: 13px; 
+                font-family: 'Outfit', system-ui, -apple-system, sans-serif;
                 background: #0b1120;
                 color: var(--text-main);
             }
@@ -193,7 +195,7 @@ def home():
                 background: linear-gradient(135deg, #0284c7, #0369a1); 
                 color: white; 
                 border: none; 
-                font-weight: bold; 
+                font-weight: 600; 
                 cursor: pointer; 
                 transition: opacity 0.2s;
             }
@@ -201,12 +203,12 @@ def home():
             button:hover { opacity: 0.9; }
 
             .btn-voice { background: var(--accent-purple); width: auto; padding: 6px 10px; font-size: 11px; margin: 0; }
-            .btn-share { background: #059669; font-weight: bold; margin-top: 10px; }
-            .btn-backup { background: #334155; font-weight: bold; margin-top: 5px; }
-            .btn-mantenimiento { background: #d97706; font-weight: bold; margin-top: 8px; }
-            .btn-reset-tanque { background: #dc2626; font-weight: bold; font-size: 12px; padding: 10px; width: 30%; }
+            .btn-share { background: #059669; font-weight: 600; margin-top: 10px; }
+            .btn-backup { background: #334155; font-weight: 600; margin-top: 5px; }
+            .btn-mantenimiento { background: #d97706; font-weight: 600; margin-top: 8px; }
+            .btn-reset-tanque { background: #dc2626; font-weight: 600; font-size: 12px; padding: 10px; width: 30%; }
             .btn-main-carga { width: 68%; }
-            .btn-leido { background: var(--accent-green); font-weight: bold; margin-top: 10px; }
+            .btn-leido { background: var(--accent-green); font-weight: 600; margin-top: 10px; }
 
             #auth { display: block; }
             #app { display: none; }
@@ -226,7 +228,7 @@ def home():
                 margin-bottom: 8px; 
             }
             .telemetria-item { display: flex; flex-direction: column; gap: 2px; }
-            .telemetria-item label { font-size: 11px; font-weight: bold; color: var(--text-muted); }
+            .telemetria-item label { font-size: 11px; font-weight: 600; color: var(--text-muted); }
             
             .entorno-box { 
                 background: rgba(14, 165, 233, 0.05); 
@@ -254,9 +256,9 @@ def home():
             .diag-header { display: flex; align-items: center; justify-content: space-between; width: 100%; }
             .diag-header-left { display: flex; align-items: center; gap: 10px; }
             .diag-icon { font-size: 18px; line-height: 1; }
-            .diag-title { font-weight: bold; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-            .diag-subtitle { font-size: 12px; font-weight: bold; }
-            .diag-arrow { font-size: 10px; color: var(--text-muted); font-weight: bold; transition: transform 0.2s; }
+            .diag-title { font-weight: 600; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .diag-subtitle { font-size: 12px; font-weight: 600; }
+            .diag-arrow { font-size: 10px; color: var(--text-muted); font-weight: 600; transition: transform 0.2s; }
             .diag-details { display: none; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 11px; color: var(--text-muted); }
             .diag-details ul { margin: 4px 0 0 15px; padding: 0; }
             .diag-details li { margin-bottom: 3px; }
@@ -331,12 +333,12 @@ def home():
             
             <div id="contenedor-inspeccion">
                 <div id="checklist-contenedor" class="checklist-box">
-                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 12px; color: var(--accent-amber);">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
+                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: 600; font-size: 12px; color: var(--accent-amber);">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
                     
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-frenos', 'arrow-frenos')">
-                            <span style="font-size:12px; font-weight:bold;">🛑 1. Frenos / Suspensión</span>
-                            <span id="arrow-frenos" style="font-size:10px; font-weight:bold;">▼</span>
+                            <span style="font-size:12px; font-weight:600;">🛑 1. Frenos / Suspensión</span>
+                            <span id="arrow-frenos" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-frenos" class="check-accordion-body">
                             <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Pastillas de freno, líquido de frenos DOT 4, retenes de horquilla.</p>
@@ -351,8 +353,8 @@ def home():
 
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-cadena', 'arrow-cadena')">
-                            <span style="font-size:12px; font-weight:bold;">⛓ 2. Kit Arrastre / Piñones</span>
-                            <span id="arrow-cadena" style="font-size:10px; font-weight:bold;">▼</span>
+                            <span style="font-size:12px; font-weight:600;">⛓ 2. Kit Arrastre / Piñones</span>
+                            <span id="arrow-cadena" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-cadena" class="check-accordion-body">
                             <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Cadena de transmisión, sprocket (corona) y piñón de ataque.</p>
@@ -367,8 +369,8 @@ def home():
 
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-llantas', 'arrow-llantas')">
-                            <span style="font-size:12px; font-weight:bold;">🛞 3. Llantas / Presión</span>
-                            <span id="arrow-llantas" style="font-size:10px; font-weight:bold;">▼</span>
+                            <span style="font-size:12px; font-weight:600;">🛞 3. Llantas / Presión</span>
+                            <span id="arrow-llantas" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-llantas" class="check-accordion-body">
                             <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Neumáticos delantero y trasero, válvulas y parches/cámaras.</p>
@@ -383,8 +385,8 @@ def home():
 
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-luces', 'arrow-luces')">
-                            <span style="font-size:12px; font-weight:bold;">💡 4. Sistema Eléctrico / Intermitentes</span>
-                            <span id="arrow-luces" style="font-size:10px; font-weight:bold;">▼</span>
+                            <span style="font-size:12px; font-weight:600;">💡 4. Sistema Eléctrico / Intermitentes</span>
+                            <span id="arrow-luces" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-luces" class="check-accordion-body">
                             <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Focos LED/halógenos, batería, fusibles y relay de direccionales.</p>
@@ -399,8 +401,8 @@ def home():
 
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-epp', 'arrow-epp')">
-                            <span style="font-size:12px; font-weight:bold;">🪖 5. Casco / Indumentaria (EPP)</span>
-                            <span id="arrow-epp" style="font-size:10px; font-weight:bold;">▼</span>
+                            <span style="font-size:12px; font-weight:600;">🪖 5. Casco / Indumentaria (EPP)</span>
+                            <span id="arrow-epp" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-epp" class="check-accordion-body">
                             <p style="margin:0 0 4px 0;"><b>Refacciones Asociadas:</b> Mica de repuesto, barboquejo, guantes con protección y chaleco.</p>
@@ -415,8 +417,8 @@ def home():
 
                     <div class="check-accordion-card">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-docs', 'arrow-docs')">
-                            <span style="font-size:12px; font-weight:bold;">📄 6. Licencia / Póliza Vigente</span>
-                            <span id="arrow-docs" style="font-size:10px; font-weight:bold;">▼</span>
+                            <span style="font-size:12px; font-weight:600;">📄 6. Licencia / Póliza Vigente</span>
+                            <span id="arrow-docs" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-docs" class="check-accordion-body">
                             <p style="margin:0 0 4px 0;"><b>Refacciones / Trámites Asociados:</b> Renovación de licencia de conducir tipo A/C, póliza de seguro anual.</p>
@@ -432,7 +434,7 @@ def home():
                 </div>
 
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
-                    <p style="margin:0 0 4px 0; font-weight:bold; color:#60a5fa; font-size:12px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
+                    <p style="margin:0 0 4px 0; font-weight:600; color:#60a5fa; font-size:12px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
                     <p style="margin:0 0 4px 0;">Cumple estrictamente la reglamentación:</p>
                     <p style="margin:0 0 4px 0; font-size:11px;">• <b>Límites:</b> Máx 50 km/h secundarias, 80 km/h acceso controlado, 30 km/h escuelas.</p>
                     <p style="margin:0 0 4px 0; font-size:11px;">• <b>EPP:</b> Casco certificado (DOT/ECE) y chaleco reflejante nocturno.</p>
@@ -448,15 +450,15 @@ def home():
             </select>
 
             <div style="background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 8px; margin-bottom: 10px;">
-                <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL DEL COMPONENTE SELECCIONADO:</p>
+                <p style="margin: 0 0 6px 0; font-weight: 600; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL DEL COMPONENTE SELECCIONADO:</p>
                 <div style="font-size: 12px; display: flex; justify-content: space-between;">
-                    <span id="label-componente-activo" style="font-weight:bold;">Cambio de Aceite</span>
-                    <span id="porcentaje-vida" style="color:var(--accent-green)">100% Vida Restante</span>
+                    <span id="label-componente-activo" style="font-weight:600;">Cambio de Aceite</span>
+                    <span id="porcentaje-vida" style="color:var(--accent-green); font-weight: 600;">100% Vida Restante</span>
                 </div>
                 <div class="progress-container">
                     <div id="barra-vida" class="progress-bar" style="width: 100%;"></div>
                 </div>
-                <div id="alerta-inversion" style="font-size: 11px; margin-top: 4px; font-weight: bold; color: var(--accent-green);">Estado óptimo. Sin gastos imprevistos próximos.</div>
+                <div id="alerta-inversion" style="font-size: 11px; margin-top: 4px; font-weight: 600; color: var(--accent-green);">Estado óptimo. Sin gastos imprevistos próximos.</div>
                 
                 <button class="btn-mantenimiento" onclick="registrarMantenimientoRealizado()">🔧 Registrar Mantenimiento Realizado (Reiniciar al 100%)</button>
             </div>
@@ -506,7 +508,7 @@ def home():
             <div id="diagnostico"></div>
 
             <div class="bitacora-box">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 12px; color: var(--text-main);">📋 AUDITORÍA Y BITÁCORA ANALÍTICA:</p>
+                <p style="margin: 0 0 5px 0; font-weight: 600; font-size: 12px; color: var(--text-main);">📋 AUDITORÍA Y BITÁCORA ANALÍTICA:</p>
                 <div id="lista-bitacora">Sin registros analíticos en esta sesión.</div>
             </div>
 
@@ -1148,7 +1150,7 @@ def home():
                     let autonomiaTanque = round(litrosActualesTanque * rendimientoEstandar, 1);
 
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: var(--accent-green); font-weight: bold; margin:4px 0;">✔ Carga Registrada y Tanque Acumulado:</p>
+                        <p style="color: var(--accent-green); font-weight: 600; margin:4px 0;">✔ Carga Registrada y Tanque Acumulado:</p>
                         <p style="margin:2px 0;"><b>Litros Totales en Tanque:</b> ${litrosActualesTanque} L</p>
                         <p style="margin:2px 0;"><b>Autonomía Disponible:</b> ${autonomiaTanque} km</p>
                     `;
@@ -1177,7 +1179,7 @@ def home():
                     document.getElementById("km_ruta").value = "";
                     document.getElementById("nombre_ruta").value = "";
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: var(--accent-green); font-weight: bold;">✔ Acción realizada con éxito.</p>
+                        <p style="color: var(--accent-green); font-weight: 600;">✔ Acción realizada con éxito.</p>
                     `;
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.innerHTML = "";
@@ -1228,14 +1230,14 @@ def home():
                     panelOficial.style.display = "block";
 
                     panelOficial.innerHTML = `
-                        <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}] <span style="font-size:10px; color:var(--text-muted); font-weight:normal;">(Últimos registros del sistema de ruta)</span>:</p>
+                        <p style="color: var(--accent-green); font-weight: 600; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}] <span style="font-size:10px; color:var(--text-muted); font-weight:normal;">(Últimos registros del sistema de ruta)</span>:</p>
                         <p style="margin:2px 0;"><b>Entorno:</b> ${data.hora_registro} | ${data.clima_registro}</p>
                         <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${data.red_registro} | Tráfico: ${data.trafico_registro}</p>
                         <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje}</p>
                         <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km (${data.litros_restantes} L)</p>
                         <hr style="border: 0; border-top: 1px dashed rgba(16, 185, 129, 0.3); margin: 6px 0;">
-                        <p style="color: #60a5fa; font-weight: bold; margin:2px 0;">📊 Acumulados Globales:</p>
+                        <p style="color: #60a5fa; font-weight: 600; margin:2px 0;">📊 Acumulados Globales:</p>
                         <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km | Gasto: $${gastoTotalAcumuladoGlobal} MXN</p>
                     `;
                 } else {
