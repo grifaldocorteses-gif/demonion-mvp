@@ -53,6 +53,9 @@ def init_db():
             km_recorridos REAL,
             costo_viaje REAL,
             tiempo_viaje TEXT,
+            clima_registro TEXT,
+            hora_registro TEXT,
+            red_registro TEXT,
             fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -107,6 +110,9 @@ class EvaluarRuta(BaseModel):
     nombre_ruta: str = "Ruta General"
     km_recorridos: float
     precio_gasolina: float
+    clima_registro: str = "N/D"
+    hora_registro: str = "N/D"
+    red_registro: str = "N/D"
 
 class RegistrarMantenimiento(BaseModel):
     componente: str
@@ -1129,6 +1135,11 @@ def home():
                 let nombre_ruta = document.getElementById("nombre_ruta").value.trim() || "Ruta General";
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
                 let precio_gasolina = parseFloat(document.getElementById("precio_gas").value);
+                
+                // Capturar contexto ambiental activo del Bloque 3
+                let clima_registro = document.getElementById("info-clima").innerText.replace("🌤️ Clima: ", "");
+                let hora_registro = document.getElementById("info-horario").innerText.replace("🕒 Hora: ", "");
+                let red_registro = document.getElementById("info-red").innerText.replace("📶 Red: ", "");
 
                 let res = await fetch(API + "/combustible/evaluar", {
                     method: "POST",
@@ -1136,7 +1147,7 @@ def home():
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina })
+                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina, clima_registro, hora_registro, red_registro })
                 });
                 let data = await res.json();
                 if(res.ok) {
@@ -1159,6 +1170,7 @@ def home():
 
                     panelOficial.innerHTML = `
                         <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}]:</p>
+                        <p style="margin:2px 0;"><b>Clima / Hora / Red:</b> ${data.clima_registro} | ${data.hora_registro} | ${data.red_registro}</p>
                         <p style="margin:2px 0;"><b>Último registro de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p style="margin:2px 0;"><b>Último costo operativo:</b> ${data.costo_por_km} MXN / km</p>
                         <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje} (a 35 km/h prom.)</p>
@@ -1225,7 +1237,7 @@ def home():
                 if(resBitacora.ok) {
                     let dataBit = await resBitacora.json();
                     if(dataBit.length > 0) {
-                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] Odómetro: ${b.km_recorridos}km | $${b.costo_viaje} MXN | ${b.tiempo_viaje}`);
+                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] ${b.hora_registro} | ${b.clima_registro} | ${b.km_recorridos}km | $${b.costo_viaje} MXN`);
                         document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
                     }
                 }
@@ -1372,7 +1384,7 @@ def obtener_bitacora(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
+    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -1469,9 +1481,9 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     """, (usuario, e.km_recorridos, costo_viaje, minutos_viaje, e.km_recorridos, costo_viaje, minutos_viaje))
 
     cursor.execute("""
-        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje) 
-        VALUES (?, ?, ?, ?, ?)
-    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str))
+        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro))
 
     cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
@@ -1504,7 +1516,10 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "km_totales_acumulados": km_totales_acumulados,
         "gasto_total_acumulado": gasto_total_acumulado,
         "tiempo_total_acumulado_str": tiempo_total_acumulado_str,
-        "tiempo_total_acumulado_min": tiempo_total_acumulado_min
+        "tiempo_total_acumulado_min": tiempo_total_acumulado_min,
+        "clima_registro": e.clima_registro,
+        "hora_registro": e.hora_registro,
+        "red_registro": e.red_registro
     }
 
 if __name__ == "__main__":
