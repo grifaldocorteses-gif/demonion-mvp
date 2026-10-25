@@ -213,6 +213,7 @@ def home():
             .btn-reset-tanque { background: #dc2626; font-weight: 600; font-size: 12px; padding: 10px; width: 30%; }
             .btn-main-carga { width: 68%; }
             .btn-leido { background: var(--accent-green); font-weight: 600; margin-top: 10px; }
+            .btn-ocultar-carpeta { background: #334155; width: auto; padding: 4px 8px; font-size: 10px; margin: 0; }
 
             #auth { display: block; }
             #app { display: none; }
@@ -331,18 +332,20 @@ def home():
             
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
             
-            <!-- Posición intercambiada: El menú desplegable de viajes se ubica aquí, donde antes aparecía el rendimiento registrado -->
+            <!-- Menú desplegable de viajes registrados en la jornada con botón de ocultar / retraer completo -->
             <div id="contenedor-acordeon-viajes" class="check-accordion-card" style="display:none; margin-top: 8px;">
-                <div class="check-accordion-header" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">
-                    <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📁 Viajes Registrados en la Jornada (<span id="contador-viajes">0</span>)</span>
-                    <span id="arrow-viajes" style="font-size:10px; font-weight:600;">▼</span>
+                <div class="check-accordion-header">
+                    <span style="font-size:12px; font-weight:600; color:var(--accent-cyan); cursor:pointer; flex:1;" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">📁 Viajes Registrados en la Jornada</span>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <button type="button" class="btn-ocultar-carpeta" onclick="ocultarCarpetaViajes()">Ocultar</button>
+                        <span id="arrow-viajes" style="font-size:10px; font-weight:600; cursor:pointer;" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">▼</span>
+                    </div>
                 </div>
                 <div id="body-viajes" class="check-accordion-body">
                     <div id="lista-viajes-acordeon" style="display: flex; flex-direction: column; gap: 6px;"></div>
                 </div>
             </div>
 
-            <!-- Posición intercambiada: El panel oficial de rendimiento registrado se ubica aquí abajo -->
             <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
 
             <hr>
@@ -757,10 +760,16 @@ def home():
                 }
             }
 
+            function ocultarCarpetaViajes() {
+                let contenedor = document.getElementById("contenedor-acordeon-viajes");
+                if (contenedor) {
+                    contenedor.style.display = "none";
+                }
+            }
+
             function actualizarAcordeonViajes() {
                 let contenedor = document.getElementById("contenedor-acordeon-viajes");
                 let lista = document.getElementById("lista-viajes-acordeon");
-                let contador = document.getElementById("contador-viajes");
 
                 if (!viajesJornadaList || viajesJornadaList.length === 0) {
                     contenedor.style.display = "none";
@@ -768,7 +777,6 @@ def home():
                 }
 
                 contenedor.style.display = "block";
-                contador.innerText = viajesJornadaList.length;
 
                 let htmlContent = "";
                 viajesJornadaList.forEach((viaje, index) => {
