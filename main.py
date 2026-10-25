@@ -57,6 +57,7 @@ def init_db():
             hora_registro TEXT,
             red_registro TEXT,
             trafico_registro TEXT,
+            ubicacion_registro TEXT,
             fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -115,6 +116,7 @@ class EvaluarRuta(BaseModel):
     hora_registro: str = "N/D"
     red_registro: str = "N/D"
     trafico_registro: str = "N/D"
+    ubicacion_registro: str = "N/D"
 
 class RegistrarMantenimiento(BaseModel):
     componente: str
@@ -471,6 +473,7 @@ def home():
                 <span id="info-bateria">🔋 Batería: --%</span>
                 <span id="info-horario">🕒 Hora: --:--</span>
                 <span id="info-red">📶 Red: Analizando...</span>
+                <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: Obteniendo GPS...</span>
             </div>
 
             <div class="telemetria-grid">
@@ -552,6 +555,20 @@ def home():
                     navigator.geolocation.getCurrentPosition(position => {
                         let lat = position.coords.latitude;
                         let lon = position.coords.longitude;
+                        
+                        // Geocodificación inversa ligera para zona aproximada
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`, {
+                            headers: { 'Accept-Language': 'es' }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            let direccion = data && data.address ? (data.address.city || data.address.town || data.address.municipality || data.address.suburb || "Zona Aproximada") : "Ubicación GPS";
+                            document.getElementById("info-ubicacion").innerText = `📍 Ubicación: ${direccion}`;
+                        })
+                        .catch(() => {
+                            document.getElementById("info-ubicacion").innerText = `📍 Coordenadas: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+                        });
+
                         fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
                             .then(res => res.json())
                             .then(data => {
@@ -569,9 +586,11 @@ def home():
                                 document.getElementById("info-clima").innerText = "🌤️ Clima: Sin red";
                             });
                     }, () => {
+                        document.getElementById("info-ubicacion").innerText = "📍 Ubicación: GPS Denegado / N/D";
                         document.getElementById("info-clima").innerText = "🌤️ Clima: Sin GPS";
                     });
                 } else {
+                    document.getElementById("info-ubicacion").innerText = "📍 Ubicación: No soportada";
                     document.getElementById("info-clima").innerText = "🌤️ Clima: No soportado";
                 }
 
@@ -809,9 +828,11 @@ def home():
                 let climaActual = document.getElementById("info-clima").innerText.replace("🌤️ Clima: ", "");
                 let horaActual = document.getElementById("info-horario").innerText.replace("🕒 Hora: ", "");
                 let redActual = document.getElementById("info-red").innerText.replace("📶 Red: ", "");
+                let ubicacionActual = document.getElementById("info-ubicacion").innerText.replace("📍 ", "");
 
                 divDiag.innerHTML = `
                     <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Indicadores de Entorno y Ruta]</i></p>
+                    <p style="margin:2px 0;"><b>${ubicacionActual}</b></p>
                     <p style="margin:2px 0;"><b>Entorno Actual:</b> ${horaActual} | ${climaActual}</p>
                     <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${redActual} | Tráfico: ${traficoInfo.nivel}</p>
                     <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
@@ -1203,6 +1224,7 @@ def home():
                 let hora_registro = document.getElementById("info-horario").innerText.replace("🕒 Hora: ", "");
                 let red_registro = document.getElementById("info-red").innerText.replace("📶 Red: ", "");
                 let trafico_registro = obtenerPrediccionTrafico().nivel;
+                let ubicacion_registro = document.getElementById("info-ubicacion").innerText.replace("📍 ", "");
 
                 let res = await fetch(API + "/combustible/evaluar", {
                     method: "POST",
@@ -1210,7 +1232,7 @@ def home():
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina, clima_registro, hora_registro, red_registro, trafico_registro })
+                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro })
                 });
                 let data = await res.json();
                 if(res.ok) {
@@ -1231,6 +1253,7 @@ def home():
 
                     panelOficial.innerHTML = `
                         <p style="color: var(--accent-green); font-weight: 600; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}] <span style="font-size:10px; color:var(--text-muted); font-weight:normal;">(Últimos registros del sistema de ruta)</span>:</p>
+                        <p style="margin:2px 0;"><b>${data.ubicacion_registro}</b></p>
                         <p style="margin:2px 0;"><b>Entorno:</b> ${data.hora_registro} | ${data.clima_registro}</p>
                         <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${data.red_registro} | Tráfico: ${data.trafico_registro}</p>
                         <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
@@ -1295,7 +1318,7 @@ def home():
                 if(resBitacora.ok) {
                     let dataBit = await resBitacora.json();
                     if(dataBit.length > 0) {
-                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] ${b.hora_registro} | ${b.km_recorridos}km | $${b.costo_viaje} MXN | ${b.trafico_registro}`);
+                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] ${b.ubicacion_registro || ''} | ${b.hora_registro} | ${b.km_recorridos}km | $${b.costo_viaje} MXN`);
                         document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
                     }
                 }
@@ -1442,7 +1465,7 @@ def obtener_bitacora(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
+    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -1540,9 +1563,9 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     """, (usuario, e.km_recorridos, costo_viaje, minutos_viaje, e.km_recorridos, costo_viaje, minutos_viaje))
 
     cursor.execute("""
-        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro))
+        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro))
 
     cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
@@ -1574,7 +1597,8 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "clima_registro": e.clima_registro,
         "hora_registro": e.hora_registro,
         "red_registro": e.red_registro,
-        "trafico_registro": e.trafico_registro
+        "trafico_registro": e.trafico_registro,
+        "ubicacion_registro": e.ubicacion_registro
     }
 
 if __name__ == "__main__":
