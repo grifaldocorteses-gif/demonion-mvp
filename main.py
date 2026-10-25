@@ -188,7 +188,6 @@ def home():
             .btn-main-carga { width: 68%; }
             .btn-leido { background: var(--accent-green); font-weight: bold; margin-top: 10px; }
 
-            /* Estados de visibilidad controlados por JS de manera estricta */
             #auth { display: block; }
             #app { display: none; }
 
@@ -222,7 +221,6 @@ def home():
                 gap: 6px; 
             }
             
-            /* Tarjetas Interactivas con Desplegable Estilo Cyber */
             .diagnostico-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
             .diag-card { 
                 background: #0b1120; 
@@ -613,10 +611,10 @@ def home():
             }
 
             function simularCarga() {
-                let litrosEntrada = parseFloat(document.getElementById("litros_carga").value);
+                let litrosEntrada = parseFloat(document.getElementById("litros_carga").value) || 0;
                 let divDiag = document.getElementById("diagnostico-combustible");
 
-                if (!litrosEntrada || litrosEntrada <= 0) {
+                if (litrosEntrada <= 0) {
                     if (document.getElementById("km_ruta").value > 0) {
                         simularRuta();
                     } else {
@@ -631,7 +629,8 @@ def home():
 
                 divDiag.innerHTML = `
                     <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Carga]</i></p>
-                    <p style="margin:2px 0;"><b>Litros en Tanque (Post-Carga):</b> ${totalSimulado} L</p>
+                    <p style="margin:2px 0;"><b>Carga Actual en Tanque:</b> ${litrosActualesTanque} L</p>
+                    <p style="margin:2px 0;"><b>Carga Post-Carga (Total):</b> ${totalSimulado} L (${litrosActualesTanque} L actuales + ${litrosEntrada} L nuevos)</p>
                     <p style="margin:2px 0;"><b>Autonomía Estimada:</b> ${autonomiaProyectada} km</p>
                 `;
             }
@@ -663,6 +662,7 @@ def home():
                     <p style="margin:2px 0;"><b>Consumo Ruta:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
                     <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim} (a 35 km/h prom.)</p>
                     <p style="margin:2px 0;"><b>Costo Operativo:</b> $${costoPorKm} MXN / km</p>
+                    <p style="margin:2px 0;"><b>Gasolina Restante en Tanque:</b> ${litrosRestantesSimulados} L</p>
                     <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km</p>
                 `;
             }
