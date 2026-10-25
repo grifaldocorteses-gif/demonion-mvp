@@ -211,7 +211,7 @@ def home():
             .btn-voice { background: var(--accent-purple); width: auto; padding: 6px 10px; font-size: 11px; margin: 0; }
             .btn-share { background: #059669; font-weight: 600; margin-top: 10px; }
             .btn-backup { background: #334155; font-weight: 600; margin-top: 5px; }
-            .btn-mantenimiento { background: #d97706; font-weight: 600; margin-top: 8px; }
+            .btn-mantenimiento { background: #d97706; font-weight: 600; font-size: 11px; padding: 6px; margin-top: 6px; width: 100%; }
             .btn-reset-tanque { background: #dc2626; font-weight: 600; font-size: 12px; padding: 10px; width: 30%; }
             .btn-main-carga { width: 68%; }
             .btn-leido { background: var(--accent-green); font-weight: 600; margin-top: 10px; }
@@ -278,9 +278,12 @@ def home():
             
             .bloqueado { background: #334155 !important; cursor: not-allowed !important; opacity: 0.7; }
             
-            .progress-container { background: #1e293b; border-radius: 6px; height: 10px; width: 100%; margin: 6px 0; overflow: hidden; border: 1px solid var(--border-color); }
+            .progress-container { background: #1e293b; border-radius: 6px; height: 8px; width: 100%; margin: 4px 0; overflow: hidden; border: 1px solid var(--border-color); }
             .progress-bar { height: 100%; width: 100%; background: var(--accent-green); transition: width 0.3s ease; }
             
+            .componentes-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+            .comp-card { background: #0b1120; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; }
+
             .bitacora-box { background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px; font-size: 11px; color: var(--text-muted); }
             .panel-oficial { background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px; border-radius: 8px; margin-top: 8px; }
             .alerta-normativa { background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.3); padding: 12px; border-radius: 8px; font-size: 12px; color: #93c5fd; margin-top: 10px; }
@@ -368,7 +371,7 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 2: Sello de Seguridad Obligatorio (Menú desplegable único para los 6 puntos críticos) -->
+            <!-- BLOQUE 2: Sello de Seguridad Obligatorio -->
             <div id="contenedor-inspeccion" class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-2', 'arrow-bloque-2')">
                     <span id="titulo-bloque-2" style="font-size:14px; font-weight:600; color:var(--accent-amber);">⚠️ 2. Mantenimiento Preventivo y Checklist (⚠️ Registrar puntos críticos obligatorios antes de usar Bloque 1)</span>
@@ -378,7 +381,6 @@ def home():
                     <div id="checklist-contenedor" class="checklist-box">
                         <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: 600; font-size: 12px; color: var(--accent-amber);">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
                         
-                        <!-- ÚNICO MENÚ DESPLEGABLE PARA LOS 6 PUNTOS CRÍTICOS -->
                         <div class="check-accordion-card">
                             <div class="check-accordion-header" onclick="toggleAcordeon('body-seis-puntos', 'arrow-seis-puntos')">
                                 <span style="font-size:12px; font-weight:600; color:var(--accent-amber);">📋 Menú Desplegable: Ver y Confirmar los 6 Puntos Críticos</span>
@@ -458,24 +460,55 @@ def home():
                         <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                     </div>
 
-                    <select id="tipo_serv" onchange="sincronizarVistaComponente()" style="margin-top: 10px;">
-                        <option value="Cambio de Aceite" data-ciclo="2500">Cambio de Aceite (Ciclo: 2,500 km)</option>
-                        <option value="Kit de Arrastre / Piñones" data-ciclo="15000">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
-                        <option value="Pastillas de Freno" data-ciclo="5000">Pastillas de Freno (Ciclo: 5,000 km)</option>
-                    </select>
-
-                    <div style="background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 8px; margin-bottom: 10px;">
-                        <p style="margin: 0 0 6px 0; font-weight: 600; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL DEL COMPONENTE SELECCIONADO:</p>
-                        <div style="font-size: 12px; display: flex; justify-content: space-between;">
-                            <span id="label-componente-activo" style="font-weight:600;">Cambio de Aceite</span>
-                            <span id="porcentaje-vida" style="color:var(--accent-green); font-weight: 600;">100% Vida Restante</span>
-                        </div>
-                        <div class="progress-container">
-                            <div id="barra-vida" class="progress-bar" style="width: 100%;"></div>
-                        </div>
-                        <div id="alerta-inversion" style="font-size: 11px; margin-top: 4px; font-weight: 600; color: var(--accent-green);">Estado óptimo. Sin gastos imprevistos próximos.</div>
+                    <!-- CUADRÍCULA SIMULTÁNEA DE COMPONENTES CON SUGERENCIAS Y COSTOS -->
+                    <div class="componentes-grid">
+                        <p style="margin: 4px 0 2px 0; font-weight: 600; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL Y ESTADO SIMULTÁNEO DE COMPONENTES:</p>
                         
-                        <button class="btn-mantenimiento" onclick="registrarMantenimientoRealizado()">🔧 Registrar Mantenimiento Realizado (Reiniciar al 100%)</button>
+                        <!-- 1. Cambio de Aceite -->
+                        <div class="comp-card">
+                            <div style="font-size: 12px; display: flex; justify-content: space-between; font-weight: 600;">
+                                <span style="color:#38bdf8;">Cambio de Aceite (Ciclo: 2,500 km)</span>
+                                <span id="vida-aceite-txt" style="color:var(--accent-green);">100%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div id="barra-aceite" class="progress-bar" style="width: 100%;"></div>
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+                                💡 <b>Sugerencia:</b> Revisar nivel semanalmente y cambiar aceite mineral/sintético a tiempo. | <b>Costo est:</b> $300 - $650 MXN
+                            </div>
+                            <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Cambio de Aceite')">🔧 Registrar Mantenimiento (Reiniciar Aceite)</button>
+                        </div>
+
+                        <!-- 2. Kit de Arrastre / Piñones -->
+                        <div class="comp-card">
+                            <div style="font-size: 12px; display: flex; justify-content: space-between; font-weight: 600;">
+                                <span style="color:#38bdf8;">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</span>
+                                <span id="vida-arrastre-txt" style="color:var(--accent-green);">100%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div id="barra-arrastre" class="progress-bar" style="width: 100%;"></div>
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+                                💡 <b>Sugerencia:</b> Se recomienda lubricar y ajustar tensión de la cadena cada 500 km. | <b>Costo est:</b> $1,200 - $2,500 MXN
+                            </div>
+                            <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Kit de Arrastre / Piñones')">🔧 Registrar Mantenimiento (Reiniciar Arrastre)</button>
+                        </div>
+
+                        <!-- 3. Pastillas de Freno -->
+                        <div class="comp-card">
+                            <div style="font-size: 12px; display: flex; justify-content: space-between; font-weight: 600;">
+                                <span style="color:#38bdf8;">Pastillas de Freno (Ciclo: 5,000 km)</span>
+                                <span id="vida-frenos-txt" style="color:var(--accent-green);">100%</span>
+                            </div>
+                            <div class="progress-container">
+                                <div id="barra-frenos" class="progress-bar" style="width: 100%;"></div>
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+                                💡 <b>Sugerencia:</b> Inspeccionar espesor de balatas y nivel de líquido DOT 4 periódicamente. | <b>Costo est:</b> $350 - $900 MXN
+                            </div>
+                            <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Pastillas de Freno')">🔧 Registrar Mantenimiento (Reiniciar Frenos)</button>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -995,39 +1028,35 @@ def home():
             }
 
             function sincronizarVistaComponente() {
-                let selectElem = document.getElementById("tipo_serv");
-                if(!selectElem) return;
-                let tipoServicio = selectElem.value;
-                let cicloMax = parseFloat(selectElem.options[selectElem.selectedIndex].getAttribute("data-ciclo"));
-                
-                document.getElementById("label-componente-activo").innerText = tipoServicio;
+                // Actualiza simultáneamente los 3 componentes en la cuadrícula
+                actualizarBarraComponente("Cambio de Aceite", 2500, "barra-aceite", "vida-aceite-txt");
+                actualizarBarraComponente("Kit de Arrastre / Piñones", 15000, "barra-arrastre", "vida-arrastre-txt");
+                actualizarBarraComponente("Pastillas de Freno", 5000, "barra-frenos", "vida-frenos-txt");
+            }
 
-                let kmAcumulados = kmComponentes[tipoServicio] || 0;
+            function actualizarBarraComponente(nombreComp, cicloMax, idBarra, idTxt) {
+                let kmAcumulados = kmComponentes[nombreComp] || 0;
                 let vidaRestante = Math.max(0, Math.min(100, 100 - (kmAcumulados / cicloMax) * 100));
                 
-                let barra = document.getElementById("barra-vida");
-                let txtVida = document.getElementById("porcentaje-vida");
-                let alertaInv = document.getElementById("alerta-inversion");
+                let barra = document.getElementById(idBarra);
+                let txtVida = document.getElementById(idTxt);
 
                 if(barra) barra.style.width = vidaRestante + "%";
-                if(txtVida) txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante (" + kmAcumulados + " / " + cicloMax + " km)";
+                if(txtVida) txtVida.innerText = Math.round(vidaRestante) + "% (" + kmAcumulados + "/" + cicloMax + " km)";
 
                 if (vidaRestante > 40) {
                     if(barra) barra.style.background = "var(--accent-green)";
-                    if(alertaInv) { alertaInv.style.color = "var(--accent-green)"; alertaInv.innerText = `Estado óptimo para ${tipoServicio}. Sin gastos imprevistos.`; }
+                    if(txtVida) txtVida.style.color = "var(--accent-green)";
                 } else if (vidaRestante > 15) {
                     if(barra) barra.style.background = "var(--accent-amber)";
-                    if(alertaInv) { alertaInv.style.color = "var(--accent-amber)"; alertaInv.innerText = `⚠️ Precaución: El componente ${tipoServicio} se acerca al límite.`; }
+                    if(txtVida) txtVida.style.color = "var(--accent-amber)";
                 } else {
                     if(barra) barra.style.background = "var(--accent-red)";
-                    if(alertaInv) { alertaInv.style.color = "var(--accent-red)"; alertaInv.innerText = `🚨 Alerta: Es tiempo obligatorio de cambiar ${tipoServicio}.`; }
+                    if(txtVida) txtVida.style.color = "var(--accent-red)";
                 }
             }
 
-            async function registrarMantenimientoRealizado() {
-                let selectElem = document.getElementById("tipo_serv");
-                let tipoServicio = selectElem.value;
-                
+            async function registrarMantenimientoDirecto(tipoServicio) {
                 let res = await fetch(API + "/mantenimiento/reiniciar", {
                     method: "POST",
                     headers: { 
@@ -1396,7 +1425,6 @@ def home():
                     }
                     sincronizarVistaComponente();
 
-                    // CONDICIÓN DE RE-BLOQUEO TRAS RUTA LARGA (>30 KM) O JORNADA EXCESIVA (>120 MIN)
                     if (km_recorridos > 30 || minutosViajeEval > 120 || tiempoTotalAcumuladoGlobalMin > 120) {
                         protocoloConfirmadoLeido = false;
                         document.getElementById("anulador_frenos").value = "revision";
