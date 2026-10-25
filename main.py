@@ -602,14 +602,6 @@ def home():
                 verificarJornadaYDiagnostico();
             }
 
-            function calcularTiempoFormateado(km) {
-                let vel_promedio = 35.0; 
-                let horasTotales = km / vel_promedio;
-                let h_int = Math.floor(horasTotales);
-                let m_int = Math.round((horasTotales - h_int) * 60);
-                return h_int > 0 ? `${h_int}h ${m_int}m` : `${m_int} min`;
-            }
-
             function simularCarga() {
                 let litrosEntrada = parseFloat(document.getElementById("litros_carga").value) || 0;
                 let divDiag = document.getElementById("diagnostico-combustible");
@@ -655,15 +647,25 @@ def home():
                 let costoPorKm = round(costoViaje / kmRutaVal, 2);
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
-                let tiempoEstimadoSim = calcularTiempoFormateado(kmRutaVal);
+                
+                let vel_promedio = 35.0; 
+                let minutosViaje = round((kmRutaVal / vel_promedio) * 60, 0);
+                let h_int = Math.floor(minutosViaje / 60);
+                let m_int = Math.round(minutosViaje % 60);
+                let tiempoEstimadoSim = h_int > 0 ? `${h_int}h ${m_int}m` : `${m_int} min`;
+
+                // Alertas de seguridad inteligentes
+                let alertaTiempo = minutosViaje > 60 ? " ⚠️ <b>[ALERTA: Trayecto continuo > 1h, se recomienda pausa preventiva]</b>" : "";
+                let alertaTanque = litrosRestantesSimulados < 1.0 ? " 🚨 <b>[ALERTA: Tanque crítico < 1L]</b>" : "";
+                let alertaAutonomia = autonomiaRestanteKm < 30 ? " 🚨 <b>[ALERTA: Autonomía baja < 30km]</b>" : "";
 
                 divDiag.innerHTML = `
                     <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
                     <p style="margin:2px 0;"><b>Último registro de ruta:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
-                    <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim} (a 35 km/h prom.)</p>
+                    <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim} (a 35 km/h prom.)${alertaTiempo}</p>
                     <p style="margin:2px 0;"><b>Último costo operativo:</b> $${costoPorKm} MXN / km</p>
-                    <p style="margin:2px 0;"><b>Gasolina Restante en Tanque:</b> ${litrosRestantesSimulados} L</p>
-                    <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km</p>
+                    <p style="margin:2px 0;"><b>Gasolina Restante en Tanque:</b> ${litrosRestantesSimulados} L${alertaTanque}</p>
+                    <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km${alertaAutonomia}</p>
                 `;
             }
 
