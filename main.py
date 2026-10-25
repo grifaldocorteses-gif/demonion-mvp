@@ -176,7 +176,6 @@ def home():
             }
 
             h3 { margin-top: 0; color: #38bdf8; font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
-            h4 { color: #e2e8f0; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin: 15px 0 10px 0; }
             hr { border: 0; border-top: 1px solid var(--border-color); margin: 15px 0; }
 
             input, select, button { 
@@ -285,6 +284,12 @@ def home():
             .bitacora-box { background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px; font-size: 11px; color: var(--text-muted); }
             .panel-oficial { background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px; border-radius: 8px; margin-top: 8px; }
             .alerta-normativa { background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.3); padding: 12px; border-radius: 8px; font-size: 12px; color: #93c5fd; margin-top: 10px; }
+            
+            /* Estilos maestros para los bloques desplegables principales */
+            .bloque-principal-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
+            .bloque-principal-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #0e1626; transition: background 0.2s; border-bottom: 1px solid var(--border-color); }
+            .bloque-principal-header:hover { background: #131d31; }
+            .bloque-principal-body { display: none; padding: 16px; }
         </style>
     </head>
     <body>
@@ -296,70 +301,77 @@ def home():
             <button onclick="register()" style="background:#059669; margin-top:6px;">Registrarse</button>
         </div>
 
-        <div id="app" class="card">
+        <div id="app">
             <h3>⚡ PANEL OPERATIVO [<span id="current-user" style="color:var(--accent-cyan)"></span>]</h3>
             <hr>
             
-            <h4>1. Control de Combustible y Autonomía</h4>
-            <div class="flex-row">
-                <div class="input-voz-group">
-                    <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
-                    <button type="button" class="btn-voice" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
+            <!-- BLOQUE 1: Control de Combustible y Autonomía (Desplegable) -->
+            <div class="bloque-principal-card">
+                <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-1', 'arrow-bloque-1')">
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">⚡ 1. Control de Combustible y Autonomía</span>
+                    <span id="arrow-bloque-1" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
                 </div>
-            </div>
-            
-            <div class="flex-row" style="margin-top: 4px;">
-                <button id="btn_cargar" class="btn-main-carga" onclick="cargarCombustible()">Registrar Carga y Acumular Tanque</button>
-                <button id="btn_reset" class="btn-reset-tanque" onclick="reiniciarTanqueYTelemetria()">🔄 Reiniciar</button>
-            </div>
-
-            <div class="flex-row" style="margin-top: 10px;">
-                <div class="input-voz-group">
-                    <input type="text" id="nombre_ruta" placeholder="Nombre de Ruta / Pedido (Opcional, ej. Pedido #1)">
-                    <button type="button" class="btn-voice" onclick="escucharVoz('nombre_ruta')">🎤 Voz</button>
-                </div>
-            </div>
-            <div class="flex-row" style="margin-top: 4px;">
-                <div class="input-voz-group">
-                    <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)" oninput="simularRuta()">
-                    <button type="button" class="btn-voice" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
-                </div>
-            </div>
-            <div class="flex-row">
-                <div class="input-voz-group">
-                    <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
-                    <button type="button" class="btn-voice" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
-                </div>
-            </div>
-            <div class="flex-row">
-                <div class="input-voz-group">
-                    <input type="number" id="presupuesto_ruta" placeholder="Presupuesto o Viáticos ($)" value="0.0" oninput="simularRuta()">
-                    <button type="button" class="btn-voice" onclick="escucharVoz('presupuesto_ruta')">🎤 Voz</button>
-                </div>
-            </div>
-            <button id="btn_evaluar" style="background:#059669; margin-top:8px;" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
-            
-            <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
-            
-            <div id="contenedor-acordeon-viajes" class="check-accordion-card" style="display:none; margin-top: 8px;">
-                <div class="check-accordion-header">
-                    <span style="font-size:12px; font-weight:600; color:var(--accent-cyan); cursor:pointer; flex:1;" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">📁 Viajes Registrados en la Jornada</span>
-                    <div style="display:flex; gap:6px; align-items:center;">
-                        <button type="button" class="btn-accion-carpeta" onclick="alternarVisibilidadConsulta()">Ocultar Consulta</button>
-                        <span id="arrow-viajes" style="font-size:10px; font-weight:600; cursor:pointer;" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">▼</span>
+                <div id="body-bloque-1" class="bloque-principal-body">
+                    <div class="flex-row">
+                        <div class="input-voz-group">
+                            <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
+                            <button type="button" class="btn-voice" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
+                        </div>
                     </div>
-                </div>
-                <div id="body-viajes" class="check-accordion-body">
-                    <div id="lista-viajes-acordeon" style="display: flex; flex-direction: column; gap: 6px;"></div>
+                    
+                    <div class="flex-row" style="margin-top: 4px;">
+                        <button id="btn_cargar" class="btn-main-carga" onclick="cargarCombustible()">Registrar Carga y Acumular Tanque</button>
+                        <button id="btn_reset" class="btn-reset-tanque" onclick="reiniciarTanqueYTelemetria()">🔄 Reiniciar</button>
+                    </div>
+
+                    <div class="flex-row" style="margin-top: 10px;">
+                        <div class="input-voz-group">
+                            <input type="text" id="nombre_ruta" placeholder="Nombre de Ruta / Pedido (Opcional, ej. Pedido #1)">
+                            <button type="button" class="btn-voice" onclick="escucharVoz('nombre_ruta')">🎤 Voz</button>
+                        </div>
+                    </div>
+                    <div class="flex-row" style="margin-top: 4px;">
+                        <div class="input-voz-group">
+                            <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)" oninput="simularRuta()">
+                            <button type="button" class="btn-voice" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
+                        </div>
+                    </div>
+                    <div class="flex-row">
+                        <div class="input-voz-group">
+                            <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
+                            <button type="button" class="btn-voice" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
+                        </div>
+                    </div>
+                    <div class="flex-row">
+                        <div class="input-voz-group">
+                            <input type="number" id="presupuesto_ruta" placeholder="Presupuesto o Viáticos ($)" value="0.0" oninput="simularRuta()">
+                            <button type="button" class="btn-voice" onclick="escucharVoz('presupuesto_ruta')">🎤 Voz</button>
+                        </div>
+                    </div>
+                    <button id="btn_evaluar" style="background:#059669; margin-top:8px;" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
+                    
+                    <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
+                    
+                    <div id="contenedor-acordeon-viajes" class="check-accordion-card" style="display:none; margin-top: 8px;">
+                        <div class="check-accordion-header">
+                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan); cursor:pointer; flex:1;" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">📁 Viajes Registrados en la Jornada</span>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <button type="button" class="btn-accion-carpeta" onclick="alternarVisibilidadConsulta()">Ocultar Consulta</button>
+                                <span id="arrow-viajes" style="font-size:10px; font-weight:600; cursor:pointer;" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">▼</span>
+                            </div>
+                        </div>
+                        <div id="body-viajes" class="check-accordion-body">
+                            <div id="lista-viajes-acordeon" style="display: flex; flex-direction: column; gap: 6px;"></div>
+                        </div>
+                    </div>
+
+                    <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
                 </div>
             </div>
 
-            <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
-
-            <hr>
-            <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
-            
-            <div id="contenedor-inspeccion">
+            <!-- SELLO DE SEGURIDAD OBLIGATORIO ENTRE BLOQUE 2 Y BLOQUE 1 (INMUTABLE Y ACTIVO) -->
+            <div id="contenedor-inspeccion" class="card">
+                <h4 style="margin-top:0;">2. Mantenimiento Preventivo y Checklist de Inspección</h4>
                 <div id="checklist-contenedor" class="checklist-box">
                     <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: 600; font-size: 12px; color: var(--accent-amber);">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
                     
@@ -469,84 +481,91 @@ def home():
                     <p style="margin:0 0 6px 0; font-size:11px; color:#fca5a5;">• <b>Prohibiciones:</b> Cero invasión de carriles confinados o banquetas, prohibido conducir cansado o bajo efectos de alcohol.</p>
                     <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                 </div>
+
+                <select id="tipo_serv" onchange="sincronizarVistaComponente()" style="margin-top: 10px;">
+                    <option value="Cambio de Aceite" data-ciclo="2500">Cambio de Aceite (Ciclo: 2,500 km)</option>
+                    <option value="Kit de Arrastre / Piñones" data-ciclo="15000">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
+                    <option value="Pastillas de Freno" data-ciclo="5000">Pastillas de Freno (Ciclo: 5,000 km)</option>
+                </select>
+
+                <div style="background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 8px; margin-bottom: 10px;">
+                    <p style="margin: 0 0 6px 0; font-weight: 600; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL DEL COMPONENTE SELECCIONADO:</p>
+                    <div style="font-size: 12px; display: flex; justify-content: space-between;">
+                        <span id="label-componente-activo" style="font-weight:600;">Cambio de Aceite</span>
+                        <span id="porcentaje-vida" style="color:var(--accent-green); font-weight: 600;">100% Vida Restante</span>
+                    </div>
+                    <div class="progress-container">
+                        <div id="barra-vida" class="progress-bar" style="width: 100%;"></div>
+                    </div>
+                    <div id="alerta-inversion" style="font-size: 11px; margin-top: 4px; font-weight: 600; color: var(--accent-green);">Estado óptimo. Sin gastos imprevistos próximos.</div>
+                    
+                    <button class="btn-mantenimiento" onclick="registrarMantenimientoRealizado()">🔧 Registrar Mantenimiento Realizado (Reiniciar al 100%)</button>
+                </div>
             </div>
 
-            <select id="tipo_serv" onchange="sincronizarVistaComponente()" style="margin-top: 10px;">
-                <option value="Cambio de Aceite" data-ciclo="2500">Cambio de Aceite (Ciclo: 2,500 km)</option>
-                <option value="Kit de Arrastre / Piñones" data-ciclo="15000">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</option>
-                <option value="Pastillas de Freno" data-ciclo="5000">Pastillas de Freno (Ciclo: 5,000 km)</option>
-            </select>
+            <!-- BLOQUE 3: Telemetría Avanzada y Entorno Dinámico (Desplegable) -->
+            <div class="bloque-principal-card">
+                <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Entorno Dinámico</span>
+                    <span id="arrow-bloque-3" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
+                </div>
+                <div id="body-bloque-3" class="bloque-principal-body">
+                    <div id="entorno-dispositivo" class="entorno-box">
+                        <span id="info-clima">🌤️ Clima: Cargando...</span>
+                        <span id="info-bateria">🔋 Batería: --%</span>
+                        <span id="info-horario">🕒 Hora: --:--</span>
+                        <span id="info-red">📶 Red: Analizando...</span>
+                        <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: Obteniendo GPS...</span>
+                    </div>
 
-            <div style="background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 8px; margin-bottom: 10px;">
-                <p style="margin: 0 0 6px 0; font-weight: 600; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL DEL COMPONENTE SELECCIONADO:</p>
-                <div style="font-size: 12px; display: flex; justify-content: space-between;">
-                    <span id="label-componente-activo" style="font-weight:600;">Cambio de Aceite</span>
-                    <span id="porcentaje-vida" style="color:var(--accent-green); font-weight: 600;">100% Vida Restante</span>
+                    <div class="telemetria-grid">
+                        <div class="telemetria-item">
+                            <label>Marca</label>
+                            <div class="input-voz-group">
+                                <input type="text" id="marca" placeholder="Ej. Bajaj">
+                                <button type="button" class="btn-voice" onclick="escucharVoz('marca')">🎤</button>
+                            </div>
+                        </div>
+                        <div class="telemetria-item">
+                            <label>Modelo</label>
+                            <div class="input-voz-group">
+                                <input type="text" id="modelo" placeholder="Ej. Pulsar NS 200">
+                                <button type="button" class="btn-voice" onclick="escucharVoz('modelo')">🎤</button>
+                            </div>
+                        </div>
+                        <div class="telemetria-item">
+                            <label>Año</label>
+                            <div class="input-voz-group">
+                                <input type="text" id="anio" placeholder="Ej. 2024">
+                                <button type="button" class="btn-voice" onclick="escucharVoz('anio')">🎤</button>
+                            </div>
+                        </div>
+                        <div class="telemetria-item">
+                            <label>Odómetro (km)</label>
+                            <div class="input-voz-group">
+                                <input type="number" id="km" placeholder="Km Actual">
+                                <button type="button" class="btn-voice" onclick="escucharVoz('km')">🎤</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="actualizarKm()">Sincronizar Odómetro y Auditar Telemetría</button>
+                    <div id="diagnostico"></div>
+
+                    <div class="bitacora-box">
+                        <p style="margin: 0 0 5px 0; font-weight: 600; font-size: 12px; color: var(--text-main);">📋 AUDITORÍA Y BITÁCORA ANALÍTICA:</p>
+                        <div id="lista-bitacora">Sin registros analíticos en esta sesión.</div>
+                    </div>
+
+                    <hr>
+                    <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)</button>
+                    <button class="btn-backup" onclick="descargarRespaldo()">💾 Descargar Copia de Seguridad (DB)</button>
                 </div>
-                <div class="progress-container">
-                    <div id="barra-vida" class="progress-bar" style="width: 100%;"></div>
-                </div>
-                <div id="alerta-inversion" style="font-size: 11px; margin-top: 4px; font-weight: 600; color: var(--accent-green);">Estado óptimo. Sin gastos imprevistos próximos.</div>
-                
-                <button class="btn-mantenimiento" onclick="registrarMantenimientoRealizado()">🔧 Registrar Mantenimiento Realizado (Reiniciar al 100%)</button>
             </div>
-
-            <hr>
-            <h4>3. Telemetría Avanzada y Entorno Dinámico</h4>
             
-            <div id="entorno-dispositivo" class="entorno-box">
-                <span id="info-clima">🌤️ Clima: Cargando...</span>
-                <span id="info-bateria">🔋 Batería: --%</span>
-                <span id="info-horario">🕒 Hora: --:--</span>
-                <span id="info-red">📶 Red: Analizando...</span>
-                <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: Obteniendo GPS...</span>
+            <div class="card">
+                <button onclick="logout()" style="background:#475569; margin-top: 0;">Cerrar Sesión</button>
             </div>
-
-            <div class="telemetria-grid">
-                <div class="telemetria-item">
-                    <label>Marca</label>
-                    <div class="input-voz-group">
-                        <input type="text" id="marca" placeholder="Ej. Bajaj">
-                        <button type="button" class="btn-voice" onclick="escucharVoz('marca')">🎤</button>
-                    </div>
-                </div>
-                <div class="telemetria-item">
-                    <label>Modelo</label>
-                    <div class="input-voz-group">
-                        <input type="text" id="modelo" placeholder="Ej. Pulsar NS 200">
-                        <button type="button" class="btn-voice" onclick="escucharVoz('modelo')">🎤</button>
-                    </div>
-                </div>
-                <div class="telemetria-item">
-                    <label>Año</label>
-                    <div class="input-voz-group">
-                        <input type="text" id="anio" placeholder="Ej. 2024">
-                        <button type="button" class="btn-voice" onclick="escucharVoz('anio')">🎤</button>
-                    </div>
-                </div>
-                <div class="telemetria-item">
-                    <label>Odómetro (km)</label>
-                    <div class="input-voz-group">
-                        <input type="number" id="km" placeholder="Km Actual">
-                        <button type="button" class="btn-voice" onclick="escucharVoz('km')">🎤</button>
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="actualizarKm()">Sincronizar Odómetro y Auditar Telemetría</button>
-            <div id="diagnostico"></div>
-
-            <div class="bitacora-box">
-                <p style="margin: 0 0 5px 0; font-weight: 600; font-size: 12px; color: var(--text-main);">📋 AUDITORÍA Y BITÁCORA ANALÍTICA:</p>
-                <div id="lista-bitacora">Sin registros analíticos en esta sesión.</div>
-            </div>
-
-            <hr>
-            <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)</button>
-            <button class="btn-backup" onclick="descargarRespaldo()">💾 Descargar Copia de Seguridad (DB)</button>
-            
-            <hr>
-            <button onclick="logout()" style="background:#475569; margin-top: 10px;">Cerrar Sesión</button>
         </div>
 
         <script>
