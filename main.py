@@ -285,7 +285,6 @@ def home():
             .panel-oficial { background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px; border-radius: 8px; margin-top: 8px; }
             .alerta-normativa { background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.3); padding: 12px; border-radius: 8px; font-size: 12px; color: #93c5fd; margin-top: 10px; }
             
-            /* Estilos maestros para los bloques desplegables principales */
             .bloque-principal-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
             .bloque-principal-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #0e1626; transition: background 0.2s; border-bottom: 1px solid var(--border-color); }
             .bloque-principal-header:hover { background: #131d31; }
@@ -305,7 +304,7 @@ def home():
             <h3>⚡ PANEL OPERATIVO [<span id="current-user" style="color:var(--accent-cyan)"></span>]</h3>
             <hr>
             
-            <!-- BLOQUE 1: Control de Combustible y Autonomía (Desplegable) -->
+            <!-- BLOQUE 1: Control de Combustible y Autonomía -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-1', 'arrow-bloque-1')">
                     <span style="font-size:14px; font-weight:600; color:#38bdf8;">⚡ 1. Control de Combustible y Autonomía</span>
@@ -508,7 +507,7 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 3: Telemetría Avanzada y Entorno Dinámico (Desplegable) -->
+            <!-- BLOQUE 3: Telemetría Avanzada y Entorno Dinámico -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
                     <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Entorno Dinámico</span>
@@ -741,13 +740,13 @@ def home():
                 }
 
                 if (kmRutaVal > 30) {
-                    alertas.push("🛣️ [Ruta Larga detectada: Mayor desgaste general / Recomendación: Pausa de 15 min]");
+                    alertas.push("🛣️ [Ruta Larga detectada: Mayor desgaste general / ⚠️ Recomendación: Pausa de descanso]");
                 } else {
                     alertas.push("📍 [Trayecto corto / Estándar]");
                 }
 
                 if (minutosViaje > 120 || tiempoTotalAcumuladoGlobalMin > 120) {
-                    alertas.push("🚨 [Jornada Excesiva / Fatiga Operativa: Descanso obligatorio de 30 min sugerido]");
+                    alertas.push("🚨 [Jornada Excesiva / Fatiga Operativa: Descanso obligatorio sugerido]");
                 } else if (minutosViaje > 60) {
                     alertas.push("⚠️ [Jornada larga: Monitorear temperatura de motor]");
                 } else {
@@ -919,7 +918,7 @@ def home():
                     let docs = document.getElementById("anulador_docs").value;
 
                     if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
-                        bloquearSistema(true, "⚠️ Verificación de seguridad: Complete o confirme todos los puntos en 'Operativo (OK)'.");
+                        bloquearSistema(true, "⚠️ Verificación de seguridad requerida: Complete o confirme todos los puntos críticos en 'Operativo (OK)'.");
                         if(checklistElem) checklistElem.style.display = "block";
                         if(protocoloElem) protocoloElem.style.display = "none";
                         ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
@@ -1423,6 +1422,19 @@ def home():
                         kmComponentes[comp] += km_recorridos;
                     }
                     sincronizarVistaComponente();
+
+                    // CONDICIÓN DE RE-BLOQUEO TRAS RUTA LARGA (>30 KM) O JORNADA EXCESIVA (>120 MIN)
+                    if (km_recorridos > 30 || minutosViajeEval > 120 || tiempoTotalAcumuladoGlobalMin > 120) {
+                        protocoloConfirmadoLeido = false;
+                        document.getElementById("anulador_frenos").value = "revision";
+                        document.getElementById("anulador_cadena").value = "revision";
+                        document.getElementById("anulador_llantas").value = "revision";
+                        document.getElementById("anulador_luces").value = "revision";
+                        document.getElementById("anulador_epp").value = "revision";
+                        document.getElementById("anulador_docs").value = "revision";
+                        alert("⚠️ [Alerta de Seguridad Post-Ruta]: Debido a una ruta larga o jornada extensa, se requiere realizar nuevamente la verificación de los 6 puntos críticos y tomar un descanso preventivo.");
+                    }
+
                     verificarJornadaYDiagnostico();
 
                     viajesJornadaList.unshift({
