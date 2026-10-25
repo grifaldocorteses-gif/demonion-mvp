@@ -115,63 +115,156 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>DEMONION MVP - Telemetría Pro</title>
+        <title>DEMONION MVP - Cyber Dashboard</title>
         <style>
-            body { font-family: sans-serif; margin: 15px; background: #f4f4f9; color: #333; }
-            .card { background: white; padding: 15px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            input, select, button { padding: 8px; margin: 3px 0; width: 100%; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
-            button { background: #0284c7; color: white; border: none; font-weight: bold; cursor: pointer; }
-            .btn-voice { background: #8b5cf6; width: auto; padding: 6px 10px; font-size: 11px; margin: 0; }
-            .btn-share { background: #25d366; font-weight: bold; margin-top: 10px; }
-            .btn-backup { background: #475569; font-weight: bold; margin-top: 5px; }
-            .btn-mantenimiento { background: #d97706; font-weight: bold; margin-top: 6px; }
-            .btn-reset-tanque { background: #e11d48; font-weight: bold; font-size: 12px; padding: 8px; width: 30%; }
-            .btn-main-carga { width: 68%; }
-            .btn-leido { background: #16a34a; font-weight: bold; margin-top: 10px; }
-            #app, #auth { display: none; }
-            .flex-row { display: flex; gap: 5px; align-items: center; }
-            .telemetria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px; }
-            .telemetria-item { display: flex; flex-direction: column; gap: 2px; }
-            .telemetria-item label { font-size: 11px; font-weight: bold; color: #475569; }
-            .input-voz-group { display: flex; gap: 4px; align-items: center; }
-            .entorno-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 8px; border-radius: 6px; font-size: 11px; color: #1e3a8a; margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-            
-            /* Tarjetas Interactivas con Desplegable */
-            .diagnostico-container { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-            .diag-card { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; cursor: pointer; transition: background 0.2s; }
-            .diag-card:hover { background: #f1f5f9; }
-            .diag-header { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-            .diag-header-left { display: flex; align-items: center; gap: 8px; }
-            .diag-icon { font-size: 16px; line-height: 1; }
-            .diag-title { font-weight: bold; color: #475569; font-size: 11px; text-transform: uppercase; }
-            .diag-subtitle { font-size: 12px; font-weight: bold; }
-            .diag-arrow { font-size: 10px; color: #64748b; font-weight: bold; }
-            .diag-details { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 11px; color: #334155; }
-            .diag-details ul { margin: 4px 0 0 15px; padding: 0; }
+            :root {
+                --bg-main: #090d16;
+                --bg-card: #111827;
+                --border-color: #1f293d;
+                --text-main: #f3f4f6;
+                --text-muted: #9ca3af;
+                --accent-cyan: #06b6d4;
+                --accent-green: #10b981;
+                --accent-amber: #f59e0b;
+                --accent-red: #ef4444;
+                --accent-purple: #8b5cf6;
+            }
 
-            .checklist-box { background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fcd34d; margin-top: 10px; margin-bottom: 10px; }
+            body { 
+                font-family: system-ui, -apple-system, sans-serif; 
+                margin: 0; 
+                padding: 10px; 
+                background: var(--bg-main); 
+                color: var(--text-main); 
+            }
+
+            .card { 
+                background: var(--bg-card); 
+                padding: 16px; 
+                margin-bottom: 12px; 
+                border-radius: 12px; 
+                border: 1px solid var(--border-color);
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); 
+            }
+
+            h3 { margin-top: 0; color: #38bdf8; font-size: 18px; letter-spacing: 0.5px; }
+            h4 { color: #e2e8f0; font-size: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin: 15px 0 10px 0; }
+            hr { border: 0; border-top: 1px solid var(--border-color); margin: 15px 0; }
+
+            input, select, button { 
+                padding: 10px; 
+                margin: 4px 0; 
+                width: 100%; 
+                box-sizing: border-box; 
+                border-radius: 6px; 
+                border: 1px solid var(--border-color); 
+                font-size: 13px; 
+                background: #0b1120;
+                color: var(--text-main);
+            }
+
+            input:focus, select:focus {
+                border-color: var(--accent-cyan);
+                outline: none;
+                box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            }
+
+            button { 
+                background: linear-gradient(135deg, #0284c7, #0369a1); 
+                color: white; 
+                border: none; 
+                font-weight: bold; 
+                cursor: pointer; 
+                transition: opacity 0.2s;
+            }
+
+            button:hover { opacity: 0.9; }
+
+            .btn-voice { background: var(--accent-purple); width: auto; padding: 8px 12px; font-size: 12px; margin: 0; }
+            .btn-share { background: #059669; font-weight: bold; margin-top: 10px; }
+            .btn-backup { background: #334155; font-weight: bold; margin-top: 5px; }
+            .btn-mantenimiento { background: #d97706; font-weight: bold; margin-top: 8px; }
+            .btn-reset-tanque { background: #dc2626; font-weight: bold; font-size: 12px; padding: 10px; width: 30%; }
+            .btn-main-carga { width: 68%; }
+            .btn-leido { background: var(--accent-green); font-weight: bold; margin-top: 10px; }
+
+            #app, #auth { display: none; }
+            .flex-row { display: flex; gap: 6px; align-items: center; }
+            
+            .telemetria-grid { 
+                display: grid; 
+                grid-template-columns: 1fr 1fr; 
+                gap: 8px; 
+                background: #0b1120; 
+                padding: 10px; 
+                border-radius: 8px; 
+                border: 1px solid var(--border-color); 
+                margin-bottom: 8px; 
+            }
+            .telemetria-item { display: flex; flex-direction: column; gap: 2px; }
+            .telemetria-item label { font-size: 11px; font-weight: bold; color: var(--text-muted); }
+            .input-voz-group { display: flex; gap: 4px; align-items: center; }
+            
+            .entorno-box { 
+                background: rgba(14, 165, 233, 0.05); 
+                border: 1px solid rgba(14, 165, 233, 0.2); 
+                padding: 10px; 
+                border-radius: 8px; 
+                font-size: 11px; 
+                color: #38bdf8; 
+                margin-bottom: 10px; 
+                display: grid; 
+                grid-template-columns: 1fr 1fr; 
+                gap: 6px; 
+            }
+            
+            /* Tarjetas Interactivas con Desplegable Estilo Cyber */
+            .diagnostico-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+            .diag-card { 
+                background: #0b1120; 
+                border: 1px solid var(--border-color); 
+                border-radius: 8px; 
+                padding: 10px 12px; 
+                cursor: pointer; 
+                transition: all 0.2s; 
+            }
+            .diag-card:hover { border-color: var(--accent-cyan); background: #131d31; }
+            .diag-header { display: flex; align-items: center; justify-content: space-width; width: 100%; justify-content: space-between; }
+            .diag-header-left { display: flex; align-items: center; gap: 10px; }
+            .diag-icon { font-size: 18px; line-height: 1; }
+            .diag-title { font-weight: bold; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .diag-subtitle { font-size: 12px; font-weight: bold; }
+            .diag-arrow { font-size: 10px; color: var(--text-muted); font-weight: bold; transition: transform 0.2s; }
+            .diag-details { display: none; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 11px; color: var(--text-muted); }
+            .diag-details ul { margin: 4px 0 0 15px; padding: 0; }
+            .diag-details li { margin-bottom: 3px; }
+
+            .checklist-box { background: rgba(245, 158, 11, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3); margin-top: 10px; margin-bottom: 10px; }
             .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-            .check-item { background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
-            .check-item select { padding: 5px; font-size: 12px; margin: 0; }
-            .bloqueado { background: #94a3b8 !important; cursor: not-allowed !important; }
-            .progress-container { background: #e2e8f0; border-radius: 4px; height: 10px; width: 100%; margin: 5px 0; overflow: hidden; }
-            .progress-bar { height: 100%; width: 100%; background: #22c55e; transition: width 0.3s ease; }
-            .bitacora-box { background: #f1f5f9; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 10px; font-size: 12px; color: #334155; }
-            .panel-oficial { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; margin-top: 8px; }
-            .alerta-normativa { background: #eff6ff; border: 1px solid #2563eb; padding: 12px; border-radius: 6px; font-size: 12px; color: #1e3a8a; margin-top: 10px; }
+            .check-item { background: var(--bg-card); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+            .check-item select { padding: 6px; font-size: 11px; margin: 0; }
+            
+            .bloqueado { background: #334155 !important; cursor: not-allowed !important; opacity: 0.7; }
+            
+            .progress-container { background: #1e293b; border-radius: 6px; height: 10px; width: 100%; margin: 6px 0; overflow: hidden; border: 1px solid var(--border-color); }
+            .progress-bar { height: 100%; width: 100%; background: var(--accent-green); transition: width 0.3s ease; }
+            
+            .bitacora-box { background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+            .panel-oficial { background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px; border-radius: 8px; margin-top: 8px; }
+            .alerta-normativa { background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.3); padding: 12px; border-radius: 8px; font-size: 12px; color: #93c5fd; margin-top: 10px; }
         </style>
     </head>
     <body>
         <div id="auth" class="card" style="display:block;">
-            <h3>Acceso DEMONION MVP</h3>
+            <h3>🛡️ ACCESO DEMONION MVP</h3>
             <input type="text" id="user" placeholder="Usuario">
             <input type="password" id="pass" placeholder="Contraseña">
             <button onclick="login()">Iniciar Sesión</button>
-            <button onclick="register()" style="background:#10b981;">Registrarse</button>
+            <button onclick="register()" style="background:#059669; margin-top:6px;">Registrarse</button>
         </div>
 
         <div id="app" class="card">
-            <h3>Panel Operativo (<span id="current-user"></span>)</h3>
+            <h3>⚡ PANEL OPERATIVO [<span id="current-user" style="color:var(--accent-cyan)"></span>]</h3>
             <hr>
             
             <h4>1. Control de Combustible y Autonomía</h4>
@@ -193,7 +286,7 @@ def home():
                 <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
                 <button type="button" class="btn-voice" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
             </div>
-            <button id="btn_evaluar" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
+            <button id="btn_evaluar" style="background:#059669; margin-top:8px;" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
             <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
@@ -203,7 +296,7 @@ def home():
             
             <div id="contenedor-inspeccion">
                 <div id="checklist-contenedor" class="checklist-box">
-                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px; color: #ea580c;">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
+                    <p id="diagnostico-anulador" style="margin: 0 0 8px 0; font-weight: bold; font-size: 12px; color: var(--accent-amber);">⚠️ Inspección preventiva: Confirme los 6 puntos críticos de seguridad.</p>
                     <div class="checklist-grid">
                         <div class="check-item">
                             <span>🛑 Frenos / Suspensión</span>
@@ -251,12 +344,11 @@ def home():
                 </div>
 
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
-                    <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
-                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple estrictamente la reglamentación oficial:</p>
+                    <p style="margin:0 0 4px 0; font-weight:bold; color:#60a5fa; font-size:12px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
+                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple estrictamente la reglamentación:</p>
                     <ul style="margin: 4px 0 8px 15px; padding: 0;">
-                        <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en secundarias y <b>80 km/h</b> en acceso controlado. <b>30 km/h</b> en escuelas.</li>
-                        <li><b>Equipo de Protección (EPP):</b> Casco certificado (DOT / ECE) y chaleco reflejante nocturno.</li>
-                        <li><b>Cero Invasión:</b> Prohibido circular en banquetas, ciclovías o carriles confinados.</li>
+                        <li><b>Límites:</b> Máx <b>50 km/h</b> secundarias, <b>80 km/h</b> acceso controlado, <b>30 km/h</b> escuelas.</li>
+                        <li><b>EPP:</b> Casco certificado (DOT/ECE) y chaleco reflejante nocturno.</li>
                     </ul>
                     <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                 </div>
@@ -268,16 +360,16 @@ def home():
                 <option value="Pastillas de Freno" data-ciclo="5000">Pastillas de Freno (Ciclo: 5,000 km)</option>
             </select>
 
-            <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 8px; margin-bottom: 10px;">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">📊 Vida Útil del Componente Seleccionado:</p>
+            <div style="background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 8px; margin-bottom: 10px;">
+                <p style="margin: 0 0 6px 0; font-weight: bold; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL DEL COMPONENTE SELECCIONADO:</p>
                 <div style="font-size: 12px; display: flex; justify-content: space-between;">
-                    <span id="label-componente-activo">Desgaste por Kilometraje de Rutas</span>
-                    <span id="porcentaje-vida">100% Vida Restante</span>
+                    <span id="label-componente-activo" style="font-weight:bold;">Cambio de Aceite</span>
+                    <span id="porcentaje-vida" style="color:var(--accent-green)">100% Vida Restante</span>
                 </div>
                 <div class="progress-container">
                     <div id="barra-vida" class="progress-bar" style="width: 100%;"></div>
                 </div>
-                <div id="alerta-inversion" style="font-size: 12px; margin-top: 4px; font-weight: bold; color: #16a34a;">Estado óptimo. Sin gastos imprevistos próximos.</div>
+                <div id="alerta-inversion" style="font-size: 11px; margin-top: 4px; font-weight: bold; color: var(--accent-green);">Estado óptimo. Sin gastos imprevistos próximos.</div>
                 
                 <button class="btn-mantenimiento" onclick="registrarMantenimientoRealizado()">🔧 Registrar Mantenimiento Realizado (Reiniciar al 100%)</button>
             </div>
@@ -327,7 +419,7 @@ def home():
             <div id="diagnostico"></div>
 
             <div class="bitacora-box">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px; color: #1e293b;">📋 Auditoría y Bitácora Analítica:</p>
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 12px; color: var(--text-main);">📋 AUDITORÍA Y BITÁCORA ANALÍTICA:</p>
                 <div id="lista-bitacora">Sin registros analíticos en esta sesión.</div>
             </div>
 
@@ -336,7 +428,7 @@ def home():
             <button class="btn-backup" onclick="descargarRespaldo()">💾 Descargar Copia de Seguridad (DB)</button>
             
             <hr>
-            <button onclick="logout()" style="background:#6b7280; margin-top: 10px;">Cerrar Sesión</button>
+            <button onclick="logout()" style="background:#475569; margin-top: 10px;">Cerrar Sesión</button>
         </div>
 
         <script>
@@ -413,10 +505,10 @@ def home():
                 let elemRed = document.getElementById("info-red");
                 if (navigator.onLine) {
                     elemRed.innerText = "📶 Red: Online";
-                    elemRed.style.color = "#16a34a";
+                    elemRed.style.color = "var(--accent-green)";
                 } else {
                     elemRed.innerText = "📶 Red: Offline (Local)";
-                    elemRed.style.color = "#dc2626";
+                    elemRed.style.color = "var(--accent-red)";
                 }
             }
 
@@ -425,10 +517,10 @@ def home():
                 let arrow = document.getElementById(idArrow);
                 if (details.style.display === "block") {
                     details.style.display = "none";
-                    arrow.innerText = "▼";
+                    arrow.style.transform = "rotate(0deg)";
                 } else {
                     details.style.display = "block";
-                    arrow.innerText = "▲";
+                    arrow.style.transform = "rotate(180deg)";
                 }
             }
 
@@ -453,13 +545,13 @@ def home():
                 if(div) div.innerHTML = mensaje;
 
                 if (bloquear) {
-                    if(btnCargar) { btnCargar.classList.add("bloqueado"); btnCargar.style.background = "#94a3b8"; }
-                    if(btnReset) { btnReset.classList.add("bloqueado"); btnReset.style.background = "#94a3b8"; }
-                    if(btnEvaluar) { btnEvaluar.classList.add("bloqueado"); btnEvaluar.style.background = "#94a3b8"; }
+                    if(btnCargar) btnCargar.classList.add("bloqueado");
+                    if(btnReset) btnReset.classList.add("bloqueado");
+                    if(btnEvaluar) btnEvaluar.classList.add("bloqueado");
                 } else {
-                    if(btnCargar) { btnCargar.classList.remove("bloqueado"); btnCargar.style.background = "#0284c7"; }
-                    if(btnReset) { btnReset.classList.remove("bloqueado"); btnReset.style.background = "#e11d48"; }
-                    if(btnEvaluar) { btnEvaluar.classList.remove("bloqueado"); btnEvaluar.style.background = "#059669"; }
+                    if(btnCargar) btnCargar.classList.remove("bloqueado");
+                    if(btnReset) btnReset.classList.remove("bloqueado");
+                    if(btnEvaluar) btnEvaluar.classList.remove("bloqueado");
                 }
             }
 
@@ -528,9 +620,9 @@ def home():
                 let autonomiaProyectada = round(totalSimulado * rendimientoEstandar, 1);
 
                 divDiag.innerHTML = `
-                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Carga]</i></p>
-                    <p><b>Litros en Tanque (Post-Carga):</b> ${totalSimulado} L (${litrosActualesTanque} L actuales + ${litrosEntrada} L nuevos)</p>
-                    <p><b>Autonomía Estimada:</b> ${autonomiaProyectada} km</p>
+                    <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Carga]</i></p>
+                    <p style="margin:2px 0;"><b>Litros en Tanque (Post-Carga):</b> ${totalSimulado} L</p>
+                    <p style="margin:2px 0;"><b>Autonomía Estimada:</b> ${autonomiaProyectada} km</p>
                 `;
             }
 
@@ -557,12 +649,11 @@ def home():
                 let tiempoEstimadoSim = calcularTiempoFormateado(kmRutaVal);
 
                 divDiag.innerHTML = `
-                    <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
-                    <p><b>Consumo Ruta (Sim):</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
-                    <p><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim} (a 35 km/h prom.)</p>
-                    <p><b>Costo Operativo:</b> $${costoPorKm} MXN / km</p>
-                    <p><b>Autonomía Proyectada:</b> ${autonomiaRestanteKm} km restantes</p>
-                    <p><b>Litros Restantes Estimados:</b> ${litrosRestantesSimulados} L</p>
+                    <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
+                    <p style="margin:2px 0;"><b>Consumo Ruta:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
+                    <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim} (a 35 km/h prom.)</p>
+                    <p style="margin:2px 0;"><b>Costo Operativo:</b> $${costoPorKm} MXN / km</p>
+                    <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km</p>
                 `;
             }
 
@@ -589,14 +680,14 @@ def home():
                 if(txtVida) txtVida.innerText = Math.round(vidaRestante) + "% Vida Restante (" + kmAcumulados + " / " + cicloMax + " km)";
 
                 if (vidaRestante > 40) {
-                    if(barra) barra.style.background = "#22c55e";
-                    if(alertaInv) { alertaInv.style.color = "#16a34a"; alertaInv.innerText = `Estado óptimo para ${tipoServicio}. Sin gastos imprevistos.`; }
+                    if(barra) barra.style.background = "var(--accent-green)";
+                    if(alertaInv) { alertaInv.style.color = "var(--accent-green)"; alertaInv.innerText = `Estado óptimo para ${tipoServicio}. Sin gastos imprevistos.`; }
                 } else if (vidaRestante > 15) {
-                    if(barra) barra.style.background = "#eab308";
-                    if(alertaInv) { alertaInv.style.color = "#ca8a04"; alertaInv.innerText = `⚠️ Precaución: El componente ${tipoServicio} se acerca al límite.`; }
+                    if(barra) barra.style.background = "var(--accent-amber)";
+                    if(alertaInv) { alertaInv.style.color = "var(--accent-amber)"; alertaInv.innerText = `⚠️ Precaución: El componente ${tipoServicio} se acerca al límite.`; }
                 } else {
-                    if(barra) barra.style.background = "#ef4444";
-                    if(alertaInv) { alertaInv.style.color = "#dc2626"; alertaInv.innerText = `🚨 Alerta: Es tiempo obligatorio de cambiar ${tipoServicio}.`; }
+                    if(barra) barra.style.background = "var(--accent-red)";
+                    if(alertaInv) { alertaInv.style.color = "var(--accent-red)"; alertaInv.innerText = `🚨 Alerta: Es tiempo obligatorio de cambiar ${tipoServicio}.`; }
                 }
             }
 
@@ -661,7 +752,7 @@ def home():
                     alert("Realiza una evaluación primero.");
                     return;
                 }
-                const textoReporte = "*REPORTE TELEMETRÍA DEMONION MVP*\\n" + ultimoDiagnostico + "\\n\\nBitácora Reciente:\\n" + (bitacoraLocal.length > 0 ? bitacoraLocal[0] : "Sin registros recientes");
+                const textoReporte = "*REPORTE TELEMETRÍA DEMONION MVP*\n" + ultimoDiagnostico + "\n\nBitácora Reciente:\n" + (bitacoraLocal.length > 0 ? bitacoraLocal[0] : "Sin registros recientes");
 
                 if (navigator.share) {
                     navigator.share({
@@ -747,17 +838,17 @@ def home():
                     let deprecioAntiguedadPct = antiguedadAnios * 10.0;
                     
                     let estatusKilometraje = "Kilometraje Estándar (Óptimo)";
-                    let colorKm = "#16a34a";
-                    let recomendacionUso = "Uso personal balanceado. El desgaste mecánico está dentro de los rangos ideales de fábrica.";
+                    let colorKm = "var(--accent-green)";
+                    let recomendacionUso = "Uso personal balanceado. El desgaste mecánico está dentro de los rangos ideales.";
 
                     if (km_actual > 20000 || (antiguedadAnios > 0 && (km_actual / antiguedadAnios) > 15000)) {
                         estatusKilometraje = "Kilometraje Elevado (>15k-20k km anuales)";
-                        colorKm = "#dc2626";
-                        recomendacionUso = "Uso intensivo / comercial detectado. Realiza revisiones preventivas de aceite cada 2,000 km para prevenir desgaste en cilindro.";
+                        colorKm = "var(--accent-red)";
+                        recomendacionUso = "Uso intensivo / comercial detectado. Realiza revisiones preventivas de aceite cada 2,000 km.";
                     } else if (km_actual > 10000) {
                         estatusKilometraje = "Kilometraje Moderado / Uso Medio";
-                        colorKm = "#d97706";
-                        recomendacionUso = "Uso continuo. Se recomienda revisar la tensión y lubricación de cadena semanalmente.";
+                        colorKm = "var(--accent-amber)";
+                        recomendacionUso = "Uso continuo. Se recomienda revisar tensión y lubricación de cadena semanalmente.";
                     }
 
                     let retencionEstimada = Math.max(30, 100 - (18 + deprecioAntiguedadPct));
@@ -796,7 +887,7 @@ def home():
                                         <span class="diag-icon">💰</span>
                                         <div style="display:flex; flex-direction:column;">
                                             <span class="diag-title">VALOR COMERCIAL ESTIMADO</span>
-                                            <span class="diag-subtitle" style="color: #047857;">$${valorMonetarioEstimado.toLocaleString()} MXN (~${retencionEstimada}% retención)</span>
+                                            <span class="diag-subtitle" style="color: var(--accent-green);">$${valorMonetarioEstimado.toLocaleString()} MXN (~${retencionEstimada}% retención)</span>
                                         </div>
                                     </div>
                                     <span id="arrow-valor" class="diag-arrow">▼</span>
@@ -817,7 +908,7 @@ def home():
                                         <span class="diag-icon">🔧</span>
                                         <div style="display:flex; flex-direction:column;">
                                             <span class="diag-title">PRÓXIMO MANTENIMIENTO CRÍTICO</span>
-                                            <span class="diag-subtitle" style="color: #d97706;">${mantenimientoProximo}</span>
+                                            <span class="diag-subtitle" style="color: var(--accent-amber);">${mantenimientoProximo}</span>
                                         </div>
                                     </div>
                                     <span id="arrow-maint" class="diag-arrow">▼</span>
@@ -896,9 +987,9 @@ def home():
                     let autonomiaTanque = round(litrosActualesTanque * rendimientoEstandar, 1);
 
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: #047857; font-weight: bold;">✔ Carga Registrada y Tanque Acumulado:</p>
-                        <p><b>Litros Totales en Tanque:</b> ${litrosActualesTanque} L</p>
-                        <p><b>Autonomía Disponible:</b> ${autonomiaTanque} km</p>
+                        <p style="color: var(--accent-green); font-weight: bold; margin:4px 0;">✔ Carga Registrada y Tanque Acumulado:</p>
+                        <p style="margin:2px 0;"><b>Litros Totales en Tanque:</b> ${litrosActualesTanque} L</p>
+                        <p style="margin:2px 0;"><b>Autonomía Disponible:</b> ${autonomiaTanque} km</p>
                     `;
                     document.getElementById("litros_carga").value = "";
                 } else {
@@ -924,7 +1015,7 @@ def home():
                     document.getElementById("litros_carga").value = "";
                     document.getElementById("km_ruta").value = "";
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: #047857; font-weight: bold;">✔ Acción realizada con éxito.</p>
+                        <p style="color: var(--accent-green); font-weight: bold;">✔ Acción realizada con éxito.</p>
                     `;
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.innerHTML = "";
@@ -967,17 +1058,17 @@ def home():
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.style.display = "block";
                     panelOficial.innerHTML = `
-                        <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado:</p>
-                        <p><b>Consumo de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p><b>Costo por km:</b> ${data.costo_por_km} MXN / km</p>
-                        <p><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje} (a 35 km/h prom.)</p>
-                        <p><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
-                        <p><b>Litros en Tanque:</b> ${data.litros_restantes} L</p>
-                        <hr style="border: 0; border-top: 1px dashed #bbf7d0; margin: 6px 0;">
-                        <p style="color: #1e3a8a; font-weight: bold;">📊 Acumulados Globales:</p>
-                        <p><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km</p>
-                        <p><b>Gasto Total:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
-                        <p><b>⏱️ Tiempo Total Acumulado:</b> ${data.tiempo_total_acumulado_str}</p>
+                        <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado:</p>
+                        <p style="margin:2px 0;"><b>Consumo de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
+                        <p style="margin:2px 0;"><b>Costo por km:</b> ${data.costo_por_km} MXN / km</p>
+                        <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje} (a 35 km/h prom.)</p>
+                        <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
+                        <p style="margin:2px 0;"><b>Litros en Tanque:</b> ${data.litros_restantes} L</p>
+                        <hr style="border: 0; border-top: 1px dashed rgba(16, 185, 129, 0.3); margin: 6px 0;">
+                        <p style="color: #60a5fa; font-weight: bold; margin:2px 0;">📊 Acumulados Globales:</p>
+                        <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km</p>
+                        <p style="margin:2px 0;"><b>Gasto Total:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
+                        <p style="margin:2px 0;"><b>⏱️ Tiempo Total Acumulado:</b> ${data.tiempo_total_acumulado_str}</p>
                     `;
                 } else {
                     alert(data.detail);
@@ -1260,11 +1351,10 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     costo_por_km = round(costo_viaje / e.km_recorridos, 2)
     autonomia_restante_km = round(max(0.0, litros_restantes) * rendimiento_estandar, 1)
 
-    # Cálculo del tiempo de viaje actual (velocidad promedio 35 km/h)
     vel_promedio = 35.0
     minutos_viaje = round((e.km_recorridos / vel_promedio) * 60)
     
-    h_viaje = math_h = int(minutos_viaje // 60)
+    h_viaje = int(minutos_viaje // 60)
     m_viaje = int(minutos_viaje % 60)
     tiempo_viaje_str = f"{h_viaje}h {m_viaje}m" if h_viaje > 0 else f"{m_viaje} min"
 
@@ -1283,7 +1373,6 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     gasto_total_acumulado = est_row[1]
     tiempo_total_acumulado_min = est_row[2]
 
-    # Formatear tiempo acumulado total
     tot_h = int(tiempo_total_acumulado_min // 60)
     tot_m = int(tiempo_total_acumulado_min % 60)
     tiempo_total_acumulado_str = f"{tot_h}h {tot_m}m" if tot_h > 0 else f"{tot_m} min"
