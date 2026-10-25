@@ -251,7 +251,7 @@ def home():
 
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                     <p style="margin:0 0 4px 0; font-weight:bold; color:#1e40af; font-size:13px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
-                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple strictly la reglamentación oficial:</p>
+                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple estrictamente la reglamentación oficial:</p>
                     <ul style="margin: 4px 0 8px 15px; padding: 0;">
                         <li><b>Límites de Velocidad:</b> Máximo <b>50 km/h</b> en secundarias y <b>80 km/h</b> en acceso controlado. <b>30 km/h</b> en escuelas.</li>
                         <li><b>Equipo de Protección (EPP):</b> Casco certificado (DOT / ECE) y chaleco reflejante nocturno.</li>
@@ -775,11 +775,8 @@ def home():
                     let promedioDiario = antiguedadAnios > 0 ? Math.round(km_actual / (antiguedadAnios * 365)) : km_actual;
                     let promedioMensual = antiguedadAnios > 0 ? Math.round(km_actual / (antiguedadAnios * 12)) : km_actual;
 
-                    // Renderizado en 4 Tarjetas Interactivas Desplegables
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
-                            
-                            <!-- Tarjeta 1: Valor Comercial -->
                             <div class="diag-card" onclick="toggleDesplegable('details-valor', 'arrow-valor')">
                                 <div class="diag-header">
                                     <div class="diag-header-left">
@@ -801,7 +798,6 @@ def home():
                                 </div>
                             </div>
 
-                            <!-- Tarjeta 2: Próximo Mantenimiento -->
                             <div class="diag-card" onclick="toggleDesplegable('details-maint', 'arrow-maint')">
                                 <div class="diag-header">
                                     <div class="diag-header-left">
@@ -821,7 +817,6 @@ def home():
                                 </div>
                             </div>
 
-                            <!-- Tarjeta 3: Antigüedad y Odómetro -->
                             <div class="diag-card" onclick="toggleDesplegable('details-odometer', 'arrow-odometer')">
                                 <div class="diag-header">
                                     <div class="diag-header-left">
@@ -843,7 +838,6 @@ def home():
                                 </div>
                             </div>
 
-                            <!-- Tarjeta 4: Análisis de Kilometraje -->
                             <div class="diag-card" onclick="toggleDesplegable('details-km', 'arrow-km')">
                                 <div class="diag-header">
                                     <div class="diag-header-left">
@@ -961,6 +955,7 @@ def home():
                         <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado:</p>
                         <p><b>Consumo de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Costo por km:</b> ${data.costo_por_km} MXN / km</p>
+                        <p><b>⏱️ Tiempo Estimado:</b> ~${data.tiempo_estimado} (a 35 km/h prom.)</p>
                         <p><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
                         <p><b>Litros en Tanque:</b> ${data.litros_restantes} L</p>
                         <hr style="border: 0; border-top: 1px dashed #bbf7d0; margin: 6px 0;">
@@ -1248,6 +1243,13 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     costo_por_km = round(costo_viaje / e.km_recorridos, 2)
     autonomia_restante_km = round(max(0.0, litros_restantes) * rendimiento_estandar, 1)
 
+    # Cálculo del tiempo estimado (velocidad promedio estimada 35 km/h)
+    vel_promedio = 35.0
+    horas_totales = e.km_recorridos / vel_promedio
+    h_int = int(horas_totales)
+    m_int = round((horas_totales - h_int) * 60)
+    tiempo_estimado_str = f"{h_int}h {m_int}m" if h_int > 0 else f"{m_int} min"
+
     cursor.execute("""
         INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado) 
         VALUES (?, ?, ?)
@@ -1275,6 +1277,7 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "litros_consumidos": litros_consumidos,
         "costo_viaje": costo_viaje,
         "costo_por_km": costo_por_km,
+        "tiempo_estimado": tiempo_estimado_str,
         "autonomia_restante_km": autonomia_restante_km,
         "litros_restantes": max(0.0, litros_restantes),
         "km_totales_acumulados": km_totales_acumulados,
