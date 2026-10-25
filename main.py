@@ -456,6 +456,7 @@ def home():
 
                     </div>
 
+                    <!-- PROTOCOLO NORMATIVO / AVISO DE SEGURIDAD RECUPERADO -->
                     <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                         <p style="margin:0 0 4px 0; font-weight:600; color:#60a5fa; font-size:12px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
                         <p style="margin:0 0 4px 0;">Cumple estrictamente la reglamentación:</p>
@@ -991,19 +992,20 @@ def home():
                     }
                 }
 
-                if (!protocoloConfirmadoLeido || alertaGraveActiva || riesgoComponenteCritico) {
-                    let f = document.getElementById("anulador_frenos").value;
-                    let c = document.getElementById("anulador_cadena").value;
-                    let ll = document.getElementById("anulador_llantas").value;
-                    let l = document.getElementById("anulador_luces").value;
-                    let epp = document.getElementById("anulador_epp").value;
-                    let docs = document.getElementById("anulador_docs").value;
+                let f = document.getElementById("anulador_frenos").value;
+                let c = document.getElementById("anulador_cadena").value;
+                let ll = document.getElementById("anulador_llantas").value;
+                let l = document.getElementById("anulador_luces").value;
+                let epp = document.getElementById("anulador_epp").value;
+                let docs = document.getElementById("anulador_docs").value;
+                let todosOk = (f === "ok" && c === "ok" && ll === "ok" && l === "ok" && epp === "ok" && docs === "ok");
 
+                if (!todosOk || !protocoloConfirmadoLeido || alertaGraveActiva || riesgoComponenteCritico) {
                     if (riesgoComponenteCritico) {
                         bloquearSistema(true, mensajeRiesgo);
                     } else if (alertaGraveActiva) {
                         bloquearSistema(true, "🚨 ALERTA GRAVE: Superados los km sin chequeo obligatorio. Bloque 1 suspendido hasta confirmar chequeo.");
-                    } else if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
+                    } else if (!todosOk) {
                         bloquearSistema(true, "⚠️ Verificación de seguridad requerida: Complete o confirme todos los puntos en 'Operativo (OK)'.");
                     } else {
                         bloquearSistema(false, "✔ Inspección aprobada con éxito.");
@@ -1013,9 +1015,10 @@ def home():
                     if(protocoloElem) protocoloElem.style.display = "none";
                     ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
                 } else {
+                    // Cuando todos los 6 puntos están en OK y se confirma, se oculta el checklist de puntos y se muestra el protocolo/aviso normativo
+                    bloquearSistema(false, "✔ Puntos de inspección confirmados y operativos.");
                     if(checklistElem) checklistElem.style.display = "none";
                     if(protocoloElem) protocoloElem.style.display = "block";
-                    bloquearSistema(false, "✔ Puntos de inspección confirmados y operativos.");
                 }
             }
 
