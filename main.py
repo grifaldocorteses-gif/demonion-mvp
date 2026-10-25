@@ -180,7 +180,7 @@ def home():
 
             button:hover { opacity: 0.9; }
 
-            .btn-voice { background: var(--accent-purple); width: auto; padding: 8px 12px; font-size: 12px; margin: 0; }
+            .btn-voice { background: var(--accent-purple); width: auto; padding: 6px 10px; font-size: 11px; margin: 0; }
             .btn-share { background: #059669; font-weight: bold; margin-top: 10px; }
             .btn-backup { background: #334155; font-weight: bold; margin-top: 5px; }
             .btn-mantenimiento { background: #d97706; font-weight: bold; margin-top: 8px; }
@@ -188,11 +188,13 @@ def home():
             .btn-main-carga { width: 68%; }
             .btn-leido { background: var(--accent-green); font-weight: bold; margin-top: 10px; }
 
-            /* Control explicito de visibilidad inicial corregido */
-            #auth { display: block !important; }
+            /* Estados de visibilidad controlados por JS de manera estricta */
+            #auth { display: block; }
             #app { display: none; }
 
             .flex-row { display: flex; gap: 6px; align-items: center; }
+            .input-voz-group { display: flex; gap: 4px; align-items: center; width: 100%; }
+            .input-voz-group input { flex: 1; margin: 0; }
             
             .telemetria-grid { 
                 display: grid; 
@@ -206,7 +208,6 @@ def home():
             }
             .telemetria-item { display: flex; flex-direction: column; gap: 2px; }
             .telemetria-item label { font-size: 11px; font-weight: bold; color: var(--text-muted); }
-            .input-voz-group { display: flex; gap: 4px; align-items: center; }
             
             .entorno-box { 
                 background: rgba(14, 165, 233, 0.05); 
@@ -221,6 +222,7 @@ def home():
                 gap: 6px; 
             }
             
+            /* Tarjetas Interactivas con Desplegable Estilo Cyber */
             .diagnostico-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
             .diag-card { 
                 background: #0b1120; 
@@ -271,22 +273,28 @@ def home():
             
             <h4>1. Control de Combustible y Autonomía</h4>
             <div class="flex-row">
-                <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
-                <button type="button" class="btn-voice" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
+                <div class="input-voz-group">
+                    <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
+                    <button type="button" class="btn-voice" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
+                </div>
             </div>
             
-            <div class="flex-row">
+            <div class="flex-row" style="margin-top: 4px;">
                 <button id="btn_cargar" class="btn-main-carga" onclick="cargarCombustible()">Registrar Carga y Acumular Tanque</button>
                 <button id="btn_reset" class="btn-reset-tanque" onclick="reiniciarTanqueYTelemetria()">🔄 Reiniciar</button>
             </div>
 
             <div class="flex-row" style="margin-top: 10px;">
-                <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)" oninput="simularRuta()">
-                <button type="button" class="btn-voice" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
+                <div class="input-voz-group">
+                    <input type="number" id="km_ruta" placeholder="Km a Recorrer (Nueva Ruta)" oninput="simularRuta()">
+                    <button type="button" class="btn-voice" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
+                </div>
             </div>
             <div class="flex-row">
-                <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
-                <button type="button" class="btn-voice" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
+                <div class="input-voz-group">
+                    <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
+                    <button type="button" class="btn-voice" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
+                </div>
             </div>
             <button id="btn_evaluar" style="background:#059669; margin-top:8px;" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             
