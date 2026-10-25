@@ -413,11 +413,10 @@ def home():
 
                 <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                     <p style="margin:0 0 4px 0; font-weight:bold; color:#60a5fa; font-size:12px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
-                    <p style="margin:0 0 4px 0;">Has confirmado los 6 puntos críticos de inspección. Cumple estrictamente la reglamentación:</p>
-                    <ul style="margin: 4px 0 8px 15px; padding: 0;">
-                        <li><b>Límites:</b> Máx <b>50 km/h</b> secundarias, <b>80 km/h</b> acceso controlado, <b>30 km/h</b> escuelas.</li>
-                        <li><b>EPP:</b> Casco certificado (DOT/ECE) y chaleco reflejante nocturno.</li>
-                    </ul>
+                    <p style="margin:0 0 4px 0;">Cumple estrictamente la reglamentación:</p>
+                    <p style="margin:0 0 4px 0; font-size:11px;">• <b>Límites:</b> Máx 50 km/h secundarias, 80 km/h acceso controlado, 30 km/h escuelas.</p>
+                    <p style="margin:0 0 4px 0; font-size:11px;">• <b>EPP:</b> Casco certificado (DOT/ECE) y chaleco reflejante nocturno.</p>
+                    <p style="margin:0 0 6px 0; font-size:11px; color:#fca5a5;">• <b>Prohibiciones:</b> Cero invasión de carriles confinados o banquetas, prohibido conducir cansado o bajo efectos de alcohol.</p>
                     <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                 </div>
             </div>
