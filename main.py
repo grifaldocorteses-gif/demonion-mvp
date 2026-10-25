@@ -659,9 +659,9 @@ def home():
 
                 divDiag.innerHTML = `
                     <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
-                    <p style="margin:2px 0;"><b>Consumo Ruta:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
+                    <p style="margin:2px 0;"><b>Último registro de ruta:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
                     <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim} (a 35 km/h prom.)</p>
-                    <p style="margin:2px 0;"><b>Costo Operativo:</b> $${costoPorKm} MXN / km</p>
+                    <p style="margin:2px 0;"><b>Último costo operativo:</b> $${costoPorKm} MXN / km</p>
                     <p style="margin:2px 0;"><b>Gasolina Restante en Tanque:</b> ${litrosRestantesSimulados} L</p>
                     <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km</p>
                 `;
@@ -1069,8 +1069,8 @@ def home():
                     panelOficial.style.display = "block";
                     panelOficial.innerHTML = `
                         <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado:</p>
-                        <p style="margin:2px 0;"><b>Consumo de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p style="margin:2px 0;"><b>Costo por km:</b> ${data.costo_por_km} MXN / km</p>
+                        <p style="margin:2px 0;"><b>Último registro de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
+                        <p style="margin:2px 0;"><b>Último costo operativo:</b> ${data.costo_por_km} MXN / km</p>
                         <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje} (a 35 km/h prom.)</p>
                         <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
                         <p style="margin:2px 0;"><b>Litros en Tanque:</b> ${data.litros_restantes} L</p>
