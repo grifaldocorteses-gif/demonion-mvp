@@ -654,8 +654,7 @@ def home():
                 let m_int = Math.round(minutosViaje % 60);
                 let tiempoEstimadoSim = h_int > 0 ? `${h_int}h ${m_int}m` : `${m_int} min`;
 
-                // Alertas de seguridad inteligentes
-                let alertaTiempo = minutosViaje > 60 ? " ⚠️ <b>[ALERTA: Trayecto continuo > 1h, se recomienda pausa preventiva]</b>" : "";
+                let alertaTiempo = minutosViaje > 60 ? " ⚠️ <b>[ALERTA: Trayecto continuo > 1h]</b>" : "";
                 let alertaTanque = litrosRestantesSimulados < 1.0 ? " 🚨 <b>[ALERTA: Tanque crítico < 1L]</b>" : "";
                 let alertaAutonomia = autonomiaRestanteKm < 30 ? " 🚨 <b>[ALERTA: Autonomía baja < 30km]</b>" : "";
 
@@ -1069,6 +1068,10 @@ def home():
                     document.getElementById("diagnostico-combustible").innerHTML = "";
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.style.display = "block";
+
+                    // Alerta de seguridad si el tiempo total acumulado excede los 120 minutos (2 horas)
+                    let alertaTiempoAcumulado = data.tiempo_total_acumulado_min > 120 ? " 🚨 <b>[ALERTA: Fatiga operativa: Tiempo total acumulado > 2h]</b>" : "";
+
                     panelOficial.innerHTML = `
                         <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado:</p>
                         <p style="margin:2px 0;"><b>Último registro de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
@@ -1080,7 +1083,7 @@ def home():
                         <p style="color: #60a5fa; font-weight: bold; margin:2px 0;">📊 Acumulados Globales:</p>
                         <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km</p>
                         <p style="margin:2px 0;"><b>Gasto Total:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
-                        <p style="margin:2px 0;"><b>⏱️ Tiempo Total Acumulado:</b> ${data.tiempo_total_acumulado_str}</p>
+                        <p style="margin:2px 0;"><b>⏱️ Tiempo Total Acumulado:</b> ${data.tiempo_total_acumulado_str}${alertaTiempoAcumulado}</p>
                     `;
                 } else {
                     alert(data.detail);
@@ -1408,7 +1411,8 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "litros_restantes": max(0.0, litros_restantes),
         "km_totales_acumulados": km_totales_acumulados,
         "gasto_total_acumulado": gasto_total_acumulado,
-        "tiempo_total_acumulado_str": tiempo_total_acumulado_str
+        "tiempo_total_acumulado_str": tiempo_total_acumulado_str,
+        "tiempo_total_acumulado_min": tiempo_total_acumulado_min
     }
 
 if __name__ == "__main__":
