@@ -213,7 +213,7 @@ def home():
             .btn-reset-tanque { background: #dc2626; font-weight: 600; font-size: 12px; padding: 10px; width: 30%; }
             .btn-main-carga { width: 68%; }
             .btn-leido { background: var(--accent-green); font-weight: 600; margin-top: 10px; }
-            .btn-ocultar-carpeta { background: #334155; width: auto; padding: 4px 8px; font-size: 10px; margin: 0; }
+            .btn-accion-carpeta { background: #334155; width: auto; padding: 4px 8px; font-size: 10px; margin: 0; }
 
             #auth { display: block; }
             #app { display: none; }
@@ -332,12 +332,12 @@ def home():
             
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
             
-            <!-- Menú desplegable de viajes registrados en la jornada con botón de ocultar / retraer completo -->
+            <!-- Menú desplegable de viajes registrados con controles de ocultar/mostrar la consulta seleccionada -->
             <div id="contenedor-acordeon-viajes" class="check-accordion-card" style="display:none; margin-top: 8px;">
                 <div class="check-accordion-header">
                     <span style="font-size:12px; font-weight:600; color:var(--accent-cyan); cursor:pointer; flex:1;" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">📁 Viajes Registrados en la Jornada</span>
                     <div style="display:flex; gap:6px; align-items:center;">
-                        <button type="button" class="btn-ocultar-carpeta" onclick="ocultarCarpetaViajes()">Ocultar</button>
+                        <button type="button" class="btn-accion-carpeta" onclick="alternarVisibilidadConsulta()">Ocultar Consulta</button>
                         <span id="arrow-viajes" style="font-size:10px; font-weight:600; cursor:pointer;" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">▼</span>
                     </div>
                 </div>
@@ -558,6 +558,7 @@ def home():
             };
             let bitacoraLocal = [];
             let viajesJornadaList = [];
+            let consultaViajeOculta = false;
 
             function iniciarTelemetriaNativa() {
                 if (navigator.getBattery) {
@@ -760,10 +761,19 @@ def home():
                 }
             }
 
-            function ocultarCarpetaViajes() {
-                let contenedor = document.getElementById("contenedor-acordeon-viajes");
-                if (contenedor) {
-                    contenedor.style.display = "none";
+            function alternarVisibilidadConsulta() {
+                consultaViajeOculta = !consultaViajeOculta;
+                let panelOficial = document.getElementById("diagnostico-oficial");
+                let btnOcultar = event.target;
+
+                if (consultaViajeOculta) {
+                    panelOficial.style.display = "none";
+                    btnOcultar.innerText = "Mostrar Consulta";
+                } else {
+                    if (panelOficial.innerHTML.trim() !== "") {
+                        panelOficial.style.display = "block";
+                    }
+                    btnOcultar.innerText = "Ocultar Consulta";
                 }
             }
 
@@ -800,7 +810,6 @@ def home():
                 if (!viaje) return;
 
                 let panelOficial = document.getElementById("diagnostico-oficial");
-                panelOficial.style.display = "block";
                 panelOficial.innerHTML = `
                     <p style="color: var(--accent-cyan); font-weight: 600; margin: 0 0 5px 0;">🔍 [Consulta de Viaje Seleccionado: ${viaje.nombre_ruta}]:</p>
                     <p style="margin:2px 0;"><b>${viaje.ubicacion_registro || 'N/D'}</b></p>
@@ -810,6 +819,10 @@ def home():
                     <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${viaje.tiempo_viaje}</p>
                     <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${viaje.alerta_operativa || 'N/D'}</p>
                 `;
+
+                if (!consultaViajeOculta) {
+                    panelOficial.style.display = "block";
+                }
             }
 
             function limpiarVariablesLocales() {
@@ -821,6 +834,7 @@ def home():
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 bitacoraLocal = [];
                 viajesJornadaList = [];
+                consultaViajeOculta = false;
                 ultimoDiagnostico = "";
                 document.getElementById("contenedor-acordeon-viajes").style.display = "none";
                 let panelOficial = document.getElementById("diagnostico-oficial");
@@ -929,7 +943,7 @@ def home():
                 let rendimientoEstandar = 30.0;
                 let litrosConsumidos = round(kmRutaVal / rendimientoEstandar, 2);
                 let costoViaje = round(litrosConsumidos * precioGasVal, 2);
-                let costoPorKm = round(costoViaje / kmRutaVal, 2);
+                let costoByKm = round(costoViaje / kmRutaVal, 2);
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
                 
@@ -1380,7 +1394,10 @@ def home():
 
                     document.getElementById("diagnostico-combustible").innerHTML = "";
                     let panelOficial = document.getElementById("diagnostico-oficial");
-                    panelOficial.style.display = "block";
+                    
+                    if (!consultaViajeOculta) {
+                        panelOficial.style.display = "block";
+                    }
 
                     panelOficial.innerHTML = `
                         <p style="color: var(--accent-green); font-weight: 600; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}] <span style="font-size:10px; color:var(--text-muted); font-weight:normal;">(Últimos registros del sistema de ruta)</span>:</p>
