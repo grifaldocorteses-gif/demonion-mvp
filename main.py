@@ -78,6 +78,7 @@ def init_db():
             usuario TEXT,
             componente TEXT,
             km_acumulados REAL DEFAULT 0.0,
+            km_desde_ultimo_aviso REAL DEFAULT 0.0,
             PRIMARY KEY (usuario, componente)
         )
     """)
@@ -124,6 +125,9 @@ class EvaluarRuta(BaseModel):
     alerta_operativa: str = "N/D"
 
 class RegistrarMantenimiento(BaseModel):
+    componente: str
+
+class ConfirmarChequeoComponente(BaseModel):
     componente: str
 
 def verificar_token(authorization: str = Header(None)):
@@ -211,7 +215,8 @@ def home():
             .btn-voice { background: var(--accent-purple); width: auto; padding: 6px 10px; font-size: 11px; margin: 0; }
             .btn-share { background: #059669; font-weight: 600; margin-top: 10px; }
             .btn-backup { background: #334155; font-weight: 600; margin-top: 5px; }
-            .btn-mantenimiento { background: #d97706; font-weight: 600; font-size: 11px; padding: 6px; margin-top: 6px; width: 100%; }
+            .btn-mantenimiento { background: #d97706; font-weight: 600; font-size: 11px; padding: 6px; margin-top: 6px; width: 48%; }
+            .btn-chequeo { background: #0284c7; font-weight: 600; font-size: 11px; padding: 6px; margin-top: 6px; width: 48%; }
             .btn-reset-tanque { background: #dc2626; font-weight: 600; font-size: 12px; padding: 10px; width: 30%; }
             .btn-main-carga { width: 68%; }
             .btn-leido { background: var(--accent-green); font-weight: 600; margin-top: 10px; }
@@ -460,53 +465,80 @@ def home():
                         <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                     </div>
 
-                    <!-- CUADRÍCULA SIMULTÁNEA DE COMPONENTES CON SUGERENCIAS Y COSTOS -->
+                    <!-- CUADRÍCULA SIMULTÁNEA DE COMPONENTES CON MENÚ DESPLEGABLE, ALERTAS Y BOTÓN DE CHEQUEO -->
                     <div class="componentes-grid">
                         <p style="margin: 4px 0 2px 0; font-weight: 600; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL Y ESTADO SIMULTÁNEO DE COMPONENTES:</p>
                         
                         <!-- 1. Cambio de Aceite -->
                         <div class="comp-card">
-                            <div style="font-size: 12px; display: flex; justify-content: space-between; font-weight: 600;">
-                                <span style="color:#38bdf8;">Cambio de Aceite (Ciclo: 2,500 km)</span>
-                                <span id="vida-aceite-txt" style="color:var(--accent-green);">100%</span>
+                            <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-aceite', 'arrow-comp-aceite')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
+                                <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">🛢️ Cambio de Aceite (Ciclo: 2,500 km)</span>
+                                <span id="arrow-comp-aceite" style="font-size:10px; font-weight:600;">▼</span>
                             </div>
-                            <div class="progress-container">
-                                <div id="barra-aceite" class="progress-bar" style="width: 100%;"></div>
+                            <div id="body-comp-aceite" class="check-accordion-body" style="padding: 6px 0;">
+                                <div style="font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px;">
+                                    <span>Progreso de Vida:</span>
+                                    <span id="vida-aceite-txt" style="color:var(--accent-green);">100%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div id="barra-aceite" class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                                <div id="alerta-aceite-msg" style="font-size: 10px; color: var(--accent-green); margin-top: 3px; font-weight: 600;">
+                                    💡 <b>Sugerencia:</b> Revisar nivel semanalmente.
+                                </div>
                             </div>
-                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
-                                💡 <b>Sugerencia:</b> Revisar nivel semanalmente y cambiar aceite mineral/sintético a tiempo. | <b>Costo est:</b> $300 - $650 MXN
+                            <div style="display: flex; gap: 4px;">
+                                <button class="btn-chequeo" onclick="confirmarChequeoComponente('Cambio de Aceite')">✔ Confirmar Chequeo</button>
+                                <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Cambio de Aceite')">🔧 Registrar Mant.</button>
                             </div>
-                            <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Cambio de Aceite')">🔧 Registrar Mantenimiento (Reiniciar Aceite)</button>
                         </div>
 
                         <!-- 2. Kit de Arrastre / Piñones -->
                         <div class="comp-card">
-                            <div style="font-size: 12px; display: flex; justify-content: space-between; font-weight: 600;">
-                                <span style="color:#38bdf8;">Kit de Arrastre / Piñones (Ciclo: 15,000 km)</span>
-                                <span id="vida-arrastre-txt" style="color:var(--accent-green);">100%</span>
+                            <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-arrastre', 'arrow-comp-arrastre')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
+                                <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">⛓️ Kit de Arrastre / Piñones (Ciclo: 15,000 km)</span>
+                                <span id="arrow-comp-arrastre" style="font-size:10px; font-weight:600;">▼</span>
                             </div>
-                            <div class="progress-container">
-                                <div id="barra-arrastre" class="progress-bar" style="width: 100%;"></div>
+                            <div id="body-comp-arrastre" class="check-accordion-body" style="padding: 6px 0;">
+                                <div style="font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px;">
+                                    <span>Progreso de Vida:</span>
+                                    <span id="vida-arrastre-txt" style="color:var(--accent-green);">100%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div id="barra-arrastre" class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                                <div id="alerta-arrastre-msg" style="font-size: 10px; color: var(--accent-green); margin-top: 3px; font-weight: 600;">
+                                    💡 <b>Sugerencia:</b> Lubricar cadena cada 500 km.
+                                </div>
                             </div>
-                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
-                                💡 <b>Sugerencia:</b> Se recomienda lubricar y ajustar tensión de la cadena cada 500 km. | <b>Costo est:</b> $1,200 - $2,500 MXN
+                            <div style="display: flex; gap: 4px;">
+                                <button class="btn-chequeo" onclick="confirmarChequeoComponente('Kit de Arrastre / Piñones')">✔ Confirmar Chequeo</button>
+                                <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Kit de Arrastre / Piñones')">🔧 Registrar Mant.</button>
                             </div>
-                            <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Kit de Arrastre / Piñones')">🔧 Registrar Mantenimiento (Reiniciar Arrastre)</button>
                         </div>
 
                         <!-- 3. Pastillas de Freno -->
                         <div class="comp-card">
-                            <div style="font-size: 12px; display: flex; justify-content: space-between; font-weight: 600;">
-                                <span style="color:#38bdf8;">Pastillas de Freno (Ciclo: 5,000 km)</span>
-                                <span id="vida-frenos-txt" style="color:var(--accent-green);">100%</span>
+                            <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-frenos', 'arrow-comp-frenos')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
+                                <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">🛑 Pastillas de Freno (Ciclo: 5,000 km)</span>
+                                <span id="arrow-comp-frenos" style="font-size:10px; font-weight:600;">▼</span>
                             </div>
-                            <div class="progress-container">
-                                <div id="barra-frenos" class="progress-bar" style="width: 100%;"></div>
+                            <div id="body-comp-frenos" class="check-accordion-body" style="padding: 6px 0;">
+                                <div style="font-size: 11px; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 2px;">
+                                    <span>Progreso de Vida:</span>
+                                    <span id="vida-frenos-txt" style="color:var(--accent-green);">100%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <div id="barra-frenos" class="progress-bar" style="width: 100%;"></div>
+                                </div>
+                                <div id="alerta-frenos-msg" style="font-size: 10px; color: var(--accent-green); margin-top: 3px; font-weight: 600;">
+                                    💡 <b>Sugerencia:</b> Inspeccionar espesor de balatas periódicamente.
+                                </div>
                             </div>
-                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
-                                💡 <b>Sugerencia:</b> Inspeccionar espesor de balatas y nivel de líquido DOT 4 periódicamente. | <b>Costo est:</b> $350 - $900 MXN
+                            <div style="display: flex; gap: 4px;">
+                                <button class="btn-chequeo" onclick="confirmarChequeoComponente('Pastillas de Freno')">✔ Confirmar Chequeo</button>
+                                <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Pastillas de Freno')">🔧 Registrar Mant.</button>
                             </div>
-                            <button class="btn-mantenimiento" onclick="registrarMantenimientoDirecto('Pastillas de Freno')">🔧 Registrar Mantenimiento (Reiniciar Frenos)</button>
                         </div>
 
                     </div>
@@ -589,6 +621,11 @@ def home():
             let tiempoTotalAcumuladoGlobalMin = 0.0;
             let protocoloConfirmadoLeido = false;
             let kmComponentes = {
+                "Cambio de Aceite": 0,
+                "Kit de Arrastre / Piñones": 0,
+                "Pastillas de Freno": 0
+            };
+            let kmDesdeUltimoChequeo = {
                 "Cambio de Aceite": 0,
                 "Kit de Arrastre / Piñones": 0,
                 "Pastillas de Freno": 0
@@ -872,6 +909,7 @@ def home():
                 tiempoTotalAcumuladoGlobalMin = 0.0;
                 protocoloConfirmadoLeido = false;
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
+                kmDesdeUltimoChequeo = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 bitacoraLocal = [];
                 viajesJornadaList = [];
                 consultaViajeOculta = false;
@@ -915,7 +953,22 @@ def home():
                 let checklistElem = document.getElementById("checklist-contenedor");
                 let protocoloElem = document.getElementById("protocolo-normativo");
 
-                if (!protocoloConfirmadoLeido) {
+                // Verificar si hay alertas graves de chequeo (>1000 km sin lubricar cadena u otros componentes)
+                let alertaGraveActiva = false;
+                for (let comp in kmDesdeUltimoChequeo) {
+                    let umbralGrave = (comp === "Kit de Arrastre / Piñones") ? 1000 : 2000;
+                    if (kmDesdeUltimoChequeo[comp] >= umbralGrave) {
+                        alertaGraveActiva = true;
+                        // Forzar el selector del componente a revisión en el menú de 6 puntos si aplica
+                        if (comp === "Kit de Arrastre / Piñones") {
+                            document.getElementById("anulador_cadena").value = "revision";
+                        } else if (comp === "Cambio de Aceite") {
+                            document.getElementById("anulador_frenos").value = "revision"; // o mapeado
+                        }
+                    }
+                }
+
+                if (!protocoloConfirmadoLeido || alertaGraveActiva) {
                     let f = document.getElementById("anulador_frenos").value;
                     let c = document.getElementById("anulador_cadena").value;
                     let ll = document.getElementById("anulador_llantas").value;
@@ -923,17 +976,17 @@ def home():
                     let epp = document.getElementById("anulador_epp").value;
                     let docs = document.getElementById("anulador_docs").value;
 
-                    if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
+                    if (alertaGraveActiva) {
+                        bloquearSistema(true, "🚨 ALERTA GRAVE: Superados los km sin chequeo/lubricación obligatorios. Bloque 1 suspendido hasta confirmar chequeo.");
+                    } else if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
                         bloquearSistema(true, "⚠️ Verificación de seguridad requerida: Complete o confirme todos los puntos en 'Operativo (OK)'.");
-                        if(checklistElem) checklistElem.style.display = "block";
-                        if(protocoloElem) protocoloElem.style.display = "none";
-                        ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
                     } else {
                         bloquearSistema(false, "✔ Inspección aprobada con éxito.");
-                        if(checklistElem) checklistElem.style.display = "none";
-                        if(protocoloElem) protocoloElem.style.display = "block";
-                        ultimoDiagnostico = "Estado Operativo: Protocolo Vial Activo y Habilitado";
                     }
+
+                    if(checklistElem) checklistElem.style.display = "block";
+                    if(protocoloElem) protocoloElem.style.display = "none";
+                    ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
                 } else {
                     if(checklistElem) checklistElem.style.display = "block";
                     if(protocoloElem) protocoloElem.style.display = "none";
@@ -1028,32 +1081,58 @@ def home():
             }
 
             function sincronizarVistaComponente() {
-                // Actualiza simultáneamente los 3 componentes en la cuadrícula
-                actualizarBarraComponente("Cambio de Aceite", 2500, "barra-aceite", "vida-aceite-txt");
-                actualizarBarraComponente("Kit de Arrastre / Piñones", 15000, "barra-arrastre", "vida-arrastre-txt");
-                actualizarBarraComponente("Pastillas de Freno", 5000, "barra-frenos", "vida-frenos-txt");
+                actualizarBarraComponente("Cambio de Aceite", 2500, "barra-aceite", "vida-aceite-txt", "alerta-aceite-msg", 500);
+                actualizarBarraComponente("Kit de Arrastre / Piñones", 15000, "barra-arrastre", "vida-arrastre-txt", "alerta-arrastre-msg", 500);
+                actualizarBarraComponente("Pastillas de Freno", 5000, "barra-frenos", "vida-frenos-txt", "alerta-frenos-msg", 1000);
             }
 
-            function actualizarBarraComponente(nombreComp, cicloMax, idBarra, idTxt) {
+            function actualizarBarraComponente(nombreComp, cicloMax, idBarra, idTxt, idMsg, umbralChequeo) {
                 let kmAcumulados = kmComponentes[nombreComp] || 0;
+                let kmChequeo = kmDesdeUltimoChequeo[nombreComp] || 0;
                 let vidaRestante = Math.max(0, Math.min(100, 100 - (kmAcumulados / cicloMax) * 100));
                 
                 let barra = document.getElementById(idBarra);
                 let txtVida = document.getElementById(idTxt);
+                let msgElem = document.getElementById(idMsg);
 
                 if(barra) barra.style.width = vidaRestante + "%";
                 if(txtVida) txtVida.innerText = Math.round(vidaRestante) + "% (" + kmAcumulados + "/" + cicloMax + " km)";
 
+                // Lógica de Alertas Dinámicas por km desde el último chequeo (ej. lubricar cadena cada 500 km)
+                let umbralGrave = (nombreComp === "Kit de Arrastre / Piñones") ? 1000 : 2000;
+
+                if (kmChequeo >= umbralGrave) {
+                    if(msgElem) {
+                        msgElem.style.color = "var(--accent-red)";
+                        msgElem.innerHTML = `🚨 <b>Alerta Grave (${kmChequeo} km sin chequeo):</b> ¡Requiere inspección obligatoria en el Bloque 2! Bloque 1 suspendido.`;
+                    }
+                } else if (kmChequeo >= umbralChequeo) {
+                    if(msgElem) {
+                        msgElem.style.color = "var(--accent-amber)";
+                        msgElem.innerHTML = `⚠️ <b>Aviso:</b> Han pasado ${kmChequeo} km desde el último chequeo. Se recomienda inspeccionar / lubricar.`;
+                    }
+                } else {
+                    if(msgElem) {
+                        msgElem.style.color = "var(--accent-green)";
+                        let sugerenciaTexto = (nombreComp === "Kit de Arrastre / Piñones") ? "Lubricar cadena cada 500 km." : "Revisar nivel periódicamente.";
+                        msgElem.innerHTML = `💡 <b>Sugerencia:</b> ${sugerenciaTexto} (${kmChequeo} km desde último chequeo)`;
+                    }
+                }
+
                 if (vidaRestante > 40) {
                     if(barra) barra.style.background = "var(--accent-green)";
-                    if(txtVida) txtVida.style.color = "var(--accent-green)";
                 } else if (vidaRestante > 15) {
                     if(barra) barra.style.background = "var(--accent-amber)";
-                    if(txtVida) txtVida.style.color = "var(--accent-amber)";
                 } else {
                     if(barra) barra.style.background = "var(--accent-red)";
-                    if(txtVida) txtVida.style.color = "var(--accent-red)";
                 }
+            }
+
+            async function confirmarChequeoComponente(tipoServicio) {
+                kmDesdeUltimoChequeo[tipoServicio] = 0;
+                sincronizarVistaComponente();
+                verificarJornadaYDiagnostico();
+                alert(`✔ Chequeo confirmado para '${tipoServicio}'. Contador de mantenimiento preventivo reiniciado.`);
             }
 
             async function registrarMantenimientoDirecto(tipoServicio) {
@@ -1068,7 +1147,9 @@ def home():
                 let data = await res.json();
                 if(res.ok) {
                     kmComponentes[tipoServicio] = 0;
+                    kmDesdeUltimoChequeo[tipoServicio] = 0;
                     sincronizarVistaComponente();
+                    verificarJornadaYDiagnostico();
                     
                     let kmActualVal = document.getElementById("km").value || "0";
                     bitacoraLocal.unshift(`✔ [Odómetro: ${kmActualVal} km] Auditoría: ${tipoServicio} auditado y reiniciado al 100%.`);
@@ -1385,7 +1466,7 @@ def home():
 
             async function evaluarRuta() {
                 if (sistemaBloqueado) {
-                    alert("⚠️ Acción bloqueada: Debe confirmar el checklist de seguridad obligatorio.");
+                    alert("⚠️ Acción bloqueada: Debe confirmar el checklist de seguridad obligatorio o realizar los chequeos pendientes.");
                     return;
                 }
                 let nombre_ruta = document.getElementById("nombre_ruta").value.trim() || "Ruta General";
@@ -1422,6 +1503,7 @@ def home():
 
                     for (let comp in kmComponentes) {
                         kmComponentes[comp] += km_recorridos;
+                        kmDesdeUltimoChequeo[comp] += km_recorridos;
                     }
                     sincronizarVistaComponente();
 
@@ -1522,6 +1604,7 @@ def home():
                     dataMaint.forEach(item => {
                         if(kmComponentes.hasOwnProperty(item.componente)) {
                             kmComponentes[item.componente] = item.km_acumulados;
+                            kmDesdeUltimoChequeo[item.componente] = item.km_desde_ultimo_aviso !== undefined ? item.km_desde_ultimo_aviso : item.km_acumulados;
                         }
                     });
                 }
@@ -1685,7 +1768,7 @@ def obtener_estado_mantenimiento(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT componente, km_acumulados FROM mantenimiento_componentes WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT componente, km_acumulados, km_desde_ultimo_aviso FROM mantenimiento_componentes WHERE usuario = ?", (usuario,))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -1712,8 +1795,8 @@ def reiniciar_mantenimiento(m: RegistrarMantenimiento, authorization: str = Head
     km_actual = v_row[0] if v_row else 0.0
 
     cursor.execute("""
-        INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados) VALUES (?, ?, 0.0)
-        ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = 0.0
+        INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados, km_desde_ultimo_aviso) VALUES (?, ?, 0.0, 0.0)
+        ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = 0.0, km_desde_ultimo_aviso = 0.0
     """, (usuario, m.componente))
 
     cursor.execute("UPDATE vehiculos SET ultimo_servicio = ? WHERE usuario = ?", (km_actual, usuario))
@@ -1759,10 +1842,12 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     
     for comp in ["Cambio de Aceite", "Kit de Arrastre / Piñones", "Pastillas de Freno"]:
         cursor.execute("""
-            INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados) 
-            VALUES (?, ?, ?)
-            ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = km_acumulados + ?
-        """, (usuario, comp, e.km_recorridos, e.km_recorridos))
+            INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados, km_desde_ultimo_aviso) 
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(usuario, componente) DO UPDATE SET 
+                km_acumulados = km_acumulados + ?,
+                km_desde_ultimo_aviso = km_desde_ultimo_aviso + ?
+        """, (usuario, comp, e.km_recorridos, e.km_recorridos, e.km_recorridos, e.km_recorridos))
 
     cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
