@@ -330,10 +330,9 @@ def home():
             <button id="btn_evaluar" style="background:#059669; margin-top:8px;" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
-            <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
-
-            <!-- Nuevo Menú Desplegable de Viajes Registrados en la Jornada (Bloque 1) -->
-            <div id="contenedor-acordeon-viajes" class="check-accordion-card" style="display:none; margin-top: 10px;">
+            
+            <!-- Posición intercambiada: El menú desplegable de viajes se ubica aquí, donde antes aparecía el rendimiento registrado -->
+            <div id="contenedor-acordeon-viajes" class="check-accordion-card" style="display:none; margin-top: 8px;">
                 <div class="check-accordion-header" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">
                     <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📁 Viajes Registrados en la Jornada (<span id="contador-viajes">0</span>)</span>
                     <span id="arrow-viajes" style="font-size:10px; font-weight:600;">▼</span>
@@ -342,6 +341,9 @@ def home():
                     <div id="lista-viajes-acordeon" style="display: flex; flex-direction: column; gap: 6px;"></div>
                 </div>
             </div>
+
+            <!-- Posición intercambiada: El panel oficial de rendimiento registrado se ubica aquí abajo -->
+            <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
 
             <hr>
             <h4>2. Mantenimiento Preventivo y Checklist de Inspección</h4>
@@ -813,6 +815,9 @@ def home():
                 viajesJornadaList = [];
                 ultimoDiagnostico = "";
                 document.getElementById("contenedor-acordeon-viajes").style.display = "none";
+                let panelOficial = document.getElementById("diagnostico-oficial");
+                panelOficial.innerHTML = "";
+                panelOficial.style.display = "none";
             }
 
             function bloquearSistema(bloquear, mensaje) {
@@ -1302,9 +1307,6 @@ def home():
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p style="color: var(--accent-green); font-weight: 600;">✔ Acción realizada con éxito.</p>
                     `;
-                    let panelOficial = document.getElementById("diagnostico-oficial");
-                    panelOficial.innerHTML = "";
-                    panelOficial.style.display = "none";
                     verificarJornadaYDiagnostico();
                 } else {
                     alert("Error al reiniciar.");
