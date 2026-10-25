@@ -41,7 +41,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS estadisticas_rutas (
             usuario TEXT PRIMARY KEY,
             km_totales_acumulados REAL DEFAULT 0.0,
-            gasto_total_acumulado REAL DEFAULT 0.0
+            gasto_total_acumulado REAL DEFAULT 0.0,
+            tiempo_total_acumulado_min REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -346,6 +347,7 @@ def home():
             let litrosActualesTanque = 0.0;
             let kmTotalesAcumuladosGlobal = 0.0;
             let gastoTotalAcumuladoGlobal = 0.0;
+            let tiempoTotalAcumuladoGlobalMin = 0.0;
             let protocoloConfirmadoLeido = false;
             let kmComponentes = {
                 "Cambio de Aceite": 0,
@@ -434,6 +436,7 @@ def home():
                 litrosActualesTanque = 0.0;
                 kmTotalesAcumuladosGlobal = 0.0;
                 gastoTotalAcumuladoGlobal = 0.0;
+                tiempoTotalAcumuladoGlobalMin = 0.0;
                 protocoloConfirmadoLeido = false;
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 bitacoraLocal = [];
@@ -499,6 +502,14 @@ def home():
                 verificarJornadaYDiagnostico();
             }
 
+            function calcularTiempoFormateado(km) {
+                let vel_promedio = 35.0; // km/h
+                let horasTotales = km / vel_promedio;
+                let h_int = Math.floor(horasTotales);
+                let m_int = Math.round((horasTotales - h_int) * 60);
+                return h_int > 0 ? `${h_int}h ${m_int}m` : `${m_int} min`;
+            }
+
             function simularCarga() {
                 let litrosEntrada = parseFloat(document.getElementById("litros_carga").value);
                 let divDiag = document.getElementById("diagnostico-combustible");
@@ -543,10 +554,12 @@ def home():
                 let costoPorKm = round(costoViaje / kmRutaVal, 2);
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
+                let tiempoEstimadoSim = calcularTiempoFormateado(kmRutaVal);
 
                 divDiag.innerHTML = `
                     <p style="font-size:12px; color:#64748b; margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
                     <p><b>Consumo Ruta (Sim):</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
+                    <p><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim} (a 35 km/h prom.)</p>
                     <p><b>Costo Operativo:</b> $${costoPorKm} MXN / km</p>
                     <p><b>Autonomía Proyectada:</b> ${autonomiaRestanteKm} km restantes</p>
                     <p><b>Litros Restantes Estimados:</b> ${litrosRestantesSimulados} L</p>
@@ -906,6 +919,7 @@ def home():
                     litrosActualesTanque = 0.0;
                     kmTotalesAcumuladosGlobal = 0.0;
                     gastoTotalAcumuladoGlobal = 0.0;
+                    tiempoTotalAcumuladoGlobalMin = 0.0;
                     protocoloConfirmadoLeido = false;
                     document.getElementById("litros_carga").value = "";
                     document.getElementById("km_ruta").value = "";
@@ -941,6 +955,7 @@ def home():
                     litrosActualesTanque = data.litros_restantes;
                     kmTotalesAcumuladosGlobal = data.km_totales_acumulados;
                     gastoTotalAcumuladoGlobal = data.gasto_total_acumulado;
+                    tiempoTotalAcumuladoGlobalMin = data.tiempo_total_acumulado_min;
 
                     for (let comp in kmComponentes) {
                         kmComponentes[comp] += km_recorridos;
@@ -955,13 +970,14 @@ def home():
                         <p style="color: #047857; font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado:</p>
                         <p><b>Consumo de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p><b>Costo por km:</b> ${data.costo_por_km} MXN / km</p>
-                        <p><b>⏱️ Tiempo Estimado:</b> ~${data.tiempo_estimado} (a 35 km/h prom.)</p>
+                        <p><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje} (a 35 km/h prom.)</p>
                         <p><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
                         <p><b>Litros en Tanque:</b> ${data.litros_restantes} L</p>
                         <hr style="border: 0; border-top: 1px dashed #bbf7d0; margin: 6px 0;">
                         <p style="color: #1e3a8a; font-weight: bold;">📊 Acumulados Globales:</p>
                         <p><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km</p>
                         <p><b>Gasto Total:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
+                        <p><b>⏱️ Tiempo Total Acumulado:</b> ${data.tiempo_total_acumulado_str}</p>
                     `;
                 } else {
                     alert(data.detail);
@@ -997,6 +1013,7 @@ def home():
                     let dataEst = await resEstadisticas.json();
                     kmTotalesAcumuladosGlobal = dataEst.km_totales_acumulados || 0.0;
                     gastoTotalAcumuladoGlobal = dataEst.gasto_total_acumulado || 0.0;
+                    tiempoTotalAcumuladoGlobalMin = dataEst.tiempo_total_acumulado_min || 0.0;
                 }
 
                 let resMantenimiento = await fetch(API + "/mantenimiento/estado", {
@@ -1078,12 +1095,12 @@ def obtener_estadisticas_rutas(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     conn.close()
     if row:
         return dict(row)
-    return {"km_totales_acumulados": 0.0, "gasto_total_acumulado": 0.0}
+    return {"km_totales_acumulados": 0.0, "gasto_total_acumulado": 0.0, "tiempo_total_acumulado_min": 0.0}
 
 @app.post("/combustible/reiniciar-telemetria")
 def reiniciar_tanque_y_telemetria(authorization: str = Header(None)):
@@ -1091,7 +1108,7 @@ def reiniciar_tanque_y_telemetria(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("UPDATE tanque_usuario SET litros_tanque = 0.0 WHERE usuario = ?", (usuario,))
-    cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0 WHERE usuario = ?", (usuario,))
+    cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0, tiempo_total_acumulado_min = 0.0 WHERE usuario = ?", (usuario,))
     conn.commit()
     conn.close()
     return {"mensaje": "Tanque y contadores de telemetría reiniciados con éxito."}
@@ -1243,25 +1260,33 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     costo_por_km = round(costo_viaje / e.km_recorridos, 2)
     autonomia_restante_km = round(max(0.0, litros_restantes) * rendimiento_estandar, 1)
 
-    # Cálculo del tiempo estimado (velocidad promedio estimada 35 km/h)
+    # Cálculo del tiempo de viaje actual (velocidad promedio 35 km/h)
     vel_promedio = 35.0
-    horas_totales = e.km_recorridos / vel_promedio
-    h_int = int(horas_totales)
-    m_int = round((horas_totales - h_int) * 60)
-    tiempo_estimado_str = f"{h_int}h {m_int}m" if h_int > 0 else f"{m_int} min"
+    minutos_viaje = round((e.km_recorridos / vel_promedio) * 60)
+    
+    h_viaje = math_h = int(minutos_viaje // 60)
+    m_viaje = int(minutos_viaje % 60)
+    tiempo_viaje_str = f"{h_viaje}h {m_viaje}m" if h_viaje > 0 else f"{m_viaje} min"
 
     cursor.execute("""
-        INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado) 
-        VALUES (?, ?, ?)
+        INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min) 
+        VALUES (?, ?, ?, ?)
         ON CONFLICT(usuario) DO UPDATE SET 
             km_totales_acumulados = km_totales_acumulados + ?,
-            gasto_total_acumulado = gasto_total_acumulado + ?
-    """, (usuario, e.km_recorridos, costo_viaje, e.km_recorridos, costo_viaje))
+            gasto_total_acumulado = gasto_total_acumulado + ?,
+            tiempo_total_acumulado_min = tiempo_total_acumulado_min + ?
+    """, (usuario, e.km_recorridos, costo_viaje, minutos_viaje, e.km_recorridos, costo_viaje, minutos_viaje))
 
-    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
     km_totales_acumulados = est_row[0]
     gasto_total_acumulado = est_row[1]
+    tiempo_total_acumulado_min = est_row[2]
+
+    # Formatear tiempo acumulado total
+    tot_h = int(tiempo_total_acumulado_min // 60)
+    tot_m = int(tiempo_total_acumulado_min % 60)
+    tiempo_total_acumulado_str = f"{tot_h}h {tot_m}m" if tot_h > 0 else f"{tot_m} min"
 
     cursor.execute("""
         INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
@@ -1277,11 +1302,12 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "litros_consumidos": litros_consumidos,
         "costo_viaje": costo_viaje,
         "costo_por_km": costo_por_km,
-        "tiempo_estimado": tiempo_estimado_str,
+        "tiempo_viaje": tiempo_viaje_str,
         "autonomia_restante_km": autonomia_restante_km,
         "litros_restantes": max(0.0, litros_restantes),
         "km_totales_acumulados": km_totales_acumulados,
-        "gasto_total_acumulado": gasto_total_acumulado
+        "gasto_total_acumulado": gasto_total_acumulado,
+        "tiempo_total_acumulado_str": tiempo_total_acumulado_str
     }
 
 if __name__ == "__main__":
