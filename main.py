@@ -918,7 +918,7 @@ def home():
                     let docs = document.getElementById("anulador_docs").value;
 
                     if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
-                        bloquearSistema(true, "⚠️ Verificación de seguridad requerida: Complete o confirme todos los puntos críticos en 'Operativo (OK)'.");
+                        bloquearSistema(true, "⚠️ Verificación de seguridad requerida: Complete o confirme todos los puntos en 'Operativo (OK)'.");
                         if(checklistElem) checklistElem.style.display = "block";
                         if(protocoloElem) protocoloElem.style.display = "none";
                         ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
