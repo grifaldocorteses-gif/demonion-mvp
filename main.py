@@ -369,10 +369,10 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 2: Sello de Seguridad Obligatorio (Desplegable con Alerta en el Título) -->
+            <!-- BLOQUE 2: Sello de Seguridad Obligatorio (Desplegable con Título Dinámico) -->
             <div id="contenedor-inspeccion" class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-2', 'arrow-bloque-2')">
-                    <span style="font-size:14px; font-weight:600; color:var(--accent-amber);">⚠️ 2. Mantenimiento Preventivo y Checklist (⚠️ Registrar puntos críticos obligatorios antes de usar Bloque 1)</span>
+                    <span id="titulo-bloque-2" style="font-size:14px; font-weight:600; color:var(--accent-amber);">⚠️ 2. Mantenimiento Preventivo y Checklist (⚠️ Registrar puntos críticos obligatorios antes de usar Bloque 1)</span>
                     <span id="arrow-bloque-2" style="font-size:12px; font-weight:600; color:var(--accent-amber);">▼</span>
                 </div>
                 <div id="body-bloque-2" class="bloque-principal-body">
@@ -741,13 +741,13 @@ def home():
                 }
 
                 if (kmRutaVal > 30) {
-                    alertas.push("🛣️ [Ruta Larga detectada: Mayor desgaste general]");
+                    alertas.push("🛣️ [Ruta Larga detectada: Mayor desgaste general / Recomendación: Pausa de 15 min]");
                 } else {
                     alertas.push("📍 [Trayecto corto / Estándar]");
                 }
 
                 if (minutosViaje > 120 || tiempoTotalAcumuladoGlobalMin > 120) {
-                    alertas.push("🚨 [Jornada Excesiva / Fatiga Operativa: Se recomienda descanso]");
+                    alertas.push("🚨 [Jornada Excesiva / Fatiga Operativa: Descanso obligatorio de 30 min sugerido]");
                 } else if (minutosViaje > 60) {
                     alertas.push("⚠️ [Jornada larga: Monitorear temperatura de motor]");
                 } else {
@@ -882,6 +882,7 @@ def home():
                 let btnReset = document.getElementById("btn_reset");
                 let btnEvaluar = document.getElementById("btn_evaluar");
                 let div = document.getElementById("diagnostico-anulador");
+                let tituloBloque2 = document.getElementById("titulo-bloque-2");
 
                 sistemaBloqueado = bloquear;
                 if(div) div.innerHTML = mensaje;
@@ -890,10 +891,18 @@ def home():
                     if(btnCargar) btnCargar.classList.add("bloqueado");
                     if(btnReset) btnReset.classList.add("bloqueado");
                     if(btnEvaluar) btnEvaluar.classList.add("bloqueado");
+                    if(tituloBloque2) {
+                        tituloBloque2.style.color = "var(--accent-amber)";
+                        tituloBloque2.innerText = "⚠️ 2. Mantenimiento Preventivo y Checklist (⚠️ Registrar puntos críticos obligatorios antes de usar Bloque 1)";
+                    }
                 } else {
                     if(btnCargar) btnCargar.classList.remove("bloqueado");
                     if(btnReset) btnReset.classList.remove("bloqueado");
                     if(btnEvaluar) btnEvaluar.classList.remove("bloqueado");
+                    if(tituloBloque2) {
+                        tituloBloque2.style.color = "#38bdf8";
+                        tituloBloque2.innerText = "🛡️ 2. Mantenimiento Preventivo y Checklist (Operativo OK)";
+                    }
                 }
             }
 
