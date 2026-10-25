@@ -56,6 +56,7 @@ def init_db():
             clima_registro TEXT,
             hora_registro TEXT,
             red_registro TEXT,
+            trafico_registro TEXT,
             fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -113,6 +114,7 @@ class EvaluarRuta(BaseModel):
     clima_registro: str = "N/D"
     hora_registro: str = "N/D"
     red_registro: str = "N/D"
+    trafico_registro: str = "N/D"
 
 class RegistrarMantenimiento(BaseModel):
     componente: str
@@ -460,13 +462,13 @@ def home():
             </div>
 
             <hr>
-            <h4>3. Telemetría de Precisión y Bitácora Analítica</h4>
+            <h4>3. Telemetría Avanzada y Entorno Dinámico</h4>
             
             <div id="entorno-dispositivo" class="entorno-box">
                 <span id="info-clima">🌤️ Clima: Cargando...</span>
                 <span id="info-bateria">🔋 Batería: --%</span>
                 <span id="info-horario">🕒 Hora: --:--</span>
-                <span id="info-red">📶 Red: Conectado</span>
+                <span id="info-red">📶 Red: Analizando...</span>
             </div>
 
             <div class="telemetria-grid">
@@ -553,7 +555,9 @@ def home():
                             .then(data => {
                                 if (data && data.current_weather) {
                                     let temp = data.current_weather.temperature;
-                                    document.getElementById("info-clima").innerText = `🌤️ Clima: ${temp}°C`;
+                                    let code = data.current_weather.weathercode;
+                                    let climaDesc = interpretarClimaWMO(code, temp);
+                                    document.getElementById("info-clima").innerText = `🌤️ Clima: ${climaDesc}`;
                                 }
                             })
                             .catch(() => {
@@ -569,9 +573,22 @@ def home():
                 actualizarRelojSistema();
                 setInterval(actualizarRelojSistema, 30000);
 
-                actualizarEstadoRed();
-                window.addEventListener('online', actualizarEstadoRed);
-                window.addEventListener('offline', actualizarEstadoRed);
+                actualizarEstadoRedDetallado();
+                if (navigator.connection) {
+                    navigator.connection.addEventListener('change', actualizarEstadoRedDetallado);
+                }
+                window.addEventListener('online', actualizarEstadoRedDetallado);
+                window.addEventListener('offline', actualizarEstadoRedDetallado);
+            }
+
+            function interpretarClimaWMO(code, temp) {
+                if (code === 0) return `${temp}°C (Óptimo / Soleado)`;
+                if (code >= 1 && code <= 3) return `${temp}°C (Nublado / Parcial)`;
+                if (code >= 45 && code <= 48) return `${temp}°C (Neblina Densa - Visibilidad Reducida)`;
+                if (code >= 51 && code <= 67) return `${temp}°C (Lluvia - Riesgo de Derrape)`;
+                if (code >= 71 && code <= 77) return `${temp}°C (Nieve / Aguanieve)`;
+                if (code >= 95) return `${temp}°C (Tormenta Severa - Alerta)`;
+                return `${temp}°C`;
             }
 
             function actualizarBateria(battery) {
@@ -586,15 +603,49 @@ def home():
                 document.getElementById("info-horario").innerText = `🕒 Hora: ${horaStr}`;
             }
 
-            function actualizarEstadoRed() {
+            function actualizarEstadoRedDetallado() {
                 let elemRed = document.getElementById("info-red");
-                if (navigator.onLine) {
-                    elemRed.innerText = "📶 Red: Online";
-                    elemRed.style.color = "var(--accent-green)";
-                } else {
-                    elemRed.innerText = "📶 Red: Offline (Local)";
+                if (!navigator.onLine) {
+                    elemRed.innerText = "📶 Red: Offline";
                     elemRed.style.color = "var(--accent-red)";
+                    return;
                 }
+                
+                let conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                if (conn) {
+                    let tipo = conn.effectiveType || "unknown";
+                    let downlink = conn.downlink || 0;
+                    let rtt = conn.rtt || 0;
+
+                    if (rtt > 300 || tipo === '2g' || tipo === 'slow-2g') {
+                        elemRed.innerText = "📶 Red: Intermitente / Baja";
+                        elemRed.style.color = "var(--accent-amber)";
+                    } else if (downlink > 5 && (tipo === '4g' || tipo === '5g')) {
+                        elemRed.innerText = "📶 Red: Excelente (4G/5G)";
+                        elemRed.style.color = "var(--accent-green)";
+                    } else {
+                        elemRed.innerText = "📶 Red: Buena (" + tipo.toUpperCase() + ")";
+                        elemRed.style.color = "var(--accent-cyan)";
+                    }
+                } else {
+                    elemRed.innerText = "📶 Red: Online (Estable)";
+                    elemRed.style.color = "var(--accent-green)";
+                }
+            }
+
+            function obtenerPrediccionTrafico() {
+                let ahora = new Date();
+                let hora = ahora.getHours();
+                let dia = ahora.getDay(); // 0 = Domingo, 6 = Sábado
+                
+                if (dia >= 1 && dia <= 5) {
+                    if ((hora >= 7 && hora <= 9) || (hora >= 18 && hora <= 20)) {
+                        return { nivel: "Alto (Hora Pico Laboral)", multiplicador: 1.35 };
+                    } else if ((hora >= 10 && hora <= 17)) {
+                        return { nivel: "Moderado (Tránsito Medio)", multiplicador: 1.15 };
+                    }
+                }
+                return { nivel: "Fluido / Óptimo", multiplicador: 1.0 };
             }
 
             function toggleDesplegable(idDetails, idArrow) {
@@ -737,23 +788,23 @@ def home():
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
                 
-                let vel_promedio = 35.0; 
+                let traficoInfo = obtenerPrediccionTrafico();
+                let vel_promedio = 35.0 / traficoInfo.multiplicador; 
                 let minutosViaje = round((kmRutaVal / vel_promedio) * 60, 0);
                 let h_int = Math.floor(minutosViaje / 60);
                 let m_int = Math.round(minutosViaje % 60);
                 let tiempoEstimadoSim = h_int > 0 ? `${h_int}h ${m_int}m` : `${m_int} min`;
 
-                let alertaTiempo = minutosViaje > 60 ? " ⚠️ <b>[ALERTA: Trayecto continuo > 1h]</b>" : "";
-                let alertaTanque = litrosRestantesSimulados < 1.0 ? " 🚨 <b>[ALERTA: Tanque crítico < 1L]</b>" : "";
-                let alertaAutonomia = autonomiaRestanteKm < 30 ? " 🚨 <b>[ALERTA: Autonomía baja < 30km]</b>" : "";
+                let alertaTrafico = traficoInfo.multiplicador > 1.0 ? ` ⚠️ <b>[Tráfico: ${traficoInfo.nivel}]</b>` : "";
+                let alertaTiempo = minutosViaje > 60 ? " ⚠️ <b>[ALERTA: Trayecto > 1h]</b>" : "";
+                let alertaTanque = litrosRestantesSimulados < 1.0 ? " 🚨 <b>[Tanque crítico < 1L]</b>" : "";
 
                 divDiag.innerHTML = `
                     <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Viaje]</i></p>
+                    <p style="margin:2px 0;"><b>Tráfico Estimado:</b> ${traficoInfo.nivel}${alertaTrafico}</p>
                     <p style="margin:2px 0;"><b>Último registro de ruta:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
-                    <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim} (a 35 km/h prom.)${alertaTiempo}</p>
-                    <p style="margin:2px 0;"><b>Último costo operativo:</b> $${costoPorKm} MXN / km</p>
-                    <p style="margin:2px 0;"><b>Gasolina Restante en Tanque:</b> ${litrosRestantesSimulados} L${alertaTanque}</p>
-                    <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km${alertaAutonomia}</p>
+                    <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim}${alertaTiempo}</p>
+                    <p style="margin:2px 0;"><b>Gasolina Restante:</b> ${litrosRestantesSimulados} L${alertaTanque}</p>
                 `;
             }
 
@@ -1136,10 +1187,10 @@ def home():
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
                 let precio_gasolina = parseFloat(document.getElementById("precio_gas").value);
                 
-                // Capturar contexto ambiental activo del Bloque 3
                 let clima_registro = document.getElementById("info-clima").innerText.replace("🌤️ Clima: ", "");
                 let hora_registro = document.getElementById("info-horario").innerText.replace("🕒 Hora: ", "");
                 let red_registro = document.getElementById("info-red").innerText.replace("📶 Red: ", "");
+                let trafico_registro = obtenerPrediccionTrafico().nivel;
 
                 let res = await fetch(API + "/combustible/evaluar", {
                     method: "POST",
@@ -1147,7 +1198,7 @@ def home():
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina, clima_registro, hora_registro, red_registro })
+                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina, clima_registro, hora_registro, red_registro, trafico_registro })
                 });
                 let data = await res.json();
                 if(res.ok) {
@@ -1166,21 +1217,16 @@ def home():
                     let panelOficial = document.getElementById("diagnostico-oficial");
                     panelOficial.style.display = "block";
 
-                    let alertaTiempoAcumulado = data.tiempo_total_acumulado_min > 120 ? " 🚨 <b>[ALERTA: Fatiga operativa: Tiempo total acumulado > 2h]</b>" : "";
-
                     panelOficial.innerHTML = `
                         <p style="color: var(--accent-green); font-weight: bold; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}]:</p>
-                        <p style="margin:2px 0;"><b>Clima / Hora / Red:</b> ${data.clima_registro} | ${data.hora_registro} | ${data.red_registro}</p>
-                        <p style="margin:2px 0;"><b>Último registro de ruta:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p style="margin:2px 0;"><b>Último costo operativo:</b> ${data.costo_por_km} MXN / km</p>
-                        <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje} (a 35 km/h prom.)</p>
-                        <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km</p>
-                        <p style="margin:2px 0;"><b>Litros en Tanque:</b> ${data.litros_restantes} L</p>
+                        <p style="margin:2px 0;"><b>Entorno:</b> ${data.hora_registro} | ${data.clima_registro}</p>
+                        <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${data.red_registro} | Tráfico: ${data.trafico_registro}</p>
+                        <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
+                        <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje}</p>
+                        <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km (${data.litros_restantes} L)</p>
                         <hr style="border: 0; border-top: 1px dashed rgba(16, 185, 129, 0.3); margin: 6px 0;">
                         <p style="color: #60a5fa; font-weight: bold; margin:2px 0;">📊 Acumulados Globales:</p>
-                        <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km</p>
-                        <p style="margin:2px 0;"><b>Gasto Total:</b> $${gastoTotalAcumuladoGlobal} MXN</p>
-                        <p style="margin:2px 0;"><b>⏱️ Tiempo Total Acumulado:</b> ${data.tiempo_total_acumulado_str}${alertaTiempoAcumulado}</p>
+                        <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km | Gasto: $${gastoTotalAcumuladoGlobal} MXN</p>
                     `;
                 } else {
                     alert(data.detail);
@@ -1237,7 +1283,7 @@ def home():
                 if(resBitacora.ok) {
                     let dataBit = await resBitacora.json();
                     if(dataBit.length > 0) {
-                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] ${b.hora_registro} | ${b.clima_registro} | ${b.km_recorridos}km | $${b.costo_viaje} MXN`);
+                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] ${b.hora_registro} | ${b.km_recorridos}km | $${b.costo_viaje} MXN | ${b.trafico_registro}`);
                         document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
                     }
                 }
@@ -1384,7 +1430,7 @@ def obtener_bitacora(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
+    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -1464,7 +1510,8 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     costo_por_km = round(costo_viaje / e.km_recorridos, 2)
     autonomia_restante_km = round(max(0.0, litros_restantes) * rendimiento_estandar, 1)
 
-    vel_promedio = 35.0
+    multiplicador_trafico = 1.35 if "Alto" in e.trafico_registro else (1.15 if "Moderado" in e.trafico_registro else 1.0)
+    vel_promedio = 35.0 / multiplicador_trafico
     minutos_viaje = round((e.km_recorridos / vel_promedio) * 60)
     
     h_viaje = int(minutos_viaje // 60)
@@ -1481,19 +1528,15 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     """, (usuario, e.km_recorridos, costo_viaje, minutos_viaje, e.km_recorridos, costo_viaje, minutos_viaje))
 
     cursor.execute("""
-        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro))
+        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro))
 
     cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
     km_totales_acumulados = est_row[0]
     gasto_total_acumulado = est_row[1]
     tiempo_total_acumulado_min = est_row[2]
-
-    tot_h = int(tiempo_total_acumulado_min // 60)
-    tot_m = int(tiempo_total_acumulado_min % 60)
-    tiempo_total_acumulado_str = f"{tot_h}h {tot_m}m" if tot_h > 0 else f"{tot_m} min"
 
     cursor.execute("""
         INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
@@ -1515,11 +1558,11 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "litros_restantes": max(0.0, litros_restantes),
         "km_totales_acumulados": km_totales_acumulados,
         "gasto_total_acumulado": gasto_total_acumulado,
-        "tiempo_total_acumulado_str": tiempo_total_acumulado_str,
         "tiempo_total_acumulado_min": tiempo_total_acumulado_min,
         "clima_registro": e.clima_registro,
         "hora_registro": e.hora_registro,
-        "red_registro": e.red_registro
+        "red_registro": e.red_registro,
+        "trafico_registro": e.trafico_registro
     }
 
 if __name__ == "__main__":
