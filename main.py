@@ -465,7 +465,7 @@ def home():
                         <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                     </div>
 
-                    <!-- CUADRÍCULA SIMULTÁNEA DE COMPONENTES CON MENÚ DESPLEGABLE, ALERTAS Y BOTÓN DE CHEQUEO -->
+                    <!-- CUADRÍCULA SIMULTÁNEA DE COMPONENTES CON MENÚ DESPLEGABLE, ALERTAS Y BLOQUEO INTELIGENTE DE RUTA -->
                     <div class="componentes-grid">
                         <p style="margin: 4px 0 2px 0; font-weight: 600; font-size: 12px; color: var(--text-muted);">📊 VIDA ÚTIL Y ESTADO SIMULTÁNEO DE COMPONENTES:</p>
                         
@@ -936,7 +936,7 @@ def home():
                     if(btnEvaluar) btnEvaluar.classList.add("bloqueado");
                     if(tituloBloque2) {
                         tituloBloque2.style.color = "var(--accent-amber)";
-                        tituloBloque2.innerText = "⚠️ 2. Mantenimiento Preventivo y Checklist (⚠️ Registrar puntos críticos obligatorios antes de usar Bloque 1)";
+                        tituloBloque2.innerText = "⚠️ 2. Mantenimiento Preventivo y Checklist (⚠️ Bloqueo de seguridad: Revise el Bloque 2)";
                     }
                 } else {
                     if(btnCargar) btnCargar.classList.remove("bloqueado");
@@ -953,22 +953,39 @@ def home():
                 let checklistElem = document.getElementById("checklist-contenedor");
                 let protocoloElem = document.getElementById("protocolo-normativo");
 
-                // Verificar si hay alertas graves de chequeo (>1000 km sin lubricar cadena u otros componentes)
+                // Validación inteligente de vida útil vs kit de ruta (ej. si faltan <100 km para el servicio y se planea viaje >10 km)
+                let kmRutaVal = parseFloat(document.getElementById("km_ruta").value) || 0;
+                let riesgoComponenteCritico = false;
+                let mensajeRiesgo = "";
+
+                let ciclosMaximos = {
+                    "Cambio de Aceite": 2500,
+                    "Kit de Arrastre / Piñones": 15000,
+                    "Pastillas de Freno": 5000
+                };
+
+                for (let comp in kmComponentes) {
+                    let kmAcum = kmComponentes[comp];
+                    let maxCiclo = ciclosMaximos[comp];
+                    let kmRestantes = maxCiclo - kmAcum;
+
+                    // Si al componente le quedan menos de 100 km y la ruta planeada supera los 10 km
+                    if (kmRestantes < 100 && kmRutaVal > 10) {
+                        riesgoComponenteCritico = true;
+                        mensajeRiesgo = `🚨 BLOQUEO DE SEGURIDAD: A '${comp}' le restan solo ${Math.round(kmRestantes)} km de vida y planeas una ruta de ${kmRutaVal} km (>10 km). Realice el mantenimiento o confirme el chequeo en el Bloque 2 para desbloquear.`;
+                        break;
+                    }
+                }
+
                 let alertaGraveActiva = false;
                 for (let comp in kmDesdeUltimoChequeo) {
                     let umbralGrave = (comp === "Kit de Arrastre / Piñones") ? 1000 : 2000;
                     if (kmDesdeUltimoChequeo[comp] >= umbralGrave) {
                         alertaGraveActiva = true;
-                        // Forzar el selector del componente a revisión en el menú de 6 puntos si aplica
-                        if (comp === "Kit de Arrastre / Piñones") {
-                            document.getElementById("anulador_cadena").value = "revision";
-                        } else if (comp === "Cambio de Aceite") {
-                            document.getElementById("anulador_frenos").value = "revision"; // o mapeado
-                        }
                     }
                 }
 
-                if (!protocoloConfirmadoLeido || alertaGraveActiva) {
+                if (!protocoloConfirmadoLeido || alertaGraveActiva || riesgoComponenteCritico) {
                     let f = document.getElementById("anulador_frenos").value;
                     let c = document.getElementById("anulador_cadena").value;
                     let ll = document.getElementById("anulador_llantas").value;
@@ -976,8 +993,10 @@ def home():
                     let epp = document.getElementById("anulador_epp").value;
                     let docs = document.getElementById("anulador_docs").value;
 
-                    if (alertaGraveActiva) {
-                        bloquearSistema(true, "🚨 ALERTA GRAVE: Superados los km sin chequeo/lubricación obligatorios. Bloque 1 suspendido hasta confirmar chequeo.");
+                    if (riesgoComponenteCritico) {
+                        bloquearSistema(true, mensajeRiesgo);
+                    } else if (alertaGraveActiva) {
+                        bloquearSistema(true, "🚨 ALERTA GRAVE: Superados los km sin chequeo obligatorio. Bloque 1 suspendido hasta confirmar chequeo.");
                     } else if (f === "revision" || c === "revision" || ll === "revision" || l === "revision" || epp === "revision" || docs === "revision") {
                         bloquearSistema(true, "⚠️ Verificación de seguridad requerida: Complete o confirme todos los puntos en 'Operativo (OK)'.");
                     } else {
@@ -988,8 +1007,8 @@ def home():
                     if(protocoloElem) protocoloElem.style.display = "none";
                     ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
                 } else {
-                    if(checklistElem) checklistElem.style.display = "block";
-                    if(protocoloElem) protocoloElem.style.display = "none";
+                    if(checklistElem) checklistElem.style.display = "none";
+                    if(protocoloElem) protocoloElem.style.display = "block";
                     bloquearSistema(false, "✔ Puntos de inspección confirmados y operativos.");
                 }
             }
@@ -1033,6 +1052,9 @@ def home():
                 let precioGasVal = parseFloat(document.getElementById("precio_gas").value) || 24.0;
                 let presupuestoVal = parseFloat(document.getElementById("presupuesto_ruta").value) || 0.0;
                 let divDiag = document.getElementById("diagnostico-combustible");
+
+                // Validar bloqueo en tiempo real al escribir km de ruta si pone en riesgo el motor
+                verificarJornadaYDiagnostico();
 
                 if (!kmRutaVal || kmRutaVal <= 0) {
                     if (document.getElementById("litros_carga").value > 0) {
@@ -1098,13 +1120,17 @@ def home():
                 if(barra) barra.style.width = vidaRestante + "%";
                 if(txtVida) txtVida.innerText = Math.round(vidaRestante) + "% (" + kmAcumulados + "/" + cicloMax + " km)";
 
-                // Lógica de Alertas Dinámicas por km desde el último chequeo (ej. lubricar cadena cada 500 km)
                 let umbralGrave = (nombreComp === "Kit de Arrastre / Piñones") ? 1000 : 2000;
 
-                if (kmChequeo >= umbralGrave) {
+                if (kmAcumulados >= cicloMax) {
                     if(msgElem) {
                         msgElem.style.color = "var(--accent-red)";
-                        msgElem.innerHTML = `🚨 <b>Alerta Grave (${kmChequeo} km sin chequeo):</b> ¡Requiere inspección obligatoria en el Bloque 2! Bloque 1 suspendido.`;
+                        msgElem.innerHTML = `🚨 <b>Vida Agotada (${kmAcumulados}/${cicloMax} km):</b> ¡Mantenimiento crítico requerido! Bloque 1 bloqueado para rutas >10 km.`;
+                    }
+                } else if (kmChequeo >= umbralGrave) {
+                    if(msgElem) {
+                        msgElem.style.color = "var(--accent-red)";
+                        msgElem.innerHTML = `🚨 <b>Alerta Grave (${kmChequeo} km sin chequeo):</b> ¡Requiere inspección obligatoria en el Bloque 2!`;
                     }
                 } else if (kmChequeo >= umbralChequeo) {
                     if(msgElem) {
@@ -1466,7 +1492,7 @@ def home():
 
             async function evaluarRuta() {
                 if (sistemaBloqueado) {
-                    alert("⚠️ Acción bloqueada: Debe confirmar el checklist de seguridad obligatorio o realizar los chequeos pendientes.");
+                    alert("⚠️ Acción bloqueada: El sistema ha detectado un riesgo crítico para el motor o componentes debido a la ruta planeada. Realice el mantenimiento o confirme el chequeo en el Bloque 2.");
                     return;
                 }
                 let nombre_ruta = document.getElementById("nombre_ruta").value.trim() || "Ruta General";
