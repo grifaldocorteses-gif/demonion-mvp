@@ -52,6 +52,8 @@ def init_db():
             nombre_ruta TEXT,
             km_recorridos REAL,
             costo_viaje REAL,
+            presupuesto REAL DEFAULT 0.0,
+            balance_neto REAL DEFAULT 0.0,
             tiempo_viaje TEXT,
             clima_registro TEXT,
             hora_registro TEXT,
@@ -113,6 +115,7 @@ class EvaluarRuta(BaseModel):
     nombre_ruta: str = "Ruta General"
     km_recorridos: float
     precio_gasolina: float
+    presupuesto: float = 0.0
     clima_registro: str = "N/D"
     hora_registro: str = "N/D"
     red_registro: str = "N/D"
@@ -328,11 +331,16 @@ def home():
                     <button type="button" class="btn-voice" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
                 </div>
             </div>
+            <div class="flex-row">
+                <div class="input-voz-group">
+                    <input type="number" id="presupuesto_ruta" placeholder="Presupuesto o Viáticos ($)" value="0.0" oninput="simularRuta()">
+                    <button type="button" class="btn-voice" onclick="escucharVoz('presupuesto_ruta')">🎤 Voz</button>
+                </div>
+            </div>
             <button id="btn_evaluar" style="background:#059669; margin-top:8px;" onclick="evaluarRuta()">Evaluar Costo, Ruta y Descontar (Oficial)</button>
             
             <div id="diagnostico-combustible" style="margin-top: 8px;"></div>
             
-            <!-- Menú desplegable de viajes registrados con controles de ocultar/mostrar la consulta seleccionada -->
             <div id="contenedor-acordeon-viajes" class="check-accordion-card" style="display:none; margin-top: 8px;">
                 <div class="check-accordion-header">
                     <span style="font-size:12px; font-weight:600; color:var(--accent-cyan); cursor:pointer; flex:1;" onclick="toggleAcordeon('body-viajes', 'arrow-viajes')">📁 Viajes Registrados en la Jornada</span>
@@ -790,14 +798,15 @@ def home():
 
                 let htmlContent = "";
                 viajesJornadaList.forEach((viaje, index) => {
+                    let balanceColor = viaje.balance_neto >= 0 ? "var(--accent-green)" : "var(--accent-red)";
                     htmlContent += `
                         <div style="background: #0b1120; border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onclick="seleccionarViajeAcordeon(${index})">
                             <div style="display: flex; justify-content: space-between; font-weight: 600; color: #38bdf8; font-size: 11px;">
                                 <span>📌 ${viaje.nombre_ruta}</span>
-                                <span style="color: var(--accent-green);">$${viaje.costo_viaje} MXN</span>
+                                <span style="color: ${balanceColor};">Neto: $${viaje.balance_neto} MXN</span>
                             </div>
                             <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
-                                🕒 ${viaje.hora_registro} | 🛣️ ${viaje.km_recorridos} km | ⏱️ ${viaje.tiempo_viaje}
+                                🕒 ${viaje.hora_registro} | 🛣️ ${viaje.km_recorridos} km | Costo: $${viaje.costo_viaje}
                             </div>
                         </div>
                     `;
@@ -810,12 +819,14 @@ def home():
                 if (!viaje) return;
 
                 let panelOficial = document.getElementById("diagnostico-oficial");
+                let balanceColor = viaje.balance_neto >= 0 ? "var(--accent-green)" : "var(--accent-red)";
                 panelOficial.innerHTML = `
                     <p style="color: var(--accent-cyan); font-weight: 600; margin: 0 0 5px 0;">🔍 [Consulta de Viaje Seleccionado: ${viaje.nombre_ruta}]:</p>
                     <p style="margin:2px 0;"><b>${viaje.ubicacion_registro || 'N/D'}</b></p>
                     <p style="margin:2px 0;"><b>Entorno:</b> ${viaje.hora_registro} | ${viaje.clima_registro}</p>
                     <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${viaje.red_registro} | Tráfico: ${viaje.trafico_registro}</p>
-                    <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${viaje.litros_consumidos} L (<b>$${viaje.costo_viaje} MXN</b>)</p>
+                    <p style="margin:2px 0;"><b>Presupuesto / Viáticos:</b> $${viaje.presupuesto || 0.0} MXN | <b>Costo:</b> $${viaje.costo_viaje} MXN</p>
+                    <p style="margin:2px 0; color: ${balanceColor};"><b>Balance Neto:</b> $${viaje.balance_neto} MXN</p>
                     <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${viaje.tiempo_viaje}</p>
                     <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${viaje.alerta_operativa || 'N/D'}</p>
                 `;
@@ -929,6 +940,7 @@ def home():
             function simularRuta() {
                 let kmRutaVal = parseFloat(document.getElementById("km_ruta").value);
                 let precioGasVal = parseFloat(document.getElementById("precio_gas").value) || 24.0;
+                let presupuestoVal = parseFloat(document.getElementById("presupuesto_ruta").value) || 0.0;
                 let divDiag = document.getElementById("diagnostico-combustible");
 
                 if (!kmRutaVal || kmRutaVal <= 0) {
@@ -943,7 +955,7 @@ def home():
                 let rendimientoEstandar = 30.0;
                 let litrosConsumidos = round(kmRutaVal / rendimientoEstandar, 2);
                 let costoViaje = round(litrosConsumidos * precioGasVal, 2);
-                let costoByKm = round(costoViaje / kmRutaVal, 2);
+                let balanceNetoSim = round(presupuestoVal - costoViaje, 2);
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
                 
@@ -959,13 +971,14 @@ def home():
                 let redActual = document.getElementById("info-red").innerText.replace("📶 Red: ", "");
                 let ubicacionActual = document.getElementById("info-ubicacion").innerText.replace("📍 ", "");
                 let alertasSimuladas = evaluarAlertasOperativas(kmRutaVal, minutosViaje, litrosConsumidos);
+                let colorBalanceSim = balanceNetoSim >= 0 ? "var(--accent-green)" : "var(--accent-red)";
 
                 divDiag.innerHTML = `
                     <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Indicadores de Entorno y Ruta]</i></p>
                     <p style="margin:2px 0;"><b>${ubicacionActual}</b></p>
                     <p style="margin:2px 0;"><b>Entorno Actual:</b> ${horaActual} | ${climaActual}</p>
-                    <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${redActual} | Tráfico: ${traficoInfo.nivel}</p>
                     <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
+                    <p style="margin:2px 0; color: ${colorBalanceSim};"><b>Balance Neto Simulado:</b> $${balanceNetoSim} MXN (Presupuesto: $${presupuestoVal})</p>
                     <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim}</p>
                     <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km (${litrosRestantesSimulados} L)</p>
                     <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${alertasSimuladas}</p>
@@ -1046,13 +1059,13 @@ def home():
 
                 recognition.onresult = function(event) {
                     let texto = event.results[0][0].transcript;
-                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta' || inputId === 'precio_gas' || inputId === 'anio') {
+                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta' || inputId === 'precio_gas' || inputId === 'presupuesto_ruta' || inputId === 'anio') {
                         texto = texto.replace(/[^0-9.]/g, '');
                     }
                     document.getElementById(inputId).value = texto;
                     if (inputId === 'litros_carga') {
                         simularCarga();
-                    } else if (inputId === 'km_ruta' || inputId === 'precio_gas') {
+                    } else if (inputId === 'km_ruta' || inputId === 'precio_gas' || inputId === 'presupuesto_ruta') {
                         simularRuta();
                     }
                 };
@@ -1326,6 +1339,7 @@ def home():
                     document.getElementById("litros_carga").value = "";
                     document.getElementById("km_ruta").value = "";
                     document.getElementById("nombre_ruta").value = "";
+                    document.getElementById("presupuesto_ruta").value = "0.0";
                     document.getElementById("diagnostico-combustible").innerHTML = `
                         <p style="color: var(--accent-green); font-weight: 600;">✔ Acción realizada con éxito.</p>
                     `;
@@ -1343,6 +1357,7 @@ def home():
                 let nombre_ruta = document.getElementById("nombre_ruta").value.trim() || "Ruta General";
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
                 let precio_gasolina = parseFloat(document.getElementById("precio_gas").value);
+                let presupuesto = parseFloat(document.getElementById("presupuesto_ruta").value) || 0.0;
                 
                 let clima_registro = document.getElementById("info-clima").innerText.replace("🌤️ Clima: ", "");
                 let hora_registro = document.getElementById("info-horario").innerText.replace("🕒 Hora: ", "");
@@ -1362,7 +1377,7 @@ def home():
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa })
+                    body: JSON.stringify({ nombre_ruta, km_recorridos, precio_gasolina, presupuesto, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa })
                 });
                 let data = await res.json();
                 if(res.ok) {
@@ -1380,6 +1395,8 @@ def home():
                     viajesJornadaList.unshift({
                         nombre_ruta: data.nombre_ruta,
                         costo_viaje: data.costo_viaje,
+                        presupuesto: data.presupuesto,
+                        balance_neto: data.balance_neto,
                         litros_consumidos: data.litros_consumidos,
                         tiempo_viaje: data.tiempo_viaje,
                         km_recorridos: km_recorridos,
@@ -1399,12 +1416,14 @@ def home():
                         panelOficial.style.display = "block";
                     }
 
+                    let balanceColor = data.balance_neto >= 0 ? "var(--accent-green)" : "var(--accent-red)";
                     panelOficial.innerHTML = `
-                        <p style="color: var(--accent-green); font-weight: 600; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}] <span style="font-size:10px; color:var(--text-muted); font-weight:normal;">(Últimos registros del sistema de ruta)</span>:</p>
+                        <p style="color: var(--accent-green); font-weight: 600; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}]:</p>
                         <p style="margin:2px 0;"><b>${data.ubicacion_registro}</b></p>
                         <p style="margin:2px 0;"><b>Entorno:</b> ${data.hora_registro} | ${data.clima_registro}</p>
-                        <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${data.red_registro} | Tráfico: ${data.trafico_registro}</p>
                         <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
+                        <p style="margin:2px 0;"><b>Presupuesto / Viáticos:</b> $${data.presupuesto} MXN</p>
+                        <p style="margin:2px 0; color: ${balanceColor};"><b>Balance Neto:</b> $${data.balance_neto} MXN</p>
                         <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje}</p>
                         <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km (${data.litros_restantes} L)</p>
                         <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${data.alerta_operativa}</p>
@@ -1470,6 +1489,8 @@ def home():
                         viajesJornadaList = dataBit.map(b => ({
                             nombre_ruta: b.nombre_ruta,
                             costo_viaje: b.costo_viaje,
+                            presupuesto: b.presupuesto || 0.0,
+                            balance_neto: b.balance_neto || 0.0,
                             litros_consumidos: round(b.km_recorridos / 30.0, 2),
                             tiempo_viaje: b.tiempo_viaje,
                             km_recorridos: b.km_recorridos,
@@ -1482,7 +1503,7 @@ def home():
                         }));
                         actualizarAcordeonViajes();
 
-                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] ${b.ubicacion_registro || ''} | ${b.km_recorridos}km | $${b.costo_viaje} MXN | ${b.alerta_operativa || ''}`);
+                        bitacoraLocal = dataBit.map(b => `✔ [${b.nombre_ruta}] Neto: $${b.balance_neto || 0.0} | ${b.km_recorridos}km`);
                         document.getElementById("lista-bitacora").innerHTML = bitacoraLocal.join("<br>");
                     }
                 }
@@ -1629,7 +1650,7 @@ def obtener_bitacora(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
+    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, presupuesto, balance_neto, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 5", (usuario,))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -1704,6 +1725,7 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     rendimiento_estandar = 30.0
     litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
     costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
+    balance_neto = round(e.presupuesto - costo_viaje, 2)
     litros_restantes = round(litros_tanque - litros_consumidos, 2)
     
     costo_por_km = round(costo_viaje / e.km_recorridos, 2)
@@ -1727,9 +1749,9 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     """, (usuario, e.km_recorridos, costo_viaje, minutos_viaje, e.km_recorridos, costo_viaje, minutos_viaje))
 
     cursor.execute("""
-        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
+        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, presupuesto, balance_neto, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, e.presupuesto, balance_neto, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
 
     cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
@@ -1751,6 +1773,8 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "nombre_ruta": e.nombre_ruta,
         "litros_consumidos": litros_consumidos,
         "costo_viaje": costo_viaje,
+        "presupuesto": e.presupuesto,
+        "balance_neto": balance_neto,
         "costo_por_km": costo_por_km,
         "tiempo_viaje": tiempo_viaje_str,
         "autonomia_restante_km": autonomia_restante_km,
