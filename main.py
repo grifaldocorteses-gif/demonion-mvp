@@ -295,7 +295,7 @@ def home():
             .bloque-principal-header:hover { background: #131d31; }
             .bloque-principal-body { display: none; padding: 16px; }
 
-            /* Estilos para el Radar GPS SOS con 8 categorías y radio de 15 km + Buscador de Otros */
+            /* Estilos para el Radar GPS SOS con 8 categorías y radio optimizado de 10 km */
             .radar-grid {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
@@ -598,10 +598,10 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO CON "OTROS" Y DICTADO POR VOZ) -->
+            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO: 10 KM + ALTA PRECISIÓN SATELITAL) -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
-                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 15 km)</span>
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 10 km - Alta Precisión)</span>
                     <span id="arrow-bloque-3" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
                 </div>
                 <div id="body-bloque-3" class="bloque-principal-body">
@@ -614,14 +614,14 @@ def home():
                         <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: Obteniendo GPS...</span>
                     </div>
 
-                    <!-- Radar GPS de Servicios Cercanos (ACTUALIZADO: 8 categorías con sección 'Otros' y voz) -->
+                    <!-- Radar GPS de Servicios Cercanos (ACTUALIZADO: Radio 10 km y alta precisión) -->
                     <div class="check-accordion-card" style="margin-bottom: 10px;">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-radar-gps', 'arrow-radar-gps')">
-                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📡 Radar GPS SOS: Servicios y Auxilio Cercano (Radio 15 km)</span>
+                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📡 Radar GPS SOS: Servicios y Auxilio Cercano (Radio 10 km)</span>
                             <span id="arrow-radar-gps" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-radar-gps" class="check-accordion-body" style="display: block;">
-                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Selecciona o busca por voz establecimientos en un radio de <b>15 km</b> (ordenados automáticamente por prioridad de cercanía):</p>
+                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Selecciona o busca por voz establecimientos en un radio optimizado de <b>10 km</b> (alta precisión satelital y ordenados por cercanía):</p>
                             
                             <div class="radar-grid">
                                 <button class="btn-radar" onclick="buscarPOI('gasolinera')">⛽ Gasolineras</button>
@@ -633,7 +633,7 @@ def home():
                                 <button class="btn-radar" onclick="buscarPOI('policia')" style="grid-column: span 2;">🚨 Seguridad Pública / Policía</button>
                             </div>
 
-                            <!-- SECCIÓN NUEVA: OTROS (CON DICTADO POR VOZ Y BÚSQUEDA PERSONALIZADA) -->
+                            <!-- SECCIÓN: OTROS (CON DICTADO POR VOZ Y BÚSQUEDA PERSONALIZADA) -->
                             <div style="margin-top: 10px; background: #0b1120; padding: 8px; border-radius: 6px; border: 1px dashed var(--border-color);">
                                 <label style="font-size: 11px; font-weight: 600; color: #38bdf8;">🔍 Otros (Búsqueda Personalizada / Dictado por Voz):</label>
                                 <div class="flex-row" style="margin-top: 4px;">
@@ -740,20 +740,21 @@ def home():
                 }
 
                 if (navigator.geolocation) {
+                    // CONFIGURACIÓN DE ALTA PRECISIÓN SATELITAL (enableHighAccuracy: true)
                     navigator.geolocation.getCurrentPosition(position => {
                         currentLat = position.coords.latitude;
                         currentLon = position.coords.longitude;
                         
-                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLat}&lon=${currentLon}&zoom=14`, {
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLat}&lon=${currentLon}&zoom=16`, {
                             headers: { 'Accept-Language': 'es' }
                         })
                         .then(res => res.json())
                         .then(data => {
-                            let direccion = data && data.address ? (data.address.city || data.address.town || data.address.municipality || data.address.suburb || "Zona Aproximada") : "Ubicación GPS";
+                            let direccion = data && data.address ? (data.address.road || data.address.suburb || data.address.city || "Zona Exacta GPS") : "Ubicación GPS";
                             document.getElementById("info-ubicacion").innerText = `📍 Ubicación: ${direccion}`;
                         })
                         .catch(() => {
-                            document.getElementById("info-ubicacion").innerText = `📍 Coordenadas: ${currentLat.toFixed(2)}, ${currentLon.toFixed(2)}`;
+                            document.getElementById("info-ubicacion").innerText = `📍 Coordenadas: ${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`;
                         });
 
                         fetch(`https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current_weather=true`)
@@ -775,6 +776,10 @@ def home():
                     }, () => {
                         document.getElementById("info-ubicacion").innerText = "📍 Ubicación: GPS Denegado / N/D";
                         document.getElementById("info-clima").innerText = "🌤️ Clima: Sin GPS";
+                    }, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
                     });
                 } else {
                     document.getElementById("info-ubicacion").innerText = "📍 Ubicación: No soportada";
@@ -792,9 +797,8 @@ def home():
                 window.addEventListener('offline', actualizarEstadoRedDetallado);
             }
 
-            // FUNCIÓN AUXILIAR: Calcular distancia en kilómetros entre dos coordenadas (Haversine)
             function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
-                let R = 6371; // Radio de la tierra en km
+                let R = 6371; 
                 let dLat = (lat2 - lat1) * Math.PI / 180;
                 let dLon = (lon2 - lon1) * Math.PI / 180;
                 let a = 
@@ -805,11 +809,11 @@ def home():
                 return R * c;
             }
 
-            // RADAR GPS SOS: Ordena automáticamente por menor distancia (más cercano primero)
+            // RADAR GPS SOS: Radio optimizado a 10 km con alta precisión
             async function buscarPOI(tipo) {
                 let resultadosBox = document.getElementById("radar-resultados");
                 resultadosBox.style.display = "block";
-                resultadosBox.innerHTML = "⏳ Escaneando la zona cercana en un radio de 15 km y calculando distancias...";
+                resultadosBox.innerHTML = "⏳ Escaneando la zona cercana en un radio de 10 km (alta precisión) y calculando distancias...";
 
                 if (!currentLat || !currentLon) {
                     resultadosBox.innerHTML = "⚠️ Error: No se ha obtenido la señal GPS actual. Activa la ubicación del navegador.";
@@ -841,7 +845,7 @@ def home():
                     tituloBusqueda = "🚨 Seguridad Pública y Policía";
                 }
 
-                let overpassQuery = `[out:json][timeout:15];(${queryTag}(around:15000,${currentLat},${currentLon}););out body 12;`;
+                let overpassQuery = `[out:json][timeout:15];(${queryTag}(around:10000,${currentLat},${currentLon}););out body 12;`;
                 let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
 
                 try {
@@ -849,11 +853,10 @@ def home():
                     let data = await response.json();
                     
                     if (!data.elements || data.elements.length === 0) {
-                        resultadosBox.innerHTML = `<b>${tituloBusqueda}:</b> No se encontraron establecimientos exactos en un radio de 15 km.`;
+                        resultadosBox.innerHTML = `<b>${tituloBusqueda}:</b> No se encontraron establecimientos exactos en un radio de 10 km.`;
                         return;
                     }
 
-                    // Calcular distancia y ordenar de menor a mayor (prioridad al más cercano)
                     let elementosConDistancia = data.elements.map(el => {
                         let lat = el.lat;
                         let lon = el.lon;
@@ -863,7 +866,7 @@ def home():
 
                     elementosConDistancia.sort((a, b) => a.distanciaKm - b.distanciaKm);
 
-                    let htmlList = `<b style="color:var(--accent-cyan);">${tituloBusqueda} (~15 km - Ordenados por Prioridad de Cercanía):</b><br><br>`;
+                    let htmlList = `<b style="color:var(--accent-cyan);">${tituloBusqueda} (~10 km - Ordenados por Prioridad de Cercanía):</b><br><br>`;
                     elementosConDistancia.forEach((el, index) => {
                         let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento sin nombre comercial";
                         let brand = el.tags && el.tags.brand ? ` (${el.tags.brand})` : "";
@@ -887,7 +890,7 @@ def home():
                 }
             }
 
-            // BUSCADOR PERSONALIZADO PARA SECCIÓN "OTROS" (CON DICTADO POR VOZ Y ORDENAMIENTO POR CERCANÍA)
+            // BUSCADOR PERSONALIZADO PARA SECCIÓN "OTROS" (RADIO DE 10 KM + DICTADO POR VOZ)
             async function buscarPOIOtros() {
                 let termino = document.getElementById("input_otros_poi").value.trim().toLowerCase();
                 let resultadosBox = document.getElementById("radar-resultados");
@@ -898,15 +901,14 @@ def home():
                     return;
                 }
 
-                resultadosBox.innerHTML = `⏳ Buscando '${termino}' en un radio de 15 km y ordenando por cercanía...`;
+                resultadosBox.innerHTML = `⏳ Buscando '${termino}' en un radio de 10 km y ordenando por cercanía...`;
 
                 if (!currentLat || !currentLon) {
                     resultadosBox.innerHTML = "⚠️ Error: No se ha obtenido la señal GPS actual.";
                     return;
                 }
 
-                // Búsqueda flexible en Overpass usando regex o name/amenity/shop
-                let overpassQuery = `[out:json][timeout:15];(node["name"~"${termino}",i](around:15000,${currentLat},${currentLon});node["amenity"~"${termino}",i](around:15000,${currentLat},${currentLon});node["shop"~"${termino}",i](around:15000,${currentLat},${currentLon});node["craft"~"${termino}",i](around:15000,${currentLat},${currentLon}););out body 12;`;
+                let overpassQuery = `[out:json][timeout:15];(node["name"~"${termino}",i](around:10000,${currentLat},${currentLon});node["amenity"~"${termino}",i](around:10000,${currentLat},${currentLon});node["shop"~"${termino}",i](around:10000,${currentLat},${currentLon});node["craft"~"${termino}",i](around:10000,${currentLat},${currentLon}););out body 12;`;
                 let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
 
                 try {
@@ -914,7 +916,7 @@ def home():
                     let data = await response.json();
                     
                     if (!data.elements || data.elements.length === 0) {
-                        resultadosBox.innerHTML = `<b>Búsqueda ('${termino}'):</b> No se encontraron resultados exactos en un radio de 15 km.`;
+                        resultadosBox.innerHTML = `<b>Búsqueda ('${termino}'):</b> No se encontraron resultados exactos en un radio de 10 km.`;
                         return;
                     }
 
@@ -927,7 +929,7 @@ def home():
 
                     elementosConDistancia.sort((a, b) => a.distanciaKm - b.distanciaKm);
 
-                    let htmlList = `<b style="color:var(--accent-cyan);">Resultados para '${termino}' (~15 km - Ordenados por Cercanía):</b><br><br>`;
+                    let htmlList = `<b style="color:var(--accent-cyan);">Resultados para '${termino}' (~10 km - Ordenados por Cercanía):</b><br><br>`;
                     elementosConDistancia.forEach((el, index) => {
                         let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento sin nombre comercial";
                         let lat = el.lat;
