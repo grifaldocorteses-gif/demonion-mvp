@@ -642,7 +642,7 @@ def home():
                         </div>
                         <div id="body-radar-gps" class="check-accordion-body" style="display: block;">
                             
-                            <!-- SECCIÓN 1: MOTOR PRIMARIO (GOOGLE MAPS DIRECTO) - DESPLEGABLE Y RETRÁCTIL -->
+                            <!-- SECCIÓN 1: MOTOR PRIMARIO (GOOGLE MAPS DIRECTO) -->
                             <div class="check-accordion-card" style="margin-bottom: 8px;">
                                 <div class="check-accordion-header" onclick="toggleAcordeon('body-motor-primario', 'arrow-motor-primario')">
                                     <span style="font-size: 11px; font-weight: 700; color: #60a5fa;">🚀 MOTOR PRIMARIO: Google Maps Directo (En línea)</span>
@@ -671,7 +671,7 @@ def home():
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN 2: REPOSITORIO Y MARCADORES FAVORITOS - DESPLEGABLE Y RETRÁCTIL -->
+                            <!-- SECCIÓN 2: REPOSITORIO Y MARCADORES FAVORITOS -->
                             <div class="check-accordion-card" style="margin-bottom: 8px;">
                                 <div class="check-accordion-header" onclick="toggleAcordeon('body-repositorio', 'arrow-repositorio')">
                                     <span style="font-size: 11px; font-weight: 700; color: var(--accent-amber);">💾 Repositorio y Marcadores Favoritos (SQLite)</span>
@@ -694,7 +694,7 @@ def home():
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN 3: INYECTAR COORDENADAS DE GOOGLE MAPS - DESPLEGABLE Y RETRÁCTIL -->
+                            <!-- SECCIÓN 3: INYECTAR COORDENADAS DE GOOGLE MAPS -->
                             <div class="check-accordion-card" style="margin-bottom: 4px;">
                                 <div class="check-accordion-header" onclick="toggleAcordeon('body-inyectar', 'arrow-inyectar')">
                                     <span style="font-size: 11px; font-weight: 600; color: var(--accent-cyan);">📍 Inyectar Coordenadas Copiadas de Google Maps a Base Local</span>
@@ -723,33 +723,33 @@ def home():
                         </div>
                     </div>
 
-                    <!-- Ficha Técnica y Odómetro -->
+                    <!-- Ficha Técnica y Odómetro (Tamaños ajustados e iguales a los demás bloques) -->
                     <div class="telemetria-grid">
                         <div class="telemetria-item">
                             <label>Marca</label>
                             <div class="input-voz-group">
-                                <input type="text" id="marca" placeholder="Ej. Bajaj">
+                                <input type="text" id="marca" placeholder="Ej. Bajaj" style="padding: 6px 8px; font-size: 11px;">
                                 <button type="button" class="btn-voice" onclick="escucharVoz('marca')">🎤</button>
                             </div>
                         </div>
                         <div class="telemetria-item">
                             <label>Modelo</label>
                             <div class="input-voz-group">
-                                <input type="text" id="modelo" placeholder="Ej. Pulsar NS 200">
+                                <input type="text" id="modelo" placeholder="Ej. Pulsar NS 200" style="padding: 6px 8px; font-size: 11px;">
                                 <button type="button" class="btn-voice" onclick="escucharVoz('modelo')">🎤</button>
                             </div>
                         </div>
                         <div class="telemetria-item">
                             <label>Año</label>
                             <div class="input-voz-group">
-                                <input type="text" id="anio" placeholder="Ej. 2024">
+                                <input type="text" id="anio" placeholder="Ej. 2024" style="padding: 6px 8px; font-size: 11px;">
                                 <button type="button" class="btn-voice" onclick="escucharVoz('anio')">🎤</button>
                             </div>
                         </div>
                         <div class="telemetria-item">
                             <label>Odómetro (km)</label>
                             <div class="input-voz-group">
-                                <input type="number" id="km" placeholder="Km Actual">
+                                <input type="number" id="km" placeholder="Km Actual" style="padding: 6px 8px; font-size: 11px;">
                                 <button type="button" class="btn-voice" onclick="escucharVoz('km')">🎤</button>
                             </div>
                         </div>
