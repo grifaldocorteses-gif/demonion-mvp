@@ -1722,7 +1722,6 @@ def home():
                         colorBarraMeta = "var(--accent-green)";
                     }
 
-                    // NUEVA LÓGICA DE ALERTAS DE FELICITACIÓN DINÁMICAS
                     let alertaFelicitacionHtml = "";
                     if (ahorroAcumuladoMetaGlobal > 0 && ahorroAcumuladoMetaGlobal < monto_meta) {
                         alertaFelicitacionHtml = `<p style="margin:4px 0 0 0; color: var(--accent-green); font-weight: 600; font-size: 11px;">🎉 ¡Felicitaciones! Has recuperado tu inversión inicial e iniciado ganancias reales.</p>`;
@@ -1733,6 +1732,12 @@ def home():
                     let msgMeta = ahorroAcumuladoMetaGlobal <= 0 
                         ? `⚠️ En Negativo / Recuperando Inversión: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN.` 
                         : (ahorroAcumuladoMetaGlobal >= monto_meta ? "🏆 ¡Meta Alcanzada! Tienes el capital disponible." : `🚀 Estás al ${pctMeta}% de tu meta. Faltan $${restanteMeta.toFixed(2)} MXN.`);
+
+                    // CÁLCULO DE VALORES REALES PARA EL BALANCE AUDITADO
+                    let totalPresupuestoGlobal = presupuestoTotalAcumuladoGlobal || 0.0;
+                    let costoGasolinaRealVal = gastoGasolinaRealGlobal || 0.0;
+                    let litrosTanqueVal = litrosActualesTanque || 0.0;
+                    let balanceTermometroReal = round(totalPresupuestoGlobal - costoGasolinaRealVal, 2);
 
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
@@ -1754,7 +1759,7 @@ def home():
                                     </div>
                                     <p style="margin:2px 0; color: var(--text-main);"><b>Estatus:</b> ${msgMeta}</p>
                                     ${alertaFelicitacionHtml}
-                                    <p style="margin:6px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados (Termómetro):</b> Inversión ruta ($MXN, lt gas) vs Ganancias en ruta ($MXN).</p>
+                                    <p style="margin:6px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados (Termómetro):</b> Inversión: $${costoGasolinaRealVal.toFixed(2)} MXN (${litrosTanqueVal.toFixed(2)} lt gas) vs Ganancias: $${totalPresupuestoGlobal.toFixed(2)} MXN | <b>Balance Real:</b> $${balanceTermometroReal.toFixed(2)} MXN</p>
                                 </div>
                             </div>
 
@@ -2391,7 +2396,12 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     presupuesto_row = cursor.fetchone()
     total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
 
-    ahorro_real_actualizado = round(total_presupuestos - nuevo_gasto_gasolina, 2)
+    cursor.execute("SELECT SUM(costo_viaje) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    costo_viajes_row = cursor.fetchone()
+    total_costo_viajes = costo_viajes_row[0] if costo_viajes_row and costo_viajes_row[0] is not None else 0.0
+
+    gasto_total_inversion = max(nuevo_gasto_gasolina, total_costo_viajes)
+    ahorro_real_actualizado = round(total_presupuestos - gasto_total_inversion, 2)
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_actualizado, usuario))
 
     conn.commit()
@@ -2466,7 +2476,11 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     presupuesto_row = cursor.fetchone()
     total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
 
-    gasto_total_inversion = max(gasto_gasolina_real, costo_viaje)
+    cursor.execute("SELECT SUM(costo_viaje) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    costo_viajes_row = cursor.fetchone()
+    total_costo_viajes = costo_viajes_row[0] if costo_viajes_row and costo_viajes_row[0] is not None else 0.0
+
+    gasto_total_inversion = max(gasto_gasolina_real, total_costo_viajes)
     ahorro_real_meta = round(total_presupuestos - gasto_total_inversion, 2)
 
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
