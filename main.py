@@ -669,26 +669,23 @@ def home():
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN 2: MOTOR SECUNDARIO (REPOSITORIO Y MARCADORES FAVORITOS - SQLITE) -->
+                            <!-- SECCIÓN 2: REPOSITORIO Y MARCADORES FAVORITOS (BUSCADOR LOCAL PRIORITARIO CON VOZ) -->
                             <div style="background: #0b1120; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px;">
                                 <label style="font-size: 11px; font-weight: 700; color: var(--accent-amber); display: block; margin-bottom: 4px;">
                                     💾 Repositorio y Marcadores Favoritos (SQLite)
                                 </label>
-                                <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 10px;">Consulta de ubicaciones preferidas guardadas sin conexión:</p>
+                                <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 10px;">Buscador local prioritario sin conexión:</p>
                                 
-                                <div class="radar-grid">
-                                    <button class="btn-radar" onclick="buscarPOI('gasolinera')">⛽ Gasolineras Favoritas</button>
-                                    <button class="btn-radar" onclick="buscarPOI('taller')">🔧 Talleres Favoritos</button>
-                                    <button class="btn-radar" onclick="buscarPOI('vulcanizadora')">🛞 Vulka Favoritas</button>
-                                    <button class="btn-radar" onclick="buscarPOI('refaccionaria')">🔩 Refacc. Favoritas</button>
+                                <div class="flex-row">
+                                    <div class="input-voz-group">
+                                        <input type="text" id="input_mis_rutas" placeholder="Escribe o dicte tu ruta o lugar favorito...">
+                                        <button type="button" class="btn-voice" onclick="escucharVoz('input_mis_rutas')">🎤</button>
+                                    </div>
+                                    <button type="button" style="width: auto; padding: 8px 12px; background: #0284c7; font-size: 11px; font-weight: 600;" onclick="buscarMisRutas()">Mis Rutas</button>
                                 </div>
 
-                                <div class="flex-row" style="margin-top: 8px;">
-                                    <div class="input-voz-group">
-                                        <input type="text" id="input_otros_poi" placeholder="Buscar en repositorio favorito...">
-                                        <button type="button" class="btn-voice" onclick="escucharVoz('input_otros_poi')">🎤</button>
-                                    </div>
-                                    <button type="button" style="width: auto; padding: 8px 12px; background: #0284c7; font-size: 11px;" onclick="buscarPOIOtros()">Escanear DB</button>
+                                <div id="radar-resultados" class="radar-results-box" style="display: none;">
+                                    <span id="radar-loading">Ingrese un término para buscar en "Mis Rutas"...</span>
                                 </div>
                             </div>
 
@@ -713,9 +710,6 @@ def home():
                                 </div>
                             </div>
 
-                            <div id="radar-resultados" class="radar-results-box" style="display: none;">
-                                <span id="radar-loading">Seleccione una opción para consultar el repositorio...</span>
-                            </div>
                         </div>
                     </div>
 
@@ -929,10 +923,11 @@ def home():
                     });
 
                     if (res.ok) {
-                        alert("✔ ¡Coordenadas de Google Maps guardadas en el repositorio local SQLite!");
+                        alert("✔ ¡Coordenadas de Google Maps guardadas en 'Mis Rutas' (SQLite)!");
                         document.getElementById("gmaps_nombre").value = "";
                         document.getElementById("gmaps_coords").value = "";
-                        buscarPOI(tipo);
+                        document.getElementById("input_mis_rutas").value = nombre;
+                        buscarMisRutas();
                     } else {
                         alert("Error al guardar en el servidor.");
                     }
@@ -941,21 +936,22 @@ def home():
                 }
             }
 
-            async function buscarPOI(tipo) {
+            async function buscarMisRutas() {
+                let termino = document.getElementById("input_mis_rutas").value.trim().toLowerCase();
                 let resultadosBox = document.getElementById("radar-resultados");
                 resultadosBox.style.display = "block";
-                resultadosBox.innerHTML = "⏳ Consultando repositorio local SQLite...";
+                resultadosBox.innerHTML = "⏳ Consultando 'Mis Rutas' en la base local...";
 
                 try {
-                    let res = await fetch(`${API}/radar/cache?tipo=${encodeURIComponent(tipo)}`, {
+                    let res = await fetch(`${API}/radar/cache?tipo=${encodeURIComponent(termino)}`, {
                         headers: { "Authorization": "Bearer " + authToken }
                     });
                     let poisCache = await res.json();
 
-                    let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar btn-google-maps" style="width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Buscar '${tipo}' en Google Maps</button></div>`;
+                    let fallbackMapsBtn = termino ? `<div style="margin-top:8px;"><button class="btn-radar btn-google-maps" style="width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${termino}')">🧭 Buscar '${termino}' en Google Maps</button></div>` : "";
 
                     if (!poisCache || poisCache.length === 0) {
-                        resultadosBox.innerHTML = `⚠️ <b>Repositorio Vaciio:</b> No hay marcadores guardados para '${tipo}'.${fallbackMapsBtn}`;
+                        resultadosBox.innerHTML = `⚠️ <b>Sin resultados:</b> No hay coincidencias en 'Mis Rutas' para '${termino}'.${fallbackMapsBtn}`;
                         return;
                     }
 
@@ -966,7 +962,7 @@ def home():
 
                     elementosConDistancia.sort((a, b) => a.distanciaKm - b.distanciaKm);
 
-                    let htmlList = `<b style="color:var(--accent-amber);">📁 Repositorio Favoritos: '${tipo}' [SQLite]:</b><br><br>`;
+                    let htmlList = `<b style="color:var(--accent-amber);">📁 Resultados de 'Mis Rutas' [SQLite]:</b><br><br>`;
                     elementosConDistancia.forEach((el, index) => {
                         let brandStr = el.brand ? ` (${el.brand})` : "";
                         let distStr = el.distanciaKm < 999 ? ` (~${el.distanciaKm.toFixed(2)} km)` : "";
@@ -985,21 +981,8 @@ def home():
                     });
                     resultadosBox.innerHTML = htmlList + fallbackMapsBtn;
                 } catch(e) {
-                    resultadosBox.innerHTML = `⚠️ Error al acceder al repositorio local.<div style="margin-top:8px;"><button class="btn-radar btn-google-maps" style="width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Abrir Google Maps</button></div>`;
+                    resultadosBox.innerHTML = `⚠️ Error al consultar 'Mis Rutas'.`;
                 }
-            }
-
-            async function buscarPOIOtros() {
-                let termino = document.getElementById("input_otros_poi").value.trim().toLowerCase();
-                let resultadosBox = document.getElementById("radar-resultados");
-                resultadosBox.style.display = "block";
-
-                if (!termino) {
-                    resultadosBox.innerHTML = "⚠️ Ingrese un término para buscar en el repositorio.";
-                    return;
-                }
-
-                await buscarPOI(termino);
             }
 
             function interpretarClimaWMO(code, temp) {
@@ -1030,7 +1013,7 @@ def home():
             function actualizarEstadoRedDetallado() {
                 let elemRed = document.getElementById("info-red");
                 if (!navigator.onLine) {
-                    elemRed.innerText = "📶 Red: Offline (Modo Repositorio Activo)";
+                    elemRed.innerText = "📶 Red: Offline (Modo 'Mis Rutas' Activo)";
                     elemRed.style.color = "var(--accent-red)";
                     return;
                 }
@@ -1509,8 +1492,8 @@ def home():
                         simularCarga();
                     } else if (inputId === 'km_ruta' || inputId === 'precio_gas' || inputId === 'presupuesto_ruta') {
                         simularRuta();
-                    } else if (inputId === 'input_otros_poi') {
-                        buscarPOIOtros();
+                    } else if (inputId === 'input_mis_rutas') {
+                        buscarMisRutas();
                     } else if (inputId === 'input_gmaps_otros') {
                         abrirGoogleMapsOtros();
                     }
