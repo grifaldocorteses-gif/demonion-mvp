@@ -674,11 +674,11 @@ def home():
                                 <label style="font-size: 11px; font-weight: 700; color: var(--accent-amber); display: block; margin-bottom: 4px;">
                                     💾 Repositorio y Marcadores Favoritos (SQLite)
                                 </label>
-                                <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 10px;">Buscador local prioritario sin conexión:</p>
+                                <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 10px;">Buscador local prioritario:</p>
                                 
                                 <div class="flex-row">
                                     <div class="input-voz-group">
-                                        <input type="text" id="input_mis_rutas" placeholder="Escribe o dicte tu ruta o lugar favorito...">
+                                        <input type="text" id="input_mis_rutas" placeholder="Preferencias">
                                         <button type="button" class="btn-voice" onclick="escucharVoz('input_mis_rutas')">🎤</button>
                                     </div>
                                     <button type="button" style="width: auto; padding: 8px 12px; background: #0284c7; font-size: 11px; font-weight: 600;" onclick="buscarMisRutas()">Mis Rutas</button>
@@ -948,10 +948,8 @@ def home():
                     });
                     let poisCache = await res.json();
 
-                    let fallbackMapsBtn = termino ? `<div style="margin-top:8px;"><button class="btn-radar btn-google-maps" style="width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${termino}')">🧭 Buscar '${termino}' en Google Maps</button></div>` : "";
-
                     if (!poisCache || poisCache.length === 0) {
-                        resultadosBox.innerHTML = `⚠️ <b>Sin resultados:</b> No hay coincidencias en 'Mis Rutas' para '${termino}'.${fallbackMapsBtn}`;
+                        resultadosBox.innerHTML = `⚠️ <b>Sin resultados:</b> No hay coincidencias en 'Mis Rutas' para '${termino}'.`;
                         return;
                     }
 
@@ -979,7 +977,7 @@ def home():
                             </div>
                         `;
                     });
-                    resultadosBox.innerHTML = htmlList + fallbackMapsBtn;
+                    resultadosBox.innerHTML = htmlList;
                 } catch(e) {
                     resultadosBox.innerHTML = `⚠️ Error al consultar 'Mis Rutas'.`;
                 }
