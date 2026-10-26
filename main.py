@@ -110,7 +110,6 @@ def init_db():
         )
     """)
     
-    # Migración de columnas de seguridad para bases de datos existentes
     try:
         cursor.execute("ALTER TABLE tanque_usuario ADD COLUMN gasto_gasolina_real REAL DEFAULT 0.0")
     except sqlite3.OperationalError:
@@ -1422,10 +1421,7 @@ def home():
                 let rendimientoEstandar = 30.0;
                 let litrosConsumidos = round(kmRutaVal / rendimientoEstandar, 2);
                 let costoViaje = round(litrosConsumidos * precioGasVal, 2);
-                
-                // --- MODIFICACIÓN REQUERIDA: VÍA PERSONAL / SIN PAGO ($0.0) ---
                 let balanceNetoSim = presupuestoVal === 0 ? round(-costoViaje, 2) : round(presupuestoVal - costoViaje, 2);
-                
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
                 
@@ -1716,7 +1712,6 @@ def home():
                     let precargaSugerida = peso_piloto > 85 ? "Aumentar 2 puntos de precarga en monoshock trasero" : (peso_piloto < 60 ? "Reducir 1 punto de precarga para mayor suavidad" : "Precarga estándar de fábrica recomendada");
                     let fatigaPostural = altura_piloto > 180 ? "Postura alta: Sugiere elevadores de manillar para prevenir tensión lumbar en trayectos >60 min" : (altura_piloto < 165 ? "Postura baja: Alcance óptimo al piso, vigilar ángulo de flexión en rodillas" : "Ergonomía neutral óptima para la geometría del asiento");
 
-                    // CÁLCULOS AUDITADOS Y REALES DE LA META DE AHORRO
                     let pctMeta = Math.min(100, Math.round((ahorroAcumuladoMetaGlobal / monto_meta) * 100));
                     let restanteMeta = Math.max(0, monto_meta - ahorroAcumuladoMetaGlobal);
                     let colorBarraMeta = pctMeta >= 100 ? "var(--accent-green)" : (pctMeta > 50 ? "var(--accent-cyan)" : "var(--accent-amber)");
@@ -1725,7 +1720,6 @@ def home():
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
                             
-                            <!-- TARJETA 1: META DE AHORRO REAL AUDITADA -->
                             <div class="diag-card" onclick="toggleDesplegable('details-meta', 'arrow-meta')" style="border-color: var(--accent-cyan);">
                                 <div class="diag-header">
                                     <div class="diag-header-left">
@@ -1742,7 +1736,7 @@ def home():
                                         <div class="progress-bar" style="width: ${pctMeta}%; background: ${colorBarraMeta};"></div>
                                     </div>
                                     <p style="margin:2px 0; color: var(--text-main);"><b>Estatus:</b> ${msgMeta}</p>
-                                    <p style="margin:4px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados:</b> Pagos Recibidos ($${presupuestoTotalAcumuladoGlobal.toFixed(2)}) − Inversión Real Gasolina ($${gastoGasolinaRealGlobal.toFixed(2)})</p>
+                                    <p style="margin:4px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados:</b> Pagos Recibidos ($${presupuestoTotalAcumuladoGlobal.toFixed(2)}) − Costo Gasolina Consumida en Rutas ($${gastoTotalAcumuladoGlobal.toFixed(2)})</p>
                                 </div>
                             </div>
 
@@ -2340,12 +2334,12 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
         ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?, gasto_gasolina_real = ?
     """, (usuario, nuevo_total_litros, nuevo_gasto_gasolina, nuevo_total_litros, nuevo_gasto_gasolina))
 
-    # RECUPERAR PRESUPUESTO ACUMULADO Y RECALCULAR AHORRO REAL DE META
-    cursor.execute("SELECT presupuesto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT presupuesto_total_acumulado, gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
     presupuesto_total = est_row[0] if est_row and est_row[0] is not None else 0.0
+    gasto_total = est_row[1] if est_row and est_row[1] is not None else 0.0
 
-    ahorro_real_actualizado = max(0.0, round(presupuesto_total - nuevo_gasto_gasolina, 2))
+    ahorro_real_actualizado = max(0.0, round(presupuesto_total - gasto_total, 2))
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_actualizado, usuario))
 
     conn.commit()
@@ -2383,7 +2377,6 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
     costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
     
-    # --- MODIFICACIÓN REQUERIDA: VÍA PERSONAL / SIN PAGO ($0.0) ---
     if e.presupuesto == 0.0:
         balance_neto = round(-costo_viaje, 2)
     else:
@@ -2419,8 +2412,7 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     presupuesto_total_acumulado = est_row[2]
     tiempo_total_acumulado_min = est_row[3]
 
-    # CÁLCULO ESTRICTO DE AHORRO REAL (Ingresos Totales - Compra de Gasolina Real)
-    ahorro_real_meta = max(0.0, round(presupuesto_total_acumulado - gasto_gasolina_real, 2))
+    ahorro_real_meta = max(0.0, round(presupuesto_total_acumulado - gasto_total_acumulado, 2))
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
 
     cursor.execute("""
