@@ -91,6 +91,18 @@ def init_db():
             fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # TABLA DE CACHÉ OFFLINE PARA EL RADAR GPS
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS radar_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tipo TEXT,
+            nombre TEXT,
+            brand TEXT,
+            lat REAL,
+            lon REAL,
+            fecha_guardado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -126,6 +138,13 @@ class EvaluarRuta(BaseModel):
 
 class RegistrarMantenimiento(BaseModel):
     componente: str
+
+class CachePOI(BaseModel):
+    tipo: str
+    nombre: str
+    brand: str = ""
+    lat: float
+    lon: float
 
 def verificar_token(authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
@@ -295,7 +314,6 @@ def home():
             .bloque-principal-header:hover { background: #131d31; }
             .bloque-principal-body { display: none; padding: 16px; }
 
-            /* Estilos para el Radar GPS SOS con 8 categorías y radio optimizado de 10 km */
             .radar-grid {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
@@ -503,7 +521,7 @@ def home():
                     <!-- PROTOCOLO NORMATIVO / AVISO DE SEGURIDAD -->
                     <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                         <p style="margin:0 0 4px 0; font-weight:600; color:#60a5fa; font-size:12px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
-                        <p style="margin:0 0 4px 0;">Cumple estrictamente la reglamentación:</p>
+                        <p style="margin:0 0 4px 0;">Cumple strictly la reglamentación:</p>
                         <p style="margin:0 0 4px 0; font-size:11px;">• <b>Límites:</b> Máx 50 km/h secundarias, 80 km/h acceso controlado, 30 km/h escuelas.</p>
                         <p style="margin:0 0 4px 0; font-size:11px;">• <b>EPP:</b> Casco certificado (DOT/ECE) y chaleco reflejante nocturno.</p>
                         <p style="margin:0 0 6px 0; font-size:11px; color:#fca5a5;">• <b>Prohibiciones:</b> Cero invasión de carriles confinados o banquetas, prohibido conducir cansado o bajo efectos de alcohol.</p>
@@ -598,10 +616,10 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO: 10 KM + ALTA PRECISIÓN SATELITAL) -->
+            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO: CACHÉ OFFLINE SQLITE + NAVEGACIÓN HÍBRIDA) -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
-                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 10 km - Alta Precisión)</span>
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 10 km - Caché Offline)</span>
                     <span id="arrow-bloque-3" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
                 </div>
                 <div id="body-bloque-3" class="bloque-principal-body">
@@ -614,14 +632,14 @@ def home():
                         <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: Obteniendo GPS...</span>
                     </div>
 
-                    <!-- Radar GPS de Servicios Cercanos (ACTUALIZADO: Radio 10 km y alta precisión) -->
+                    <!-- Radar GPS de Servicios Cercanos con Caché Offline -->
                     <div class="check-accordion-card" style="margin-bottom: 10px;">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-radar-gps', 'arrow-radar-gps')">
                             <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📡 Radar GPS SOS: Servicios y Auxilio Cercano (Radio 10 km)</span>
                             <span id="arrow-radar-gps" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-radar-gps" class="check-accordion-body" style="display: block;">
-                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Selecciona o busca por voz establecimientos en un radio optimizado de <b>10 km</b> (alta precisión satelital y ordenados por cercanía):</p>
+                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Búsqueda con precisión satelital, ordenamiento por distancia y soporte <b>Caché Offline en SQLite</b>:</p>
                             
                             <div class="radar-grid">
                                 <button class="btn-radar" onclick="buscarPOI('gasolinera')">⛽ Gasolineras</button>
@@ -633,7 +651,7 @@ def home():
                                 <button class="btn-radar" onclick="buscarPOI('policia')" style="grid-column: span 2;">🚨 Seguridad Pública / Policía</button>
                             </div>
 
-                            <!-- SECCIÓN: OTROS (CON DICTADO POR VOZ Y BÚSQUEDA PERSONALIZADA) -->
+                            <!-- SECCIÓN: OTROS (CON DICTADO POR VOZ) -->
                             <div style="margin-top: 10px; background: #0b1120; padding: 8px; border-radius: 6px; border: 1px dashed var(--border-color);">
                                 <label style="font-size: 11px; font-weight: 600; color: #38bdf8;">🔍 Otros (Búsqueda Personalizada / Dictado por Voz):</label>
                                 <div class="flex-row" style="margin-top: 4px;">
@@ -740,7 +758,6 @@ def home():
                 }
 
                 if (navigator.geolocation) {
-                    // CONFIGURACIÓN DE ALTA PRECISIÓN SATELITAL (enableHighAccuracy: true)
                     navigator.geolocation.getCurrentPosition(position => {
                         currentLat = position.coords.latitude;
                         currentLon = position.coords.longitude;
@@ -754,7 +771,7 @@ def home():
                             document.getElementById("info-ubicacion").innerText = `📍 Ubicación: ${direccion}`;
                         })
                         .catch(() => {
-                            document.getElementById("info-ubicacion").innerText = `📍 Coordenadas: ${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`;
+                            document.getElementById("info-ubicacion").innerText = `📍 Coordenadas GPS: ${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`;
                         });
 
                         fetch(`https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current_weather=true`)
@@ -809,11 +826,75 @@ def home():
                 return R * c;
             }
 
-            // RADAR GPS SOS: Radio optimizado a 10 km con alta precisión
+            // GUARDAR POIS EN CACHÉ SQLITE
+            async function guardarPoisEnCache(tipo, pois) {
+                for (let p of pois) {
+                    let name = p.tags && p.tags.name ? p.tags.name : "Establecimiento de Servicio";
+                    let brand = p.tags && p.tags.brand ? p.tags.brand : "";
+                    if (p.lat && p.lon) {
+                        try {
+                            await fetch(API + "/radar/cache", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "Authorization": "Bearer " + authToken
+                                },
+                                body: JSON.stringify({ tipo, nombre: name, brand, lat: p.lat, lon: p.lon })
+                            });
+                        } catch(e) {}
+                    }
+                }
+            }
+
+            // CONSULTAR POIS DESDE CACHÉ OFFLINE (FALLBACK SQLITE)
+            async function buscarPOIOffline(tipo, tituloBusqueda) {
+                let resultadosBox = document.getElementById("radar-resultados");
+                try {
+                    let res = await fetch(`${API}/radar/cache?tipo=${encodeURIComponent(tipo)}`, {
+                        headers: { "Authorization": "Bearer " + authToken }
+                    });
+                    let poisCache = await res.json();
+
+                    if (!poisCache || poisCache.length === 0) {
+                        resultadosBox.innerHTML = `⚠️ <b>Modo Sin Red (Offline):</b> No hay registros previos guardados en la base de datos local para '${tipo}'.`;
+                        return;
+                    }
+
+                    let elementosConDistancia = poisCache.map(el => {
+                        let dist = (el.lat && el.lon && currentLat && currentLon) ? calcularDistanciaKm(currentLat, currentLon, el.lat, el.lon) : 999;
+                        return { ...el, distanciaKm: dist };
+                    });
+
+                    elementosConDistancia.sort((a, b) => a.distanciaKm - b.distanciaKm);
+
+                    let htmlList = `<b style="color:var(--accent-amber);">${tituloBusqueda} [💾 MODO OFFLINE - Base de Datos Local]:</b><br><br>`;
+                    elementosConDistancia.forEach((el, index) => {
+                        let brandStr = el.brand ? ` (${el.brand})` : "";
+                        let distStr = el.distanciaKm < 999 ? ` (~${el.distanciaKm.toFixed(2)} km)` : "";
+                        let mapsUrl = `geo:${el.lat},${el.lon}?q=${el.lat},${el.lon}(${encodeURIComponent(el.nombre)})`;
+                        let webUrl = `https://www.google.com/maps/search/?api=1&query=${el.lat},${el.lon}`;
+                        let etiquetaPrioridad = index === 0 ? " <span style='color:var(--accent-green); font-weight:600;'>[⭐ ¡Más Cercano!]</span>" : "";
+
+                        htmlList += `
+                            <div class="poi-item">
+                                <b>${index + 1}. ${el.nombre}${brandStr}</b>${etiquetaPrioridad}<br>
+                                <span style="color:var(--text-muted); font-size:10px;">Distancia: ${distStr}</span><br>
+                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir en Mapa Offline / App GPS</a> | 
+                                <a href="${webUrl}" target="_blank" style="color: #9ca3af; text-decoration: underline;">Web</a>
+                            </div>
+                        `;
+                    });
+                    resultadosBox.innerHTML = htmlList;
+                } catch(e) {
+                    resultadosBox.innerHTML = "⚠️ Error crítico al acceder a la caché local.";
+                }
+            }
+
+            // RADAR GPS SOS PRINCIPAL (ONLINE + FALLBACK OFFLINE SQLITE)
             async function buscarPOI(tipo) {
                 let resultadosBox = document.getElementById("radar-resultados");
                 resultadosBox.style.display = "block";
-                resultadosBox.innerHTML = "⏳ Escaneando la zona cercana en un radio de 10 km (alta precisión) y calculando distancias...";
+                resultadosBox.innerHTML = "⏳ Escaneando la zona cercana en un radio de 10 km...";
 
                 if (!currentLat || !currentLon) {
                     resultadosBox.innerHTML = "⚠️ Error: No se ha obtenido la señal GPS actual. Activa la ubicación del navegador.";
@@ -853,9 +934,13 @@ def home():
                     let data = await response.json();
                     
                     if (!data.elements || data.elements.length === 0) {
-                        resultadosBox.innerHTML = `<b>${tituloBusqueda}:</b> No se encontraron establecimientos exactos en un radio de 10 km.`;
+                        resultadosBox.innerHTML = `<b>${tituloBusqueda}:</b> No se encontraron establecimientos en el servidor remoto. Buscando en caché local...`;
+                        await buscarPOIOffline(tipo, tituloBusqueda);
                         return;
                     }
+
+                    // Guardar en segundo plano dentro de SQLite para uso offline futuro
+                    guardarPoisEnCache(tipo, data.elements);
 
                     let elementosConDistancia = data.elements.map(el => {
                         let lat = el.lat;
@@ -866,31 +951,34 @@ def home():
 
                     elementosConDistancia.sort((a, b) => a.distanciaKm - b.distanciaKm);
 
-                    let htmlList = `<b style="color:var(--accent-cyan);">${tituloBusqueda} (~10 km - Ordenados por Prioridad de Cercanía):</b><br><br>`;
+                    let htmlList = `<b style="color:var(--accent-cyan);">${tituloBusqueda} (~10 km - Prioridad por Cercanía):</b><br><br>`;
                     elementosConDistancia.forEach((el, index) => {
                         let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento sin nombre comercial";
                         let brand = el.tags && el.tags.brand ? ` (${el.tags.brand})` : "";
                         let lat = el.lat;
                         let lon = el.lon;
                         let distStr = el.distanciaKm < 999 ? ` (~${el.distanciaKm.toFixed(2)} km)` : "";
-                        let mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+                        let mapsUrl = `geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(name)})`;
+                        let webUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
                         let etiquetaPrioridad = index === 0 ? " <span style='color:var(--accent-green); font-weight:600;'>[⭐ ¡Más Cercano!]</span>" : "";
                         
                         htmlList += `
                             <div class="poi-item">
                                 <b>${index + 1}. ${name}${brand}</b>${etiquetaPrioridad}<br>
                                 <span style="color:var(--text-muted); font-size:10px;">Distancia: ${distStr}</span><br>
-                                <a href="${mapsUrl}" target="_blank" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir en Google Maps / Ruta</a>
+                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir en Mapa Offline / App GPS</a> | 
+                                <a href="${webUrl}" target="_blank" style="color: #9ca3af; text-decoration: underline;">Web</a>
                             </div>
                         `;
                     });
                     resultadosBox.innerHTML = htmlList;
                 } catch (e) {
-                    resultadosBox.innerHTML = "⚠️ Error de conexión al consultar el radar de servicios. Intenta de nuevo.";
+                    // SI NO HAY CONEXIÓN A INTERNET, CONSULTAR CACHÉ SQLITE
+                    await buscarPOIOffline(tipo, tituloBusqueda);
                 }
             }
 
-            // BUSCADOR PERSONALIZADO PARA SECCIÓN "OTROS" (RADIO DE 10 KM + DICTADO POR VOZ)
+            // BUSCADOR PERSONALIZADO PARA SECCIÓN "OTROS"
             async function buscarPOIOtros() {
                 let termino = document.getElementById("input_otros_poi").value.trim().toLowerCase();
                 let resultadosBox = document.getElementById("radar-resultados");
@@ -901,7 +989,7 @@ def home():
                     return;
                 }
 
-                resultadosBox.innerHTML = `⏳ Buscando '${termino}' en un radio de 10 km y ordenando por cercanía...`;
+                resultadosBox.innerHTML = `⏳ Buscando '${termino}' en un radio de 10 km...`;
 
                 if (!currentLat || !currentLon) {
                     resultadosBox.innerHTML = "⚠️ Error: No se ha obtenido la señal GPS actual.";
@@ -916,9 +1004,11 @@ def home():
                     let data = await response.json();
                     
                     if (!data.elements || data.elements.length === 0) {
-                        resultadosBox.innerHTML = `<b>Búsqueda ('${termino}'):</b> No se encontraron resultados exactos en un radio de 10 km.`;
+                        await buscarPOIOffline(termino, `Resultados para '${termino}'`);
                         return;
                     }
+
+                    guardarPoisEnCache(termino, data.elements);
 
                     let elementosConDistancia = data.elements.map(el => {
                         let lat = el.lat;
@@ -931,24 +1021,26 @@ def home():
 
                     let htmlList = `<b style="color:var(--accent-cyan);">Resultados para '${termino}' (~10 km - Ordenados por Cercanía):</b><br><br>`;
                     elementosConDistancia.forEach((el, index) => {
-                        let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento sin nombre comercial";
+                        let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento de Servicio";
                         let lat = el.lat;
                         let lon = el.lon;
                         let distStr = `(~${el.distanciaKm.toFixed(2)} km)`;
-                        let mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+                        let mapsUrl = `geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(name)})`;
+                        let webUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
                         let etiquetaPrioridad = index === 0 ? " <span style='color:var(--accent-green); font-weight:600;'>[⭐ ¡Más Cercano!]</span>" : "";
                         
                         htmlList += `
                             <div class="poi-item">
                                 <b>${index + 1}. ${name}</b>${etiquetaPrioridad}<br>
                                 <span style="color:var(--text-muted); font-size:10px;">Distancia: ${distStr}</span><br>
-                                <a href="${mapsUrl}" target="_blank" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir en Google Maps / Ruta</a>
+                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir en Mapa Offline / App GPS</a> | 
+                                <a href="${webUrl}" target="_blank" style="color: #9ca3af; text-decoration: underline;">Web</a>
                             </div>
                         `;
                     });
                     resultadosBox.innerHTML = htmlList;
                 } catch (e) {
-                    resultadosBox.innerHTML = "⚠️ Error de conexión al consultar el radar personalizado. Intenta de nuevo.";
+                    await buscarPOIOffline(termino, `Resultados para '${termino}'`);
                 }
             }
 
@@ -980,7 +1072,7 @@ def home():
             function actualizarEstadoRedDetallado() {
                 let elemRed = document.getElementById("info-red");
                 if (!navigator.onLine) {
-                    elemRed.innerText = "📶 Red: Offline";
+                    elemRed.innerText = "📶 Red: Offline (Modo Caché Activo)";
                     elemRed.style.color = "var(--accent-red)";
                     return;
                 }
@@ -1921,6 +2013,35 @@ def home():
     </html>
     """
     return html_content
+
+@app.post("/radar/cache")
+def guardar_cache_poi(item: CachePOI, authorization: str = Header(None)):
+    verificar_token(authorization)
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO radar_cache (tipo, nombre, brand, lat, lon)
+        VALUES (?, ?, ?, ?, ?)
+    """, (item.tipo.lower(), item.nombre, item.brand, item.lat, item.lon))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
+@app.get("/radar/cache")
+def obtener_cache_poi(tipo: str, authorization: str = Header(None)):
+    verificar_token(authorization)
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT nombre, brand, lat, lon 
+        FROM radar_cache 
+        WHERE tipo = ? OR nombre LIKE ? 
+        ORDER BY id DESC LIMIT 15
+    """, (tipo.lower(), f"%{tipo}%"))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 @app.get("/backup")
 def descargar_backup():
