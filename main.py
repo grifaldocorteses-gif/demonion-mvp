@@ -1714,8 +1714,17 @@ def home():
 
                     let pctMeta = Math.min(100, Math.max(0, Math.round((ahorroAcumuladoMetaGlobal / monto_meta) * 100)));
                     let restanteMeta = Math.max(0, monto_meta - ahorroAcumuladoMetaGlobal);
-                    let colorBarraMeta = ahorroAcumuladoMetaGlobal < 0 ? "var(--accent-red)" : (pctMeta >= 100 ? "var(--accent-green)" : (pctMeta > 50 ? "var(--accent-cyan)" : "var(--accent-amber)"));
-                    let msgMeta = ahorroAcumuladoMetaGlobal < 0 ? `⚠️ Balance Negativo: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN.` : (pctMeta >= 100 ? "🏆 ¡Meta Alcanzada! Tienes el capital disponible." : `🚀 Estás al ${pctMeta}% de tu meta. Faltan $${restanteMeta.toFixed(2)} MXN.`);
+                    
+                    let colorBarraMeta = "var(--accent-amber)";
+                    if (ahorroAcumuladoMetaGlobal <= 0) {
+                        colorBarraMeta = "var(--accent-red)";
+                    } else if (ahorroAcumuladoMetaGlobal >= monto_meta) {
+                        colorBarraMeta = "var(--accent-green)";
+                    }
+
+                    let msgMeta = ahorroAcumuladoMetaGlobal <= 0 
+                        ? `⚠️ En Negativo / Recuperando Inversión: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN.` 
+                        : (ahorroAcumuladoMetaGlobal >= monto_meta ? "🏆 ¡Meta Alcanzada! Tienes el capital disponible." : `🚀 Estás al ${pctMeta}% de tu meta. Faltan $${restanteMeta.toFixed(2)} MXN.`);
 
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
@@ -1733,10 +1742,10 @@ def home():
                                 </div>
                                 <div id="details-meta" class="diag-details" style="display: block;">
                                     <div class="progress-container" style="height: 10px; margin-bottom: 6px;">
-                                        <div class="progress-bar" style="width: ${Math.max(0, pctMeta)}%; background: ${colorBarraMeta};"></div>
+                                        <div class="progress-bar" style="width: ${ahorroAcumuladoMetaGlobal <= 0 ? 100 : pctMeta}%; background: ${colorBarraMeta};"></div>
                                     </div>
                                     <p style="margin:2px 0; color: var(--text-main);"><b>Estatus:</b> ${msgMeta}</p>
-                                    <p style="margin:4px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados (Suma Neta):</b> Pagos Recibidos ($${presupuestoTotalAcumuladoGlobal.toFixed(2)}) − Costos Operativos Totales ($${gastoTotalAcumuladoGlobal.toFixed(2)}) = <b>Ganancia Real: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN</b></p>
+                                    <p style="margin:4px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados (Termómetro):</b> Inversión Inicial / Gasolina Reflejada en Negativo hasta superar los costos operativos y generar ganancia real.</p>
                                 </div>
                             </div>
 
@@ -2210,10 +2219,20 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # Calcular la ganancia real sumando exactamente todos los balances netos de la bitácora
-    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    sum_row = cursor.fetchone()
-    ahorro_real_meta = sum_row[0] if sum_row and sum_row[0] is not None else 0.0
+    cursor.execute("SELECT SUM(presupuesto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    presupuesto_row = cursor.fetchone()
+    total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
+
+    cursor.execute("SELECT gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
+    tanque_row = cursor.fetchone()
+    gasto_gasolina_real = tanque_row[0] if tanque_row and tanque_row[0] is not None else 0.0
+
+    cursor.execute("SELECT SUM(costo_viaje) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    costo_viajes_row = cursor.fetchone()
+    total_costo_viajes = costo_viajes_row[0] if costo_viajes_row and costo_viajes_row[0] is not None else 0.0
+
+    gasto_total_inversion = max(gasto_gasolina_real, total_costo_viajes)
+    ahorro_real_meta = round(total_presupuestos - gasto_total_inversion, 2)
 
     cursor.execute("SELECT id, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
@@ -2261,10 +2280,20 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # Recalcular ganancia real mediante suma de balances netos
-    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    sum_row = cursor.fetchone()
-    ahorro_real_meta = sum_row[0] if sum_row and sum_row[0] is not None else 0.0
+    cursor.execute("SELECT SUM(presupuesto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    presupuesto_row = cursor.fetchone()
+    total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
+
+    cursor.execute("SELECT gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
+    tanque_row = cursor.fetchone()
+    gasto_gasolina_real = tanque_row[0] if tanque_row and tanque_row[0] is not None else 0.0
+
+    cursor.execute("SELECT SUM(costo_viaje) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    costo_viajes_row = cursor.fetchone()
+    total_costo_viajes = costo_viajes_row[0] if costo_viajes_row and costo_viajes_row[0] is not None else 0.0
+
+    gasto_total_inversion = max(gasto_gasolina_real, total_costo_viajes)
+    ahorro_real_meta = round(total_presupuestos - gasto_total_inversion, 2)
 
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
     conn.commit()
@@ -2349,10 +2378,11 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
         ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?, gasto_gasolina_real = ?
     """, (usuario, nuevo_total_litros, nuevo_gasto_gasolina, nuevo_total_litros, nuevo_gasto_gasolina))
 
-    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    sum_row = cursor.fetchone()
-    ahorro_real_actualizado = sum_row[0] if sum_row and sum_row[0] is not None else 0.0
+    cursor.execute("SELECT SUM(presupuesto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    presupuesto_row = cursor.fetchone()
+    total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
 
+    ahorro_real_actualizado = round(total_presupuestos - nuevo_gasto_gasolina, 2)
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_actualizado, usuario))
 
     conn.commit()
@@ -2423,10 +2453,12 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, e.presupuesto, balance_neto, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
 
-    # Calcular la ganancia real sumando exactamente todos los balances netos de la bitácora
-    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    sum_row = cursor.fetchone()
-    ahorro_real_meta = sum_row[0] if sum_row and sum_row[0] is not None else 0.0
+    cursor.execute("SELECT SUM(presupuesto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    presupuesto_row = cursor.fetchone()
+    total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
+
+    gasto_total_inversion = max(gasto_gasolina_real, costo_viaje)
+    ahorro_real_meta = round(total_presupuestos - gasto_total_inversion, 2)
 
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
 
