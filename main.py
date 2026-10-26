@@ -329,6 +329,7 @@ def home():
                 color: #38bdf8;
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: 6px;
                 cursor: pointer;
                 transition: all 0.2s;
@@ -652,7 +653,19 @@ def home():
                                     <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('vulcanizadora')">🛞 Vulcanizadoras</button>
                                     <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('refaccionaria')">🔩 Refaccionarias</button>
                                     <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('hospitales')">🏥 Hospitales</button>
-                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('estacion de policia')" style="grid-column: span 2;">🚨 Seguridad Pública / Policía</button>
+                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('estacion de policia')">🚨 Policía</button>
+                                </div>
+
+                                <!-- OPCIÓN "OTROS" CON ENTRADA DE VOZ PARA GOOGLE MAPS DIRECTO -->
+                                <div style="margin-top: 8px; background: rgba(26, 115, 232, 0.1); border: 1px solid rgba(66, 133, 244, 0.3); padding: 8px; border-radius: 6px;">
+                                    <label style="font-size: 10px; font-weight: 600; color: #93c5fd; display: block; margin-bottom: 4px;">🔍 Búsqueda Personalizada "Otros" (Google Maps):</label>
+                                    <div class="flex-row">
+                                        <div class="input-voz-group">
+                                            <input type="text" id="input_gmaps_otros" placeholder="Buscar en Google Maps (ej. Resto, Farmacia)...">
+                                            <button type="button" class="btn-voice" onclick="escucharVoz('input_gmaps_otros')">🎤</button>
+                                        </div>
+                                        <button type="button" class="btn-radar btn-google-maps" style="width: auto; padding: 8px 12px; font-size: 11px; margin: 0; white-space: nowrap;" onclick="abrirGoogleMapsOtros()">🧭 Buscar</button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -691,6 +704,7 @@ def home():
                                         <option value="refaccionaria">Refaccionaria</option>
                                         <option value="hospital">Hospital</option>
                                         <option value="policia">Policía</option>
+                                        <option value="otros">Otros</option>
                                     </select>
                                     <div class="flex-row">
                                         <input type="text" id="gmaps_coords" placeholder="Lat, Lon (Ej. 19.6543, -99.2014)" style="margin:0;">
@@ -857,6 +871,15 @@ def home():
                 }
                 let url = `https://www.google.com/maps/search/${encodeURIComponent(queryBusqueda)}/@${currentLat},${currentLon},14z`;
                 window.open(url, "_blank");
+            }
+
+            function abrirGoogleMapsOtros() {
+                let termino = document.getElementById("input_gmaps_otros").value.trim();
+                if (!termino) {
+                    alert("⚠️ Ingrese o dicte una categoría o lugar para buscar en Google Maps.");
+                    return;
+                }
+                abrirGoogleMapsExterno(termino);
             }
 
             function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
@@ -1557,6 +1580,8 @@ def home():
                         simularRuta();
                     } else if (inputId === 'input_otros_poi') {
                         buscarPOIOtros();
+                    } else if (inputId === 'input_gmaps_otros') {
+                        abrirGoogleMapsOtros();
                     }
                 };
 
