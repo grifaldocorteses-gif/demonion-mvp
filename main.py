@@ -615,10 +615,10 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO: GOOGLE MAPS FALLBACK & MANUAL FEEDBACK) -->
+            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO: ENLACES GOOGLE MAPS VISIBLES Y ACCESIBLES) -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
-                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 10 km - Caché Offline & Respaldo Maps)</span>
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 10 km - Enlaces Visibles Google Maps)</span>
                     <span id="arrow-bloque-3" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
                 </div>
                 <div id="body-bloque-3" class="bloque-principal-body">
@@ -638,7 +638,7 @@ def home():
                             <span id="arrow-radar-gps" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-radar-gps" class="check-accordion-body" style="display: block;">
-                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Búsqueda con precisión satelital, ordenamiento por distancia y soporte <b>Caché Offline en SQLite</b>:</p>
+                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Búsqueda con precisión satelital, ordenamiento por distancia y enlaces directos visibles a Google Maps:</p>
                             
                             <div class="radar-grid">
                                 <button class="btn-radar" onclick="buscarPOI('gasolinera')">⛽ Gasolineras</button>
@@ -662,7 +662,7 @@ def home():
                                 </div>
                             </div>
 
-                            <!-- NUEVO: FORMULARIO DE REGISTRO MANUAL PARA ALIMENTAR CACHÉ SQLITE -->
+                            <!-- FORMULARIO DE REGISTRO MANUAL PARA ALIMENTAR CACHÉ SQLITE -->
                             <div style="margin-top: 10px; background: #0b1120; padding: 8px; border-radius: 6px; border: 1px dashed rgba(16, 185, 129, 0.4);">
                                 <label style="font-size: 11px; font-weight: 600; color: var(--accent-green);">➕ Registrar POI Externo / Manualmente en Caché Local:</label>
                                 <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
@@ -912,7 +912,7 @@ def home():
                     });
                     let poisCache = await res.json();
 
-                    let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Buscar '${tipo}' directamente en Google Maps Externo</button></div>`;
+                    let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Abrir búsqueda directa en Google Maps</button></div>`;
 
                     if (!poisCache || poisCache.length === 0) {
                         resultadosBox.innerHTML = `⚠️ <b>Modo Sin Red (Offline):</b> No hay registros previos guardados en la base de datos local para '${tipo}'.${fallbackMapsBtn}`;
@@ -938,8 +938,8 @@ def home():
                             <div class="poi-item">
                                 <b>${index + 1}. ${el.nombre}${brandStr}</b>${etiquetaPrioridad}<br>
                                 <span style="color:var(--text-muted); font-size:10px;">Distancia: ${distStr}</span><br>
-                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir en Mapa Offline / App GPS</a> | 
-                                <a href="${webUrl}" target="_blank" style="color: #9ca3af; text-decoration: underline;">Web</a>
+                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir App GPS (Nativo)</a> | 
+                                <a href="${webUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">🌐 Enlace Google Maps Web</a>
                             </div>
                         `;
                     });
@@ -987,7 +987,7 @@ def home():
                 let overpassQuery = `[out:json][timeout:15];(${queryTag}(around:10000,${currentLat},${currentLon}););out body 12;`;
                 let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
 
-                let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 ¿No encuentras el lugar? Abrir Google Maps Externo</button></div>`;
+                let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 ¿Deseas más opciones? Buscar '${tipo}' directamente en Google Maps</button></div>`;
 
                 try {
                     let response = await fetch(url);
@@ -1024,8 +1024,8 @@ def home():
                             <div class="poi-item">
                                 <b>${index + 1}. ${name}${brand}</b>${etiquetaPrioridad}<br>
                                 <span style="color:var(--text-muted); font-size:10px;">Distancia: ${distStr}</span><br>
-                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir en Mapa Offline / App GPS</a> | 
-                                <a href="${webUrl}" target="_blank" style="color: #9ca3af; text-decoration: underline;">Web</a>
+                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir App GPS (Nativo)</a> | 
+                                <a href="${webUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">🌐 Enlace Google Maps Web</a>
                             </div>
                         `;
                     });
@@ -1090,8 +1090,8 @@ def home():
                             <div class="poi-item">
                                 <b>${index + 1}. ${name}</b>${etiquetaPrioridad}<br>
                                 <span style="color:var(--text-muted); font-size:10px;">Distancia: ${distStr}</span><br>
-                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir en Mapa Offline / App GPS</a> | 
-                                <a href="${webUrl}" target="_blank" style="color: #9ca3af; text-decoration: underline;">Web</a>
+                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir App GPS (Nativo)</a> | 
+                                <a href="${webUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">🌐 Enlace Google Maps Web</a>
                             </div>
                         `;
                     });
