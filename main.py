@@ -1712,10 +1712,10 @@ def home():
                     let precargaSugerida = peso_piloto > 85 ? "Aumentar 2 puntos de precarga en monoshock trasero" : (peso_piloto < 60 ? "Reducir 1 punto de precarga para mayor suavidad" : "Precarga estándar de fábrica recomendada");
                     let fatigaPostural = altura_piloto > 180 ? "Postura alta: Sugiere elevadores de manillar para prevenir tensión lumbar en trayectos >60 min" : (altura_piloto < 165 ? "Postura baja: Alcance óptimo al piso, vigilar ángulo de flexión en rodillas" : "Ergonomía neutral óptima para la geometría del asiento");
 
-                    let pctMeta = Math.min(100, Math.round((ahorroAcumuladoMetaGlobal / monto_meta) * 100));
+                    let pctMeta = Math.min(100, Math.max(0, Math.round((ahorroAcumuladoMetaGlobal / monto_meta) * 100)));
                     let restanteMeta = Math.max(0, monto_meta - ahorroAcumuladoMetaGlobal);
-                    let colorBarraMeta = pctMeta >= 100 ? "var(--accent-green)" : (pctMeta > 50 ? "var(--accent-cyan)" : "var(--accent-amber)");
-                    let msgMeta = pctMeta >= 100 ? "🏆 ¡Meta Alcanzada! Tienes el capital disponible." : `🚀 Estás al ${pctMeta}% de tu meta. Faltan $${restanteMeta.toFixed(2)} MXN.`;
+                    let colorBarraMeta = ahorroAcumuladoMetaGlobal < 0 ? "var(--accent-red)" : (pctMeta >= 100 ? "var(--accent-green)" : (pctMeta > 50 ? "var(--accent-cyan)" : "var(--accent-amber)"));
+                    let msgMeta = ahorroAcumuladoMetaGlobal < 0 ? `⚠️ Balance Negativo: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN.` : (pctMeta >= 100 ? "🏆 ¡Meta Alcanzada! Tienes el capital disponible." : `🚀 Estás al ${pctMeta}% de tu meta. Faltan $${restanteMeta.toFixed(2)} MXN.`);
 
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
@@ -1733,10 +1733,10 @@ def home():
                                 </div>
                                 <div id="details-meta" class="diag-details" style="display: block;">
                                     <div class="progress-container" style="height: 10px; margin-bottom: 6px;">
-                                        <div class="progress-bar" style="width: ${pctMeta}%; background: ${colorBarraMeta};"></div>
+                                        <div class="progress-bar" style="width: ${Math.max(0, pctMeta)}%; background: ${colorBarraMeta};"></div>
                                     </div>
                                     <p style="margin:2px 0; color: var(--text-main);"><b>Estatus:</b> ${msgMeta}</p>
-                                    <p style="margin:4px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados:</b> Pagos Recibidos ($${presupuestoTotalAcumuladoGlobal.toFixed(2)}) − Costo Gasolina Consumida en Rutas ($${gastoTotalAcumuladoGlobal.toFixed(2)})</p>
+                                    <p style="margin:4px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados (Suma Neta):</b> Pagos Recibidos ($${presupuestoTotalAcumuladoGlobal.toFixed(2)}) − Costos Operativos Totales ($${gastoTotalAcumuladoGlobal.toFixed(2)}) = <b>Ganancia Real: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN</b></p>
                                 </div>
                             </div>
 
@@ -2209,25 +2209,30 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, km_actual, ultimo_servicio, ahorro_acumulado FROM vehiculos WHERE usuario = ?", (usuario,))
+    
+    # Calcular la ganancia real sumando exactamente todos los balances netos de la bitácora
+    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    sum_row = cursor.fetchone()
+    ahorro_real_meta = sum_row[0] if sum_row and sum_row[0] is not None else 0.0
+
+    cursor.execute("SELECT id, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     
     if row:
-        vehiculo_id, km_previo, ultimo_servicio, ahorro_acum = row
+        vehiculo_id, km_previo, ultimo_servicio = row
         if ultimo_servicio is None:
             ultimo_servicio = 0.0
         cursor.execute("""
             UPDATE vehiculos 
-            SET marca = ?, modelo = ?, anio = ?, km_actual = ?, peso_piloto = ?, altura_piloto = ?, nombre_meta = ?, monto_meta = ? 
+            SET marca = ?, modelo = ?, anio = ?, km_actual = ?, peso_piloto = ?, altura_piloto = ?, nombre_meta = ?, monto_meta = ?, ahorro_acumulado = ? 
             WHERE id = ?
-        """, (v.marca, v.modelo, v.anio, v.km_actual, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta, vehiculo_id))
+        """, (v.marca, v.modelo, v.anio, v.km_actual, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta, ahorro_real_meta, vehiculo_id))
     else:
         ultimo_servicio = v.km_actual
-        ahorro_acum = 0.0
         cursor.execute("""
             INSERT INTO vehiculos (usuario, marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto, nombre_meta, monto_meta, ahorro_acumulado) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0)
-        """, (usuario, v.marca, v.modelo, v.anio, v.km_actual, ultimo_servicio, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (usuario, v.marca, v.modelo, v.anio, v.km_actual, ultimo_servicio, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta, ahorro_real_meta))
     
     conn.commit()
     conn.close()
@@ -2243,7 +2248,7 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
         "altura_piloto": v.altura_piloto,
         "nombre_meta": v.nombre_meta,
         "monto_meta": v.monto_meta,
-        "ahorro_acumulado": ahorro_acum if ahorro_acum else 0.0,
+        "ahorro_acumulado": ahorro_real_meta,
         "km_desde_servicio": km_desde_servicio,
         "alerta_color": "green",
         "mensaje_alerta": "Odómetro y metas financieras sincronizadas."
@@ -2255,12 +2260,22 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
+    
+    # Recalcular ganancia real mediante suma de balances netos
+    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    sum_row = cursor.fetchone()
+    ahorro_real_meta = sum_row[0] if sum_row and sum_row[0] is not None else 0.0
+
+    cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
+    conn.commit()
+
     cursor.execute("SELECT marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto, nombre_meta, monto_meta, ahorro_acumulado FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     conn.close()
     
     if row:
         data = dict(row)
+        data["ahorro_acumulado"] = ahorro_real_meta
         data["km_desde_servicio"] = max(0.0, data["km_actual"] - (data["ultimo_servicio"] if data["ultimo_servicio"] else 0.0))
         return data
     return {}
@@ -2334,12 +2349,10 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
         ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?, gasto_gasolina_real = ?
     """, (usuario, nuevo_total_litros, nuevo_gasto_gasolina, nuevo_total_litros, nuevo_gasto_gasolina))
 
-    cursor.execute("SELECT presupuesto_total_acumulado, gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
-    est_row = cursor.fetchone()
-    presupuesto_total = est_row[0] if est_row and est_row[0] is not None else 0.0
-    gasto_total = est_row[1] if est_row and est_row[1] is not None else 0.0
+    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    sum_row = cursor.fetchone()
+    ahorro_real_actualizado = sum_row[0] if sum_row and sum_row[0] is not None else 0.0
 
-    ahorro_real_actualizado = max(0.0, round(presupuesto_total - gasto_total, 2))
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_actualizado, usuario))
 
     conn.commit()
@@ -2405,20 +2418,24 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
             tiempo_total_acumulado_min = tiempo_total_acumulado_min + ?
     """, (usuario, e.km_recorridos, costo_viaje, e.presupuesto, minutos_viaje, e.km_recorridos, costo_viaje, e.presupuesto, minutos_viaje))
 
+    cursor.execute("""
+        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, presupuesto, balance_neto, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, e.presupuesto, balance_neto, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
+
+    # Calcular la ganancia real sumando exactamente todos los balances netos de la bitácora
+    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    sum_row = cursor.fetchone()
+    ahorro_real_meta = sum_row[0] if sum_row and sum_row[0] is not None else 0.0
+
+    cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
+
     cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
     km_totales_acumulados = est_row[0]
     gasto_total_acumulado = est_row[1]
     presupuesto_total_acumulado = est_row[2]
     tiempo_total_acumulado_min = est_row[3]
-
-    ahorro_real_meta = max(0.0, round(presupuesto_total_acumulado - gasto_total_acumulado, 2))
-    cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
-
-    cursor.execute("""
-        INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, presupuesto, balance_neto, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, e.presupuesto, balance_neto, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
 
     cursor.execute("""
         INSERT INTO tanque_usuario (usuario, litros_tanque, gasto_gasolina_real) VALUES (?, ?, ?)
