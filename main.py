@@ -445,7 +445,7 @@ def home():
                     </div>
                     <div class="flex-row">
                         <div class="input-voz-group">
-                            <input type="number" id="presupuesto_ruta" placeholder="Presupuesto / Pago Recibido ($)" value="0.0" oninput="simularRuta()">
+                            <input type="number" id="presupuesto_ruta" placeholder="Presupuesto / Pago Recibido ($0.0 si es Personal)" value="0.0" oninput="simularRuta()">
                             <button type="button" class="btn-voice" onclick="escucharVoz('presupuesto_ruta')">🎤 Voz</button>
                         </div>
                     </div>
@@ -1422,7 +1422,10 @@ def home():
                 let rendimientoEstandar = 30.0;
                 let litrosConsumidos = round(kmRutaVal / rendimientoEstandar, 2);
                 let costoViaje = round(litrosConsumidos * precioGasVal, 2);
-                let balanceNetoSim = round(presupuestoVal - costoViaje, 2);
+                
+                // --- MODIFICACIÓN REQUERIDA: VÍA PERSONAL / SIN PAGO ($0.0) ---
+                let balanceNetoSim = presupuestoVal === 0 ? round(-costoViaje, 2) : round(presupuestoVal - costoViaje, 2);
+                
                 let litrosRestantesSimulados = round(litrosActualesTanque - litrosConsumidos, 2);
                 let autonomiaRestanteKm = round(Math.max(0.0, litrosRestantesSimulados) * rendimientoEstandar, 1);
                 
@@ -1444,7 +1447,7 @@ def home():
                     <p style="margin:2px 0;"><b>${ubicacionActual}</b></p>
                     <p style="margin:2px 0;"><b>Entorno Actual:</b> ${horaActual} | ${climaActual}</p>
                     <p style="margin:2px 0;"><b>Consumo Teórico / Costo:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
-                    <p style="margin:2px 0; color: ${colorBalanceSim};"><b>Balance Neto Simulado:</b> $${balanceNetoSim} MXN (Pago Recibido: $${presupuestoVal})</p>
+                    <p style="margin:2px 0; color: ${colorBalanceSim};"><b>Balance Neto Simulado:</b> $${balanceNetoSim} MXN (Presupuesto: $${presupuestoVal})</p>
                     <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim}</p>
                     <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km (${litrosRestantesSimulados} L)</p>
                     <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${alertasSimuladas}</p>
@@ -2379,7 +2382,13 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     rendimiento_estandar = 30.0
     litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
     costo_viaje = round(litros_consumidos * e.precio_gasolina, 2)
-    balance_neto = round(e.presupuesto - costo_viaje, 2)
+    
+    # --- MODIFICACIÓN REQUERIDA: VÍA PERSONAL / SIN PAGO ($0.0) ---
+    if e.presupuesto == 0.0:
+        balance_neto = round(-costo_viaje, 2)
+    else:
+        balance_neto = round(e.presupuesto - costo_viaje, 2)
+
     litros_restantes = round(litros_tanque - litros_consumidos, 2)
     
     costo_por_km = round(costo_viaje / e.km_recorridos, 2)
