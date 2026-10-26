@@ -28,7 +28,9 @@ def init_db():
             modelo TEXT,
             anio TEXT,
             km_actual REAL,
-            ultimo_servicio REAL
+            ultimo_servicio REAL,
+            peso_piloto REAL DEFAULT 0.0,
+            altura_piloto REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -119,6 +121,8 @@ class VehiculoUpdate(BaseModel):
     modelo: str
     anio: str
     km_actual: float
+    peso_piloto: float = 0.0
+    altura_piloto: float = 0.0
 
 class CargarCombustible(BaseModel):
     litros_cargados: float
@@ -723,7 +727,7 @@ def home():
                         </div>
                     </div>
 
-                    <!-- Ficha Técnica y Odómetro (Tamaños ajustados e iguales a los demás bloques) -->
+                    <!-- Ficha Técnica, Odómetro y Nuevos Datos Biomecánicos (Peso y Altura) -->
                     <div class="telemetria-grid">
                         <div class="telemetria-item">
                             <label>Marca</label>
@@ -751,6 +755,20 @@ def home():
                             <div class="input-voz-group">
                                 <input type="number" id="km" placeholder="Km Actual" style="padding: 6px 8px; font-size: 11px;">
                                 <button type="button" class="btn-voice" onclick="escucharVoz('km')">🎤</button>
+                            </div>
+                        </div>
+                        <div class="telemetria-item">
+                            <label>Peso Piloto (kg)</label>
+                            <div class="input-voz-group">
+                                <input type="number" id="peso_piloto" placeholder="Ej. 75" style="padding: 6px 8px; font-size: 11px;">
+                                <button type="button" class="btn-voice" onclick="escucharVoz('peso_piloto')">🎤</button>
+                            </div>
+                        </div>
+                        <div class="telemetria-item">
+                            <label>Altura Piloto (cm)</label>
+                            <div class="input-voz-group">
+                                <input type="number" id="altura_piloto" placeholder="Ej. 175" style="padding: 6px 8px; font-size: 11px;">
+                                <button type="button" class="btn-voice" onclick="escucharVoz('altura_piloto')">🎤</button>
                             </div>
                         </div>
                     </div>
@@ -1492,7 +1510,7 @@ def home():
 
                 recognition.onresult = function(event) {
                     let texto = event.results[0][0].transcript;
-                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta' || inputId === 'precio_gas' || inputId === 'presupuesto_ruta' || inputId === 'anio') {
+                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta' || inputId === 'precio_gas' || inputId === 'presupuesto_ruta' || inputId === 'anio' || inputId === 'peso_piloto' || inputId === 'altura_piloto') {
                         texto = texto.replace(/[^0-9.]/g, '');
                     }
                     document.getElementById(inputId).value = texto;
@@ -1587,6 +1605,8 @@ def home():
                 let modelo = document.getElementById("modelo").value;
                 let anio = parseInt(document.getElementById("anio").value) || 2024;
                 let km_actual = parseFloat(document.getElementById("km").value) || 0;
+                let peso_piloto = parseFloat(document.getElementById("peso_piloto").value) || 75.0;
+                let altura_piloto = parseFloat(document.getElementById("altura_piloto").value) || 170.0;
                 
                 let res = await fetch(API + "/vehiculo", {
                     method: "POST",
@@ -1594,7 +1614,7 @@ def home():
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ marca, modelo, anio: anio.toString(), km_actual })
+                    body: JSON.stringify({ marca, modelo, anio: anio.toString(), km_actual, peso_piloto, altura_piloto })
                 });
                 let data = await res.json();
                 if(res.ok) {
@@ -1643,6 +1663,11 @@ def home():
 
                     let promedioDiario = antiguedadAnios > 0 ? Math.round(km_actual / (antiguedadAnios * 365)) : km_actual;
                     let promedioMensual = antiguedadAnios > 0 ? Math.round(km_actual / (antiguedadAnios * 12)) : km_actual;
+
+                    // CÁLCULOS ERGONÓMICOS Y BIOMECÁNICOS (NUEVA SECCIÓN FINAL)
+                    let imcPiloto = peso_piloto > 0 && altura_piloto > 0 ? (peso_piloto / Math.pow(altura_piloto / 100, 2)).toFixed(1) : "22.0";
+                    let precargaSugerida = peso_piloto > 85 ? "Aumentar 2 puntos de precarga en monoshock trasero" : (peso_piloto < 60 ? "Reducir 1 punto de precarga para mayor suavidad" : "Precarga estándar de fábrica recomendada");
+                    let fatigaPostural = altura_piloto > 180 ? "Postura alta: Sugiere elevadores de manillar para prevenir tensión lumbar en trayectos >60 min" : (altura_piloto < 165 ? "Postura baja: Alcance óptimo al piso, vigilar ángulo de flexión en rodillas" : "Ergonomía neutral óptima para la geometría del asiento");
 
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
@@ -1724,9 +1749,31 @@ def home():
                                 </div>
                             </div>
 
+                            <!-- NUEVA TARJETA BIOMÉTRICA Y ERGONÓMICA -->
+                            <div class="diag-card" onclick="toggleDesplegable('details-ergo', 'arrow-ergo')">
+                                <div class="diag-header">
+                                    <div class="diag-header-left">
+                                        <span class="diag-icon">🧬</span>
+                                        <div style="display:flex; flex-direction:column;">
+                                            <span class="diag-title">ERGONOMÍA Y CARGA BIOMÉTRICA</span>
+                                            <span class="diag-subtitle" style="color: var(--accent-cyan);">Piloto: ${peso_piloto} kg | ${altura_piloto} cm (IMC: ${imcPiloto})</span>
+                                        </div>
+                                    </div>
+                                    <span id="arrow-ergo" class="diag-arrow">▼</span>
+                                </div>
+                                <div id="details-ergo" class="diag-details">
+                                    <p style="margin:0 0 4px 0;"><b>Ajustes y Confort Recomendados:</b></p>
+                                    <ul>
+                                        <li><b>Suspensión / Precarga:</b> ${precargaSugerida}</li>
+                                        <li><b>Postura y Fatiga:</b> ${fatigaPostural}</li>
+                                        <li><b>Distribución de Carga:</b> Óptima para geometría naked deportiva.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
                         </div>
                     `;
-                    ultimoDiagnostico = `Unidad: ${data.marca} ${data.modelo} ${data.anio} | Valor Est: $${valorMonetarioEstimado} MXN | Prox Mantenimiento: ${mantenimientoProximo}`;
+                    ultimoDiagnostico = `Unidad: ${data.marca} ${data.modelo} ${data.anio} | Valor Est: $${valorMonetarioEstimado} MXN | Piloto: ${peso_piloto}kg/${altura_piloto}cm`;
                 }
             }
 
@@ -1897,6 +1944,8 @@ def home():
                         document.getElementById("modelo").value = data.modelo || "";
                         document.getElementById("anio").value = data.anio || "";
                         document.getElementById("km").value = data.km_actual || 0;
+                        document.getElementById("peso_piloto").value = data.peso_piloto || "";
+                        document.getElementById("altura_piloto").value = data.altura_piloto || "";
                     }
                 }
                 
@@ -2075,12 +2124,12 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
         vehiculo_id, km_previo, ultimo_servicio = row
         if ultimo_servicio is None:
             ultimo_servicio = 0.0
-        cursor.execute("UPDATE vehiculos SET marca = ?, modelo = ?, anio = ?, km_actual = ? WHERE id = ?", 
-                       (v.marca, v.modelo, v.anio, v.km_actual, vehiculo_id))
+        cursor.execute("UPDATE vehiculos SET marca = ?, modelo = ?, anio = ?, km_actual = ?, peso_piloto = ?, altura_piloto = ? WHERE id = ?", 
+                       (v.marca, v.modelo, v.anio, v.km_actual, v.peso_piloto, v.altura_piloto, vehiculo_id))
     else:
         ultimo_servicio = v.km_actual
-        cursor.execute("INSERT INTO vehiculos (usuario, marca, modelo, anio, km_actual, ultimo_servicio) VALUES (?, ?, ?, ?, ?, ?)", 
-                       (usuario, v.marca, v.modelo, v.anio, v.km_actual, ultimo_servicio))
+        cursor.execute("INSERT INTO vehiculos (usuario, marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
+                       (usuario, v.marca, v.modelo, v.anio, v.km_actual, ultimo_servicio, v.peso_piloto, v.altura_piloto))
     
     conn.commit()
     conn.close()
@@ -2092,6 +2141,8 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
         "modelo": v.modelo,
         "anio": v.anio,
         "km_actual": v.km_actual,
+        "peso_piloto": v.peso_piloto,
+        "altura_piloto": v.altura_piloto,
         "km_desde_servicio": km_desde_servicio,
         "alerta_color": "green",
         "mensaje_alerta": "Odómetro sincronizado y ficha técnica actualizada."
@@ -2103,7 +2154,7 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT marca, modelo, anio, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     conn.close()
     
