@@ -39,7 +39,8 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS tanque_usuario (
             usuario TEXT PRIMARY KEY,
-            litros_tanque REAL DEFAULT 0.0
+            litros_tanque REAL DEFAULT 0.0,
+            gasto_gasolina_real REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -47,7 +48,8 @@ def init_db():
             usuario TEXT PRIMARY KEY,
             km_totales_acumulados REAL DEFAULT 0.0,
             gasto_total_acumulado REAL DEFAULT 0.0,
-            tiempo_total_acumulado_min REAL DEFAULT 0.0
+            tiempo_total_acumulado_min REAL DEFAULT 0.0,
+            presupuesto_total_acumulado REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -107,6 +109,18 @@ def init_db():
             fecha_guardado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    
+    # Migración de columnas de seguridad para bases de datos existentes
+    try:
+        cursor.execute("ALTER TABLE tanque_usuario ADD COLUMN gasto_gasolina_real REAL DEFAULT 0.0")
+    except sqlite3.OperationalError:
+        pass
+        
+    try:
+        cursor.execute("ALTER TABLE estadisticas_rutas ADD COLUMN presupuesto_total_acumulado REAL DEFAULT 0.0")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -131,6 +145,7 @@ class VehiculoUpdate(BaseModel):
 
 class CargarCombustible(BaseModel):
     litros_cargados: float
+    precio_litro: float = 24.0
 
 class EvaluarRuta(BaseModel):
     nombre_ruta: str = "Ruta General"
@@ -406,7 +421,7 @@ def home():
                     </div>
                     
                     <div class="flex-row" style="margin-top: 4px;">
-                        <button id="btn_cargar" class="btn-main-carga" onclick="cargarCombustible()">Registrar Carga y Acumular Tanque</button>
+                        <button id="btn_cargar" class="btn-main-carga" onclick="cargarCombustible()">Registrar Carga e Inversión en Tanque</button>
                         <button id="btn_reset" class="btn-reset-tanque" onclick="reiniciarTanqueYTelemetria()">🔄 Reiniciar</button>
                     </div>
 
@@ -430,7 +445,7 @@ def home():
                     </div>
                     <div class="flex-row">
                         <div class="input-voz-group">
-                            <input type="number" id="presupuesto_ruta" placeholder="Presupuesto o Viáticos ($)" value="0.0" oninput="simularRuta()">
+                            <input type="number" id="presupuesto_ruta" placeholder="Presupuesto / Pago Recibido ($)" value="0.0" oninput="simularRuta()">
                             <button type="button" class="btn-voice" onclick="escucharVoz('presupuesto_ruta')">🎤 Voz</button>
                         </div>
                     </div>
@@ -765,18 +780,17 @@ def home():
                         <div class="telemetria-item">
                             <label>Peso Piloto (kg)</label>
                             <div class="input-voz-group">
-                                <input type="number" id="peso_piloto" placeholder="Ej. 75" style="padding: 6px 8px; font-size: 11px;">
+                                <input type="number" id="peso_piloto" placeholder="Ej. 68" style="padding: 6px 8px; font-size: 11px;">
                                 <button type="button" class="btn-voice" onclick="escucharVoz('peso_piloto')">🎤</button>
                             </div>
                         </div>
                         <div class="telemetria-item">
                             <label>Altura Piloto (cm)</label>
                             <div class="input-voz-group">
-                                <input type="number" id="altura_piloto" placeholder="Ej. 175" style="padding: 6px 8px; font-size: 11px;">
+                                <input type="number" id="altura_piloto" placeholder="Ej. 165" style="padding: 6px 8px; font-size: 11px;">
                                 <button type="button" class="btn-voice" onclick="escucharVoz('altura_piloto')">🎤</button>
                             </div>
                         </div>
-                        <!-- NUEVOS CAMPOS: META FINANCIERA DE AHORRO -->
                         <div class="telemetria-item">
                             <label>🎯 Nombre de la Meta</label>
                             <div class="input-voz-group">
@@ -787,7 +801,7 @@ def home():
                         <div class="telemetria-item">
                             <label>💵 Monto Meta ($ MXN)</label>
                             <div class="input-voz-group">
-                                <input type="number" id="monto_meta" placeholder="Ej. 2500" style="padding: 6px 8px; font-size: 11px;">
+                                <input type="number" id="monto_meta" placeholder="Ej. 900" style="padding: 6px 8px; font-size: 11px;">
                                 <button type="button" class="btn-voice" onclick="escucharVoz('monto_meta')">🎤</button>
                             </div>
                         </div>
@@ -818,8 +832,10 @@ def home():
             let ultimoDiagnostico = "";
             let sistemaBloqueado = false;
             let litrosActualesTanque = 0.0;
+            let gastoGasolinaRealGlobal = 0.0;
             let kmTotalesAcumuladosGlobal = 0.0;
             let gastoTotalAcumuladoGlobal = 0.0;
+            let presupuestoTotalAcumuladoGlobal = 0.0;
             let tiempoTotalAcumuladoGlobalMin = 0.0;
             let ahorroAcumuladoMetaGlobal = 0.0;
             let protocoloConfirmadoLeido = false;
@@ -1206,7 +1222,7 @@ def home():
                                 <span style="color: ${balanceColor};">Neto: $${viaje.balance_neto} MXN</span>
                             </div>
                             <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">
-                                🕒 ${viaje.hora_registro} | 🛣️ ${viaje.km_recorridos} km | Costo: $${viaje.costo_viaje}
+                                🕒 ${viaje.hora_registro} | 🛣️ ${viaje.km_recorridos} km | Costo Consumo: $${viaje.costo_viaje}
                             </div>
                         </div>
                     `;
@@ -1225,8 +1241,8 @@ def home():
                     <p style="margin:2px 0;"><b>${viaje.ubicacion_registro || 'N/D'}</b></p>
                     <p style="margin:2px 0;"><b>Entorno:</b> ${viaje.hora_registro} | ${viaje.clima_registro}</p>
                     <p style="margin:2px 0;"><b>Señal / Tráfico:</b> ${viaje.red_registro} | Tráfico: ${viaje.trafico_registro}</p>
-                    <p style="margin:2px 0;"><b>Presupuesto / Viáticos:</b> $${viaje.presupuesto || 0.0} MXN | <b>Costo:</b> $${viaje.costo_viaje} MXN</p>
-                    <p style="margin:2px 0; color: ${balanceColor};"><b>Balance Neto:</b> $${viaje.balance_neto} MXN</p>
+                    <p style="margin:2px 0;"><b>Presupuesto / Pago Recibido:</b> $${viaje.presupuesto || 0.0} MXN | <b>Costo Consumo:</b> $${viaje.costo_viaje} MXN</p>
+                    <p style="margin:2px 0; color: ${balanceColor};"><b>Balance Neto Estimado Viaje:</b> $${viaje.balance_neto} MXN</p>
                     <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${viaje.tiempo_viaje}</p>
                     <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${viaje.alerta_operativa || 'N/D'}</p>
                 `;
@@ -1238,8 +1254,10 @@ def home():
 
             function limpiarVariablesLocales() {
                 litrosActualesTanque = 0.0;
+                gastoGasolinaRealGlobal = 0.0;
                 kmTotalesAcumuladosGlobal = 0.0;
                 gastoTotalAcumuladoGlobal = 0.0;
+                presupuestoTotalAcumuladoGlobal = 0.0;
                 tiempoTotalAcumuladoGlobalMin = 0.0;
                 ahorroAcumuladoMetaGlobal = 0.0;
                 protocoloConfirmadoLeido = false;
@@ -1358,6 +1376,7 @@ def home():
 
             function simularCarga() {
                 let litrosEntrada = parseFloat(document.getElementById("litros_carga").value) || 0;
+                let precioGasVal = parseFloat(document.getElementById("precio_gas").value) || 24.0;
                 let divDiag = document.getElementById("diagnostico-combustible");
 
                 if (litrosEntrada <= 0) {
@@ -1370,14 +1389,16 @@ def home():
                 }
 
                 let totalSimulado = round(litrosActualesTanque + litrosEntrada, 2);
+                let costoRecargaInversion = round(litrosEntrada * precioGasVal, 2);
                 let rendimientoEstandar = 30.0;
                 let autonomiaProyectada = round(totalSimulado * rendimientoEstandar, 1);
 
                 divDiag.innerHTML = `
-                    <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Carga]</i></p>
+                    <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Simulación de Carga e Inversión]</i></p>
                     <p style="margin:2px 0;"><b>Carga Actual en Tanque:</b> ${litrosActualesTanque} L</p>
-                    <p style="margin:2px 0;"><b>Carga Post-Carga (Total):</b> ${totalSimulado} L (${litrosActualesTanque} L actuales + ${litrosEntrada} L nuevos)</p>
-                    <p style="margin:2px 0;"><b>Autonomía Estimada:</b> ${autonomiaProyectada} km</p>
+                    <p style="margin:2px 0;"><b>Carga Post-Carga:</b> ${totalSimulado} L (${litrosEntrada} L nuevos)</p>
+                    <p style="margin:2px 0; color:var(--accent-amber);"><b>Inversión Monetaria Directa:</b> $${costoRecargaInversion} MXN (${litrosEntrada}L @ $${precioGasVal}/L)</p>
+                    <p style="margin:2px 0;"><b>Autonomía Estimada Total:</b> ${autonomiaProyectada} km</p>
                 `;
             }
 
@@ -1422,8 +1443,8 @@ def home():
                     <p style="font-size:11px; color:var(--text-muted); margin:0 0 4px 0;"><i>🔍 [Vista previa / Indicadores de Entorno y Ruta]</i></p>
                     <p style="margin:2px 0;"><b>${ubicacionActual}</b></p>
                     <p style="margin:2px 0;"><b>Entorno Actual:</b> ${horaActual} | ${climaActual}</p>
-                    <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
-                    <p style="margin:2px 0; color: ${colorBalanceSim};"><b>Balance Neto Simulado:</b> $${balanceNetoSim} MXN (Presupuesto: $${presupuestoVal})</p>
+                    <p style="margin:2px 0;"><b>Consumo Teórico / Costo:</b> ${litrosConsumidos} L (<b>$${costoViaje} MXN</b>)</p>
+                    <p style="margin:2px 0; color: ${colorBalanceSim};"><b>Balance Neto Simulado:</b> $${balanceNetoSim} MXN (Pago Recibido: $${presupuestoVal})</p>
                     <p style="margin:2px 0;"><b>⏱️ Tiempo Estimado:</b> ~${tiempoEstimadoSim}</p>
                     <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${autonomiaRestanteKm} km (${litrosRestantesSimulados} L)</p>
                     <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${alertasSimuladas}</p>
@@ -1627,10 +1648,10 @@ def home():
                 let modelo = document.getElementById("modelo").value;
                 let anio = parseInt(document.getElementById("anio").value) || 2024;
                 let km_actual = parseFloat(document.getElementById("km").value) || 0;
-                let peso_piloto = parseFloat(document.getElementById("peso_piloto").value) || 75.0;
-                let altura_piloto = parseFloat(document.getElementById("altura_piloto").value) || 170.0;
+                let peso_piloto = parseFloat(document.getElementById("peso_piloto").value) || 68.0;
+                let altura_piloto = parseFloat(document.getElementById("altura_piloto").value) || 165.0;
                 let nombre_meta = document.getElementById("nombre_meta").value.trim() || "Mantenimiento General";
-                let monto_meta = parseFloat(document.getElementById("monto_meta").value) || 2000.0;
+                let monto_meta = parseFloat(document.getElementById("monto_meta").value) || 900.0;
                 
                 let res = await fetch(API + "/vehiculo", {
                     method: "POST",
@@ -1692,7 +1713,7 @@ def home():
                     let precargaSugerida = peso_piloto > 85 ? "Aumentar 2 puntos de precarga en monoshock trasero" : (peso_piloto < 60 ? "Reducir 1 punto de precarga para mayor suavidad" : "Precarga estándar de fábrica recomendada");
                     let fatigaPostural = altura_piloto > 180 ? "Postura alta: Sugiere elevadores de manillar para prevenir tensión lumbar en trayectos >60 min" : (altura_piloto < 165 ? "Postura baja: Alcance óptimo al piso, vigilar ángulo de flexión en rodillas" : "Ergonomía neutral óptima para la geometría del asiento");
 
-                    // CÁLCULOS DE LA META DE AHORRO
+                    // CÁLCULOS AUDITADOS Y REALES DE LA META DE AHORRO
                     let pctMeta = Math.min(100, Math.round((ahorroAcumuladoMetaGlobal / monto_meta) * 100));
                     let restanteMeta = Math.max(0, monto_meta - ahorroAcumuladoMetaGlobal);
                     let colorBarraMeta = pctMeta >= 100 ? "var(--accent-green)" : (pctMeta > 50 ? "var(--accent-cyan)" : "var(--accent-amber)");
@@ -1701,13 +1722,13 @@ def home():
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
                             
-                            <!-- TARJETA 1: META DE AHORRO Y PROPÓSITO DE JORNADA (PROTAGONISTA) -->
+                            <!-- TARJETA 1: META DE AHORRO REAL AUDITADA -->
                             <div class="diag-card" onclick="toggleDesplegable('details-meta', 'arrow-meta')" style="border-color: var(--accent-cyan);">
                                 <div class="diag-header">
                                     <div class="diag-header-left">
                                         <span class="diag-icon">🎯</span>
                                         <div style="display:flex; flex-direction:column;">
-                                            <span class="diag-title">PROPÓSITO DE AHORRO: ${nombre_meta.toUpperCase()}</span>
+                                            <span class="diag-title">PROPÓSITO DE AHORRO REAL: ${nombre_meta.toUpperCase()}</span>
                                             <span class="diag-subtitle" style="color: ${colorBarraMeta};">$${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN / $${monto_meta.toFixed(2)} MXN (${pctMeta}%)</span>
                                         </div>
                                     </div>
@@ -1718,7 +1739,7 @@ def home():
                                         <div class="progress-bar" style="width: ${pctMeta}%; background: ${colorBarraMeta};"></div>
                                     </div>
                                     <p style="margin:2px 0; color: var(--text-main);"><b>Estatus:</b> ${msgMeta}</p>
-                                    <p style="margin:2px 0; color: var(--text-muted); font-size:10px;">💡 <i>El excedente positivo de tus viáticos registrado en el Bloque 1 se suma automáticamente a este fondo.</i></p>
+                                    <p style="margin:4px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados:</b> Pagos Recibidos ($${presupuestoTotalAcumuladoGlobal.toFixed(2)}) − Inversión Real Gasolina ($${gastoGasolinaRealGlobal.toFixed(2)})</p>
                                 </div>
                             </div>
 
@@ -1829,6 +1850,8 @@ def home():
 
             async function cargarCombustible() {
                 let litros_cargados = parseFloat(document.getElementById("litros_carga").value);
+                let precio_litro = parseFloat(document.getElementById("precio_gas").value) || 24.0;
+
                 if (!litros_cargados || litros_cargados <= 0) {
                     alert("⚠️ Ingrese una cantidad válida de litros.");
                     return;
@@ -1840,20 +1863,25 @@ def home():
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ litros_cargados })
+                    body: JSON.stringify({ litros_cargados, precio_litro })
                 });
                 let data = await res.json();
                 if(res.ok) {
                     litrosActualesTanque = data.litros_tanque;
+                    gastoGasolinaRealGlobal = data.gasto_gasolina_real;
+                    ahorroAcumuladoMetaGlobal = data.ahorro_acumulado;
+
                     let rendimientoEstandar = 30.0;
                     let autonomiaTanque = round(litrosActualesTanque * rendimientoEstandar, 1);
 
                     document.getElementById("diagnostico-combustible").innerHTML = `
-                        <p style="color: var(--accent-green); font-weight: 600; margin:4px 0;">✔ Carga Registrada y Tanque Acumulado:</p>
+                        <p style="color: var(--accent-green); font-weight: 600; margin:4px 0;">✔ Carga Registrada e Inversión Deduciéndome en Sistema:</p>
                         <p style="margin:2px 0;"><b>Litros Totales en Tanque:</b> ${litrosActualesTanque} L</p>
+                        <p style="margin:2px 0; color:var(--accent-amber);"><b>Inversión acumulada en Gasolina:</b> $${gastoGasolinaRealGlobal.toFixed(2)} MXN</p>
                         <p style="margin:2px 0;"><b>Autonomía Disponible:</b> ${autonomiaTanque} km</p>
                     `;
                     document.getElementById("litros_carga").value = "";
+                    actualizarKm();
                 } else {
                     alert(data.detail);
                 }
@@ -1878,6 +1906,7 @@ def home():
                         <p style="color: var(--accent-green); font-weight: 600;">✔ Acción realizada con éxito.</p>
                     `;
                     verificarJornadaYDiagnostico();
+                    actualizarKm();
                 } else {
                     alert("Error al reiniciar.");
                 }
@@ -1890,7 +1919,7 @@ def home():
                 }
                 let nombre_ruta = document.getElementById("nombre_ruta").value.trim() || "Ruta General";
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
-                let precio_gasolina = parseFloat(document.getElementById("precio_gas").value);
+                let precio_gasolina = parseFloat(document.getElementById("precio_gas").value) || 24.0;
                 let presupuesto = parseFloat(document.getElementById("presupuesto_ruta").value) || 0.0;
                 
                 let clima_registro = document.getElementById("info-clima").innerText.replace("🌤️ Clima: ", "");
@@ -1916,8 +1945,10 @@ def home():
                 let data = await res.json();
                 if(res.ok) {
                     litrosActualesTanque = data.litros_restantes;
+                    gastoGasolinaRealGlobal = data.gasto_gasolina_real;
                     kmTotalesAcumuladosGlobal = data.km_totales_acumulados;
                     gastoTotalAcumuladoGlobal = data.gasto_total_acumulado;
+                    presupuestoTotalAcumuladoGlobal = data.presupuesto_total_acumulado;
                     tiempoTotalAcumuladoGlobalMin = data.tiempo_total_acumulado_min;
                     ahorroAcumuladoMetaGlobal = data.ahorro_acumulado;
 
@@ -1965,25 +1996,23 @@ def home():
                     }
 
                     let balanceColor = data.balance_neto >= 0 ? "var(--accent-green)" : "var(--accent-red)";
-                    let mensajeAhorroMeta = data.balance_neto > 0 ? `<p style="margin:2px 0; color: var(--accent-cyan);"><b>🎯 Ahorro Acumulado a la Meta:</b> +$${data.balance_neto} MXN agregados (Total: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN)</p>` : "";
 
                     panelOficial.innerHTML = `
                         <p style="color: var(--accent-green); font-weight: 600; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}]:</p>
                         <p style="margin:2px 0;"><b>${data.ubicacion_registro}</b></p>
                         <p style="margin:2px 0;"><b>Entorno:</b> ${data.hora_registro} | ${data.clima_registro}</p>
-                        <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
-                        <p style="margin:2px 0;"><b>Presupuesto / Viáticos:</b> $${data.presupuesto} MXN</p>
-                        <p style="margin:2px 0; color: ${balanceColor};"><b>Balance Neto:</b> $${data.balance_neto} MXN</p>
-                        ${mensajeAhorroMeta}
+                        <p style="margin:2px 0;"><b>Consumo Teórico / Costo:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
+                        <p style="margin:2px 0;"><b>Presupuesto / Pago Recibido:</b> $${data.presupuesto} MXN</p>
+                        <p style="margin:2px 0; color: ${balanceColor};"><b>Balance Neto Estimado Viaje:</b> $${data.balance_neto} MXN</p>
+                        <p style="margin:2px 0; color: var(--accent-cyan);"><b>🎯 Ahorro Real acumulado en Bloque 3:</b> $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN</p>
                         <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje}</p>
                         <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km (${data.litros_restantes} L)</p>
                         <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${data.alerta_operativa}</p>
                         <hr style="border: 0; border-top: 1px dashed rgba(16, 185, 129, 0.3); margin: 6px 0;">
                         <p style="color: #60a5fa; font-weight: 600; margin:2px 0;">📊 Acumulados Globales:</p>
-                        <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km | Gasto: $${gastoTotalAcumuladoGlobal} MXN</p>
+                        <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km | Pagos Recibidos: $${presupuestoTotalAcumuladoGlobal} MXN</p>
                     `;
 
-                    // Actualizar directamente la vista en el Bloque 3 si está desplegada
                     actualizarKm();
                 } else {
                     alert(data.detail);
@@ -2004,7 +2033,7 @@ def home():
                         document.getElementById("peso_piloto").value = data.peso_piloto || "";
                         document.getElementById("altura_piloto").value = data.altura_piloto || "";
                         document.getElementById("nombre_meta").value = data.nombre_meta || "Mantenimiento General";
-                        document.getElementById("monto_meta").value = data.monto_meta || 2000.0;
+                        document.getElementById("monto_meta").value = data.monto_meta || 900.0;
                         ahorroAcumuladoMetaGlobal = data.ahorro_acumulado || 0.0;
                     }
                 }
@@ -2015,6 +2044,7 @@ def home():
                 if(resTanque.ok) {
                     let dataTanque = await resTanque.json();
                     litrosActualesTanque = dataTanque.litros_tanque || 0.0;
+                    gastoGasolinaRealGlobal = dataTanque.gasto_gasolina_real || 0.0;
                 }
 
                 let resEstadisticas = await fetch(API + "/estadisticas/rutas", {
@@ -2024,6 +2054,7 @@ def home():
                     let dataEst = await resEstadisticas.json();
                     kmTotalesAcumuladosGlobal = dataEst.km_totales_acumulados || 0.0;
                     gastoTotalAcumuladoGlobal = dataEst.gasto_total_acumulado || 0.0;
+                    presupuestoTotalAcumuladoGlobal = dataEst.presupuesto_total_acumulado || 0.0;
                     tiempoTotalAcumuladoGlobalMin = dataEst.tiempo_total_acumulado_min || 0.0;
                 }
 
@@ -2142,10 +2173,13 @@ def obtener_estado_tanque(authorization: str = Header(None)):
     usuario = verificar_token(authorization)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT litros_tanque, gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     conn.close()
-    return {"litros_tanque": row[0] if row and row[0] is not None else 0.0}
+    return {
+        "litros_tanque": row[0] if row and row[0] is not None else 0.0,
+        "gasto_gasolina_real": row[1] if row and row[1] is not None else 0.0
+    }
 
 @app.get("/estadisticas/rutas")
 def obtener_estadisticas_rutas(authorization: str = Header(None)):
@@ -2153,20 +2187,20 @@ def obtener_estadisticas_rutas(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     conn.close()
     if row:
         return dict(row)
-    return {"km_totales_acumulados": 0.0, "gasto_total_acumulado": 0.0, "tiempo_total_acumulado_min": 0.0}
+    return {"km_totales_acumulados": 0.0, "gasto_total_acumulado": 0.0, "presupuesto_total_acumulado": 0.0, "tiempo_total_acumulado_min": 0.0}
 
 @app.post("/combustible/reiniciar-telemetria")
 def reiniciar_tanque_y_telemetria(authorization: str = Header(None)):
     usuario = verificar_token(authorization)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("UPDATE tanque_usuario SET litros_tanque = 0.0 WHERE usuario = ?", (usuario,))
-    cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0, tiempo_total_acumulado_min = 0.0 WHERE usuario = ?", (usuario,))
+    cursor.execute("UPDATE tanque_usuario SET litros_tanque = 0.0, gasto_gasolina_real = 0.0 WHERE usuario = ?", (usuario,))
+    cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0, presupuesto_total_acumulado = 0.0, tiempo_total_acumulado_min = 0.0 WHERE usuario = ?", (usuario,))
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = 0.0 WHERE usuario = ?", (usuario,))
     cursor.execute("DELETE FROM bitacora_rutas WHERE usuario = ?", (usuario,))
     conn.commit()
@@ -2289,19 +2323,35 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT litros_tanque, gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     litros_anteriores = row[0] if row and row[0] is not None else 0.0
+    gasto_gasolina_anterior = row[1] if row and row[1] is not None else 0.0
     
-    nuevo_total = round(litros_anteriores + c.litros_cargados, 2)
+    nuevo_total_litros = round(litros_anteriores + c.litros_cargados, 2)
+    costo_compra_actual = round(c.litros_cargados * c.precio_litro, 2)
+    nuevo_gasto_gasolina = round(gasto_gasolina_anterior + costo_compra_actual, 2)
     
     cursor.execute("""
-        INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
-        ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?
-    """, (usuario, nuevo_total, nuevo_total))
+        INSERT INTO tanque_usuario (usuario, litros_tanque, gasto_gasolina_real) VALUES (?, ?, ?)
+        ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?, gasto_gasolina_real = ?
+    """, (usuario, nuevo_total_litros, nuevo_gasto_gasolina, nuevo_total_litros, nuevo_gasto_gasolina))
+
+    # RECUPERAR PRESUPUESTO ACUMULADO Y RECALCULAR AHORRO REAL DE META
+    cursor.execute("SELECT presupuesto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+    est_row = cursor.fetchone()
+    presupuesto_total = est_row[0] if est_row and est_row[0] is not None else 0.0
+
+    ahorro_real_actualizado = max(0.0, round(presupuesto_total - nuevo_gasto_gasolina, 2))
+    cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_actualizado, usuario))
+
     conn.commit()
     conn.close()
-    return {"litros_tanque": nuevo_total}
+    return {
+        "litros_tanque": nuevo_total_litros,
+        "gasto_gasolina_real": nuevo_gasto_gasolina,
+        "ahorro_acumulado": ahorro_real_actualizado
+    }
 
 @app.post("/combustible/evaluar")
 def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
@@ -2321,9 +2371,10 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
                 km_desde_ultimo_aviso = km_desde_ultimo_aviso + ?
         """, (usuario, comp, e.km_recorridos, e.km_recorridos, e.km_recorridos, e.km_recorridos))
 
-    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT litros_tanque, gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     litros_tanque = row[0] if row and row[0] is not None else 0.0
+    gasto_gasolina_real = row[1] if row and row[1] is not None else 0.0
 
     rendimiento_estandar = 30.0
     litros_consumidos = round(e.km_recorridos / rendimiento_estandar, 2)
@@ -2342,40 +2393,36 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     m_viaje = int(minutos_viaje % 60)
     tiempo_viaje_str = f"{h_viaje}h {m_viaje}m" if h_viaje > 0 else f"{m_viaje} min"
 
-    # SUMAR EXCEDENTE AL AHARRO ACUMULADO SI ES POSITIVO
-    cursor.execute("SELECT ahorro_acumulado FROM vehiculos WHERE usuario = ?", (usuario,))
-    v_row = cursor.fetchone()
-    ahorro_actual = v_row[0] if v_row and v_row[0] is not None else 0.0
-    
-    nuevo_ahorro = ahorro_actual
-    if balance_neto > 0:
-        nuevo_ahorro = round(ahorro_actual + balance_neto, 2)
-        cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (nuevo_ahorro, usuario))
-
     cursor.execute("""
-        INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min) 
-        VALUES (?, ?, ?, ?)
+        INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado, tiempo_total_acumulado_min) 
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(usuario) DO UPDATE SET 
             km_totales_acumulados = km_totales_acumulados + ?,
             gasto_total_acumulado = gasto_total_acumulado + ?,
+            presupuesto_total_acumulado = presupuesto_total_acumulado + ?,
             tiempo_total_acumulado_min = tiempo_total_acumulado_min + ?
-    """, (usuario, e.km_recorridos, costo_viaje, minutos_viaje, e.km_recorridos, costo_viaje, minutos_viaje))
+    """, (usuario, e.km_recorridos, costo_viaje, e.presupuesto, minutos_viaje, e.km_recorridos, costo_viaje, e.presupuesto, minutos_viaje))
+
+    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+    est_row = cursor.fetchone()
+    km_totales_acumulados = est_row[0]
+    gasto_total_acumulado = est_row[1]
+    presupuesto_total_acumulado = est_row[2]
+    tiempo_total_acumulado_min = est_row[3]
+
+    # CÁLCULO ESTRICTO DE AHORRO REAL (Ingresos Totales - Compra de Gasolina Real)
+    ahorro_real_meta = max(0.0, round(presupuesto_total_acumulado - gasto_gasolina_real, 2))
+    cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
 
     cursor.execute("""
         INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, presupuesto, balance_neto, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, e.presupuesto, balance_neto, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
 
-    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
-    est_row = cursor.fetchone()
-    km_totales_acumulados = est_row[0]
-    gasto_total_acumulado = est_row[1]
-    tiempo_total_acumulado_min = est_row[2]
-
     cursor.execute("""
-        INSERT INTO tanque_usuario (usuario, litros_tanque) VALUES (?, ?)
+        INSERT INTO tanque_usuario (usuario, litros_tanque, gasto_gasolina_real) VALUES (?, ?, ?)
         ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?
-    """, (usuario, max(0.0, litros_restantes), max(0.0, litros_restantes)))
+    """, (usuario, max(0.0, litros_restantes), gasto_gasolina_real, max(0.0, litros_restantes)))
 
     cursor.execute("INSERT INTO combustible (usuario, km_recorridos, litros_consumidos, rendimiento) VALUES (?, ?, ?, ?)",
                    (usuario, e.km_recorridos, litros_consumidos, rendimiento_estandar))
@@ -2388,13 +2435,15 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "costo_viaje": costo_viaje,
         "presupuesto": e.presupuesto,
         "balance_neto": balance_neto,
-        "ahorro_acumulado": nuevo_ahorro,
+        "ahorro_acumulado": ahorro_real_meta,
+        "gasto_gasolina_real": gasto_gasolina_real,
         "costo_por_km": costo_por_km,
         "tiempo_viaje": tiempo_viaje_str,
         "autonomia_restante_km": autonomia_restante_km,
         "litros_restantes": max(0.0, litros_restantes),
         "km_totales_acumulados": km_totales_acumulados,
         "gasto_total_acumulado": gasto_total_acumulado,
+        "presupuesto_total_acumulado": presupuesto_total_acumulado,
         "tiempo_total_acumulado_min": tiempo_total_acumulado_min,
         "clima_registro": e.clima_registro,
         "hora_registro": e.hora_registro,
