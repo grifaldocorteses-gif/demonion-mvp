@@ -1722,6 +1722,14 @@ def home():
                         colorBarraMeta = "var(--accent-green)";
                     }
 
+                    // NUEVA LÓGICA DE ALERTAS DE FELICITACIÓN DINÁMICAS
+                    let alertaFelicitacionHtml = "";
+                    if (ahorroAcumuladoMetaGlobal > 0 && ahorroAcumuladoMetaGlobal < monto_meta) {
+                        alertaFelicitacionHtml = `<p style="margin:4px 0 0 0; color: var(--accent-green); font-weight: 600; font-size: 11px;">🎉 ¡Felicitaciones! Has recuperado tu inversión inicial e iniciado ganancias reales.</p>`;
+                    } else if (ahorroAcumuladoMetaGlobal >= monto_meta) {
+                        alertaFelicitacionHtml = `<p style="margin:4px 0 0 0; color: var(--accent-green); font-weight: 700; font-size: 11px;">🏆 ¡FELICITACIONES! Has superado la meta establecida de ${nombre_meta}. ¡Capital disponible!</p>`;
+                    }
+
                     let msgMeta = ahorroAcumuladoMetaGlobal <= 0 
                         ? `⚠️ En Negativo / Recuperando Inversión: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN.` 
                         : (ahorroAcumuladoMetaGlobal >= monto_meta ? "🏆 ¡Meta Alcanzada! Tienes el capital disponible." : `🚀 Estás al ${pctMeta}% de tu meta. Faltan $${restanteMeta.toFixed(2)} MXN.`);
@@ -1745,7 +1753,8 @@ def home():
                                         <div class="progress-bar" style="width: ${ahorroAcumuladoMetaGlobal <= 0 ? 100 : pctMeta}%; background: ${colorBarraMeta};"></div>
                                     </div>
                                     <p style="margin:2px 0; color: var(--text-main);"><b>Estatus:</b> ${msgMeta}</p>
-                                    <p style="margin:4px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados (Termómetro):</b> Inversión Inicial / Gasolina Reflejada en Negativo hasta superar los costos operativos y generar ganancia real.</p>
+                                    ${alertaFelicitacionHtml}
+                                    <p style="margin:6px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados (Termómetro):</b> Inversión ruta ($MXN, lt gas) vs Ganancias en ruta ($MXN).</p>
                                 </div>
                             </div>
 
