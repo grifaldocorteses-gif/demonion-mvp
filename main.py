@@ -618,10 +618,10 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 3: Telemetría Avanzada y Radar GPS DUAL (Google Maps + Local Backup) -->
+            <!-- BLOQUE 3: Telemetría Avanzada y Radar GPS DUAL (Google Maps + Inyección de Coordenadas) -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
-                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS Dual (Google Maps + Local Backup)</span>
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS Dual (Google Maps + Inyección de Coordenadas)</span>
                     <span id="arrow-bloque-3" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
                 </div>
                 <div id="body-bloque-3" class="bloque-principal-body">
@@ -636,7 +636,7 @@ def home():
                     <!-- SISTEMA DUAL DE NAVEGACIÓN Y BÚSQUEDA -->
                     <div class="check-accordion-card" style="margin-bottom: 10px;">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-radar-gps', 'arrow-radar-gps')">
-                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">🗺️ Motor Dual de Búsqueda de Servicios</span>
+                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">🗺️ Motor Dual de Búsqueda y Almacenamiento Local</span>
                             <span id="arrow-radar-gps" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-radar-gps" class="check-accordion-body" style="display: block;">
@@ -659,7 +659,7 @@ def home():
                             <!-- SECCIÓN 2: MOTOR DE RESPALDO (RADAR LOCAL SQLITE / OFFLINE) -->
                             <div style="background: #0b1120; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px;">
                                 <label style="font-size: 11px; font-weight: 700; color: var(--accent-amber); display: block; margin-bottom: 4px;">
-                                    💾 MOTOR SECUNDARIO: Radar Local Resiliente (Offline / Caché)
+                                    💾 MOTOR SECUNDARIO: Radar Local Resiliente (Caché SQLite)
                                 </label>
                                 <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 10px;">Escanear base local sin necesidad de datos móviles:</p>
                                 
@@ -679,21 +679,22 @@ def home():
                                 </div>
                             </div>
 
-                            <!-- FORMULARIO DE REGISTRO MANUAL DE POI EN DB LOCAL -->
-                            <div style="margin-top: 10px; background: #0b1120; padding: 8px; border-radius: 6px; border: 1px dashed rgba(16, 185, 129, 0.4);">
-                                <label style="font-size: 11px; font-weight: 600; color: var(--accent-green);">➕ Guardar Punto de Interés en Caché Local (SQLite):</label>
+                            <!-- FORMULARIO DE INYECCIÓN DE COORDENADAS DE GOOGLE MAPS -->
+                            <div style="margin-top: 10px; background: #0b1120; padding: 8px; border-radius: 6px; border: 1px dashed rgba(6, 182, 212, 0.4);">
+                                <label style="font-size: 11px; font-weight: 600; color: var(--accent-cyan);">📍 Inyectar Coordenadas Copiadas de Google Maps a Base Local:</label>
                                 <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
-                                    <input type="text" id="manual_poi_nombre" placeholder="Nombre (Ej. Taller Auxilio)">
+                                    <input type="text" id="gmaps_nombre" placeholder="Nombre del lugar (Ej. Taller Recomendado G. Maps)">
+                                    <select id="gmaps_tipo" style="margin:0;">
+                                        <option value="taller">Taller</option>
+                                        <option value="gasolinera">Gasolinera</option>
+                                        <option value="vulcanizadora">Vulcanizadora</option>
+                                        <option value="refaccionaria">Refaccionaria</option>
+                                        <option value="hospital">Hospital</option>
+                                        <option value="policia">Policía</option>
+                                    </select>
                                     <div class="flex-row">
-                                        <select id="manual_poi_tipo" style="flex:1; margin:0;">
-                                            <option value="taller">Taller</option>
-                                            <option value="gasolinera">Gasolinera</option>
-                                            <option value="vulcanizadora">Vulcanizadora</option>
-                                            <option value="refaccionaria">Refaccionaria</option>
-                                            <option value="hospital">Hospital</option>
-                                            <option value="policia">Policía</option>
-                                        </select>
-                                        <button type="button" style="width:auto; padding:8px 12px; background:#059669; font-size:11px; margin:0;" onclick="registrarPoiManual()">Guardar</button>
+                                        <input type="text" id="gmaps_coords" placeholder="Lat, Lon (Ej. 19.6543, -99.2014)" style="margin:0;">
+                                        <button type="button" style="width:auto; padding:8px 12px; background:#059669; font-size:11px; margin:0;" onclick="guardarCoordenadasGoogleMaps()">Guardar en DB</button>
                                     </div>
                                 </div>
                             </div>
@@ -870,36 +871,30 @@ def home():
                 return R * c;
             }
 
-            async function guardarPoisEnCache(tipo, pois) {
-                for (let p of pois) {
-                    let name = p.tags && p.tags.name ? p.tags.name : "Establecimiento de Servicio";
-                    let brand = p.tags && p.tags.brand ? p.tags.brand : "";
-                    if (p.lat && p.lon) {
-                        try {
-                            await fetch(API + "/radar/cache", {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                    "Authorization": "Bearer " + authToken
-                                },
-                                body: JSON.stringify({ tipo, nombre: name, brand, lat: p.lat, lon: p.lon })
-                            });
-                        } catch(e) {}
-                    }
-                }
-            }
+            async function guardarCoordenadasGoogleMaps() {
+                let nombre = document.getElementById("gmaps_nombre").value.trim();
+                let tipo = document.getElementById("gmaps_tipo").value;
+                let coordsTxt = document.getElementById("gmaps_coords").value.trim();
 
-            async function registrarPoiManual() {
-                let nombre = document.getElementById("manual_poi_nombre").value.trim();
-                let tipo = document.getElementById("manual_poi_tipo").value;
-                if (!nombre) {
-                    alert("Ingrese un nombre para el establecimiento.");
+                if (!nombre || !coordsTxt) {
+                    alert("⚠️ Ingrese el nombre del lugar y las coordenadas (Lat, Lon).");
                     return;
                 }
-                if (!currentLat || !currentLon) {
-                    alert("⚠️ No hay señal GPS actual para asociar las coordenadas.");
+
+                let partes = coordsTxt.split(",");
+                if (partes.length !== 2) {
+                    alert("⚠️ Formato de coordenadas inválido. Use: latitud, longitud (Ej. 19.6543, -99.2014)");
                     return;
                 }
+
+                let lat = parseFloat(partes[0].trim());
+                let lon = parseFloat(partes[1].trim());
+
+                if (isNaN(lat) || isNaN(lon)) {
+                    alert("⚠️ Las coordenadas ingresadas no son numéricas válidas.");
+                    return;
+                }
+
                 try {
                     let res = await fetch(API + "/radar/cache", {
                         method: "POST",
@@ -907,17 +902,19 @@ def home():
                             "Content-Type": "application/json",
                             "Authorization": "Bearer " + authToken
                         },
-                        body: JSON.stringify({ tipo, nombre, brand: "Manual/Externo", lat: currentLat, lon: currentLon })
+                        body: JSON.stringify({ tipo, nombre, brand: "Google Maps (Inyectado)", lat, lon })
                     });
+
                     if (res.ok) {
-                        alert("✔ POI guardado exitosamente en la caché SQLite local.");
-                        document.getElementById("manual_poi_nombre").value = "";
+                        alert("✔ ¡Coordenadas de Google Maps guardadas en la base local SQLite! Ya puedes consultarlas offline.");
+                        document.getElementById("gmaps_nombre").value = "";
+                        document.getElementById("gmaps_coords").value = "";
                         buscarPOI(tipo);
                     } else {
-                        alert("Error al registrar en servidor.");
+                        alert("Error al guardar en el servidor.");
                     }
                 } catch(e) {
-                    alert("Error de conexión al guardar POI.");
+                    alert("Error de conexión al guardar coordenadas.");
                 }
             }
 
@@ -932,7 +929,7 @@ def home():
                     let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar btn-google-maps" style="width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Abrir búsqueda directa en Google Maps</button></div>`;
 
                     if (!poisCache || poisCache.length === 0) {
-                        resultadosBox.innerHTML = `⚠️ <b>Modo Sin Red (Offline):</b> No hay registros previos guardados en la base de datos local para '${tipo}'.${fallbackMapsBtn}`;
+                        resultadosBox.innerHTML = `⚠️ <b>Modo Sin Red (Offline):</b> No hay registros previos guardados en la base local para '${tipo}'.${fallbackMapsBtn}`;
                         return;
                     }
 
@@ -1004,8 +1001,6 @@ def home():
                         await buscarPOIOffline(tipo, tituloBusqueda);
                         return;
                     }
-
-                    guardarPoisEnCache(tipo, data.elements);
 
                     let elementosConDistancia = data.elements.map(el => {
                         let lat = el.lat;
