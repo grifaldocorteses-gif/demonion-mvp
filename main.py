@@ -642,70 +642,80 @@ def home():
                         </div>
                         <div id="body-radar-gps" class="check-accordion-body" style="display: block;">
                             
-                            <!-- SECCIÓN 1: MOTOR PRIMARIO (GOOGLE MAPS DIRECTO) -->
-                            <div style="background: #0b1120; border: 1px solid #1d4ed8; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                                <label style="font-size: 11px; font-weight: 700; color: #60a5fa; display: block; margin-bottom: 6px;">
-                                    🚀 MOTOR PRIMARIO: Google Maps Directo (En línea)
-                                </label>
-                                <div class="radar-grid">
-                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('gasolineras')">⛽ Gasolineras</button>
-                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('taller mecanico')">🔧 Talleres</button>
-                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('vulcanizadora')">🛞 Vulcanizadoras</button>
-                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('refaccionaria')">🔩 Refaccionarias</button>
-                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('hospitales')">🏥 Hospitales</button>
-                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('estacion de policia')">🚨 Policía</button>
+                            <!-- SECCIÓN 1: MOTOR PRIMARIO (GOOGLE MAPS DIRECTO) - DESPLEGABLE Y RETRÁCTIL -->
+                            <div class="check-accordion-card" style="margin-bottom: 8px;">
+                                <div class="check-accordion-header" onclick="toggleAcordeon('body-motor-primario', 'arrow-motor-primario')">
+                                    <span style="font-size: 11px; font-weight: 700; color: #60a5fa;">🚀 MOTOR PRIMARIO: Google Maps Directo (En línea)</span>
+                                    <span id="arrow-motor-primario" style="font-size:10px; font-weight:600;">▼</span>
                                 </div>
+                                <div id="body-motor-primario" class="check-accordion-body" style="display: none; background: #0b1120;">
+                                    <div class="radar-grid">
+                                        <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('gasolineras')">⛽ Gasolineras</button>
+                                        <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('taller mecanico')">🔧 Talleres</button>
+                                        <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('vulcanizadora')">🛞 Vulcanizadoras</button>
+                                        <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('refaccionaria')">🔩 Refaccionarias</button>
+                                        <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('hospitales')">🏥 Hospitales</button>
+                                        <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('estacion de policia')">🚨 Policía</button>
+                                    </div>
 
-                                <!-- OPCIÓN "OTROS" CON ENTRADA DE VOZ PARA GOOGLE MAPS DIRECTO -->
-                                <div style="margin-top: 8px; background: rgba(26, 115, 232, 0.1); border: 1px solid rgba(66, 133, 244, 0.3); padding: 8px; border-radius: 6px;">
-                                    <label style="font-size: 10px; font-weight: 600; color: #93c5fd; display: block; margin-bottom: 4px;">🔍 Búsqueda Personalizada "Otros" (Google Maps):</label>
+                                    <div style="margin-top: 8px; background: rgba(26, 115, 232, 0.1); border: 1px solid rgba(66, 133, 244, 0.3); padding: 8px; border-radius: 6px;">
+                                        <label style="font-size: 10px; font-weight: 600; color: #93c5fd; display: block; margin-bottom: 4px;">🔍 Búsqueda Personalizada "Otros" (Google Maps):</label>
+                                        <div class="flex-row">
+                                            <div class="input-voz-group">
+                                                <input type="text" id="input_gmaps_otros" placeholder="Buscar en Google Maps (ej. Farmacia, Comida)...">
+                                                <button type="button" class="btn-voice" onclick="escucharVoz('input_gmaps_otros')">🎤</button>
+                                            </div>
+                                            <button type="button" class="btn-radar btn-google-maps" style="width: auto; padding: 8px 12px; font-size: 11px; margin: 0; white-space: nowrap;" onclick="abrirGoogleMapsOtros()">🧭 Buscar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SECCIÓN 2: REPOSITORIO Y MARCADORES FAVORITOS - DESPLEGABLE Y RETRÁCTIL -->
+                            <div class="check-accordion-card" style="margin-bottom: 8px;">
+                                <div class="check-accordion-header" onclick="toggleAcordeon('body-repositorio', 'arrow-repositorio')">
+                                    <span style="font-size: 11px; font-weight: 700; color: var(--accent-amber);">💾 Repositorio y Marcadores Favoritos (SQLite)</span>
+                                    <span id="arrow-repositorio" style="font-size:10px; font-weight:600;">▼</span>
+                                </div>
+                                <div id="body-repositorio" class="check-accordion-body" style="display: none; background: #0b1120;">
+                                    <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 10px;">Buscador local prioritario:</p>
+                                    
                                     <div class="flex-row">
                                         <div class="input-voz-group">
-                                            <input type="text" id="input_gmaps_otros" placeholder="Buscar en Google Maps (ej. Farmacia, Comida)...">
-                                            <button type="button" class="btn-voice" onclick="escucharVoz('input_gmaps_otros')">🎤</button>
+                                            <input type="text" id="input_mis_rutas" placeholder="Preferencias">
+                                            <button type="button" class="btn-voice" onclick="escucharVoz('input_mis_rutas')">🎤</button>
                                         </div>
-                                        <button type="button" class="btn-radar btn-google-maps" style="width: auto; padding: 8px 12px; font-size: 11px; margin: 0; white-space: nowrap;" onclick="abrirGoogleMapsOtros()">🧭 Buscar</button>
+                                        <button type="button" style="width: auto; padding: 8px 12px; background: #0284c7; font-size: 11px; font-weight: 600;" onclick="buscarMisRutas()">Mis Rutas</button>
+                                    </div>
+
+                                    <div id="radar-resultados" class="radar-results-box" style="display: none;">
+                                        <span id="radar-loading">Ingrese un término para buscar en "Mis Rutas"...</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- SECCIÓN 2: REPOSITORIO Y MARCADORES FAVORITOS (BUSCADOR LOCAL PRIORITARIO CON VOZ) -->
-                            <div style="background: #0b1120; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px;">
-                                <label style="font-size: 11px; font-weight: 700; color: var(--accent-amber); display: block; margin-bottom: 4px;">
-                                    💾 Repositorio y Marcadores Favoritos (SQLite)
-                                </label>
-                                <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 10px;">Buscador local prioritario:</p>
-                                
-                                <div class="flex-row">
-                                    <div class="input-voz-group">
-                                        <input type="text" id="input_mis_rutas" placeholder="Preferencias">
-                                        <button type="button" class="btn-voice" onclick="escucharVoz('input_mis_rutas')">🎤</button>
-                                    </div>
-                                    <button type="button" style="width: auto; padding: 8px 12px; background: #0284c7; font-size: 11px; font-weight: 600;" onclick="buscarMisRutas()">Mis Rutas</button>
+                            <!-- SECCIÓN 3: INYECTAR COORDENADAS DE GOOGLE MAPS - DESPLEGABLE Y RETRÁCTIL -->
+                            <div class="check-accordion-card" style="margin-bottom: 4px;">
+                                <div class="check-accordion-header" onclick="toggleAcordeon('body-inyectar', 'arrow-inyectar')">
+                                    <span style="font-size: 11px; font-weight: 600; color: var(--accent-cyan);">📍 Inyectar Coordenadas Copiadas de Google Maps a Base Local</span>
+                                    <span id="arrow-inyectar" style="font-size:10px; font-weight:600;">▼</span>
                                 </div>
-
-                                <div id="radar-resultados" class="radar-results-box" style="display: none;">
-                                    <span id="radar-loading">Ingrese un término para buscar en "Mis Rutas"...</span>
-                                </div>
-                            </div>
-
-                            <!-- FORMULARIO DE INYECCIÓN DE COORDENADAS DE GOOGLE MAPS -->
-                            <div style="margin-top: 10px; background: #0b1120; padding: 8px; border-radius: 6px; border: 1px dashed rgba(6, 182, 212, 0.4);">
-                                <label style="font-size: 11px; font-weight: 600; color: var(--accent-cyan);">📍 Inyectar Coordenadas Copiadas de Google Maps a Base Local:</label>
-                                <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
-                                    <input type="text" id="gmaps_nombre" placeholder="Nombre del lugar (Ej. Taller Recomendado G. Maps)">
-                                    <select id="gmaps_tipo" style="margin:0;">
-                                        <option value="taller">Taller</option>
-                                        <option value="gasolinera">Gasolinera</option>
-                                        <option value="vulcanizadora">Vulcanizadora</option>
-                                        <option value="refaccionaria">Refaccionaria</option>
-                                        <option value="hospital">Hospital</option>
-                                        <option value="policia">Policía</option>
-                                        <option value="otros">Otros</option>
-                                    </select>
-                                    <div class="flex-row">
-                                        <input type="text" id="gmaps_coords" placeholder="Lat, Lon (Ej. 19.6543, -99.2014)" style="margin:0;">
-                                        <button type="button" style="width:auto; padding:8px 12px; background:#059669; font-size:11px; margin:0;" onclick="guardarCoordenadasGoogleMaps()">Guardar en DB</button>
+                                <div id="body-inyectar" class="check-accordion-body" style="display: none; background: #0b1120;">
+                                    <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
+                                        <input type="text" id="gmaps_nombre" placeholder="Nombre del lugar (Ej. Taller Recomendado G. Maps)">
+                                        <select id="gmaps_tipo" style="margin:0;">
+                                            <option value="taller">Taller</option>
+                                            <option value="gasolinera">Gasolinera</option>
+                                            <option value="vulcanizadora">Vulcanizadora</option>
+                                            <option value="refaccionaria">Refaccionaria</option>
+                                            <option value="hospital">Hospital</option>
+                                            <option value="policia">Policía</option>
+                                            <option value="otros">Otros</option>
+                                        </select>
+                                        <div class="flex-row">
+                                            <input type="text" id="gmaps_coords" placeholder="Lat, Lon (Ej. 19.6543, -99.2014)" style="margin:0;">
+                                            <button type="button" style="width:auto; padding:8px 12px; background:#059669; font-size:11px; margin:0;" onclick="guardarCoordenadasGoogleMaps()">Guardar en DB</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
