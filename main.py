@@ -91,7 +91,6 @@ def init_db():
             fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    # TABLA DE CACHÉ OFFLINE PARA EL RADAR GPS
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS radar_cache (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -616,10 +615,10 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO: CACHÉ OFFLINE SQLITE + NAVEGACIÓN HÍBRIDA) -->
+            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO: GOOGLE MAPS FALLBACK & MANUAL FEEDBACK) -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
-                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 10 km - Caché Offline)</span>
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 10 km - Caché Offline & Respaldo Maps)</span>
                     <span id="arrow-bloque-3" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
                 </div>
                 <div id="body-bloque-3" class="bloque-principal-body">
@@ -660,6 +659,25 @@ def home():
                                         <button type="button" class="btn-voice" onclick="escucharVoz('input_otros_poi')">🎤 Voz</button>
                                     </div>
                                     <button type="button" style="width: auto; padding: 8px 12px; background: #0284c7; font-size: 11px;" onclick="buscarPOIOtros()">Buscar</button>
+                                </div>
+                            </div>
+
+                            <!-- NUEVO: FORMULARIO DE REGISTRO MANUAL PARA ALIMENTAR CACHÉ SQLITE -->
+                            <div style="margin-top: 10px; background: #0b1120; padding: 8px; border-radius: 6px; border: 1px dashed rgba(16, 185, 129, 0.4);">
+                                <label style="font-size: 11px; font-weight: 600; color: var(--accent-green);">➕ Registrar POI Externo / Manualmente en Caché Local:</label>
+                                <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
+                                    <input type="text" id="manual_poi_nombre" placeholder="Nombre del establecimiento (Ej. Taller Auxilio Izcalli)">
+                                    <div class="flex-row">
+                                        <select id="manual_poi_tipo" style="flex:1; margin:0;">
+                                            <option value="taller">Taller</option>
+                                            <option value="gasolinera">Gasolinera</option>
+                                            <option value="vulcanizadora">Vulcanizadora</option>
+                                            <option value="refaccionaria">Refaccionaria</option>
+                                            <option value="hospital">Hospital</option>
+                                            <option value="policia">Policía</option>
+                                        </select>
+                                        <button type="button" style="width:auto; padding:8px 12px; background:#059669; font-size:11px; margin:0;" onclick="registrarPoiManual()">Guardar en DB</button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -826,7 +844,6 @@ def home():
                 return R * c;
             }
 
-            // GUARDAR POIS EN CACHÉ SQLITE
             async function guardarPoisEnCache(tipo, pois) {
                 for (let p of pois) {
                     let name = p.tags && p.tags.name ? p.tags.name : "Establecimiento de Servicio";
@@ -846,7 +863,47 @@ def home():
                 }
             }
 
-            // CONSULTAR POIS DESDE CACHÉ OFFLINE (FALLBACK SQLITE)
+            async function registrarPoiManual() {
+                let nombre = document.getElementById("manual_poi_nombre").value.trim();
+                let tipo = document.getElementById("manual_poi_tipo").value;
+                if (!nombre) {
+                    alert("Ingrese un nombre para el establecimiento.");
+                    return;
+                }
+                if (!currentLat || !currentLon) {
+                    alert("⚠️ No hay señal GPS actual para asociar las coordenadas.");
+                    return;
+                }
+                try {
+                    let res = await fetch(API + "/radar/cache", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + authToken
+                        },
+                        body: JSON.stringify({ tipo, nombre, brand: "Manual/Externo", lat: currentLat, lon: currentLon })
+                    });
+                    if (res.ok) {
+                        alert("✔ POI guardado exitosamente en la caché SQLite local.");
+                        document.getElementById("manual_poi_nombre").value = "";
+                        buscarPOI(tipo);
+                    } else {
+                        alert("Error al registrar en servidor.");
+                    }
+                } catch(e) {
+                    alert("Error de conexión al guardar POI.");
+                }
+            }
+
+            function abrirGoogleMapsExterno(queryBusqueda = "servicios") {
+                if (!currentLat || !currentLon) {
+                    window.open("https://www.google.com/maps", "_blank");
+                    return;
+                }
+                let url = `https://www.google.com/maps/search/${encodeURIComponent(queryBusqueda)}/@${currentLat},${currentLon},14z`;
+                window.open(url, "_blank");
+            }
+
             async function buscarPOIOffline(tipo, tituloBusqueda) {
                 let resultadosBox = document.getElementById("radar-resultados");
                 try {
@@ -855,8 +912,10 @@ def home():
                     });
                     let poisCache = await res.json();
 
+                    let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Buscar '${tipo}' directamente en Google Maps Externo</button></div>`;
+
                     if (!poisCache || poisCache.length === 0) {
-                        resultadosBox.innerHTML = `⚠️ <b>Modo Sin Red (Offline):</b> No hay registros previos guardados en la base de datos local para '${tipo}'.`;
+                        resultadosBox.innerHTML = `⚠️ <b>Modo Sin Red (Offline):</b> No hay registros previos guardados en la base de datos local para '${tipo}'.${fallbackMapsBtn}`;
                         return;
                     }
 
@@ -884,20 +943,19 @@ def home():
                             </div>
                         `;
                     });
-                    resultadosBox.innerHTML = htmlList;
+                    resultadosBox.innerHTML = htmlList + fallbackMapsBtn;
                 } catch(e) {
-                    resultadosBox.innerHTML = "⚠️ Error crítico al acceder a la caché local.";
+                    resultadosBox.innerHTML = `⚠️ Error crítico al acceder a la caché local.<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Abrir Google Maps Externo</button></div>`;
                 }
             }
 
-            // RADAR GPS SOS PRINCIPAL (ONLINE + FALLBACK OFFLINE SQLITE)
             async function buscarPOI(tipo) {
                 let resultadosBox = document.getElementById("radar-resultados");
                 resultadosBox.style.display = "block";
                 resultadosBox.innerHTML = "⏳ Escaneando la zona cercana en un radio de 10 km...";
 
                 if (!currentLat || !currentLon) {
-                    resultadosBox.innerHTML = "⚠️ Error: No se ha obtenido la señal GPS actual. Activa la ubicación del navegador.";
+                    resultadosBox.innerHTML = `⚠️ Error: No se ha obtenido la señal GPS actual.<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Buscar en Google Maps Externo</button></div>`;
                     return;
                 }
 
@@ -929,17 +987,17 @@ def home():
                 let overpassQuery = `[out:json][timeout:15];(${queryTag}(around:10000,${currentLat},${currentLon}););out body 12;`;
                 let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
 
+                let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 ¿No encuentras el lugar? Abrir Google Maps Externo</button></div>`;
+
                 try {
                     let response = await fetch(url);
                     let data = await response.json();
                     
                     if (!data.elements || data.elements.length === 0) {
-                        resultadosBox.innerHTML = `<b>${tituloBusqueda}:</b> No se encontraron establecimientos en el servidor remoto. Buscando en caché local...`;
                         await buscarPOIOffline(tipo, tituloBusqueda);
                         return;
                     }
 
-                    // Guardar en segundo plano dentro de SQLite para uso offline futuro
                     guardarPoisEnCache(tipo, data.elements);
 
                     let elementosConDistancia = data.elements.map(el => {
@@ -971,14 +1029,12 @@ def home():
                             </div>
                         `;
                     });
-                    resultadosBox.innerHTML = htmlList;
+                    resultadosBox.innerHTML = htmlList + fallbackMapsBtn;
                 } catch (e) {
-                    // SI NO HAY CONEXIÓN A INTERNET, CONSULTAR CACHÉ SQLITE
                     await buscarPOIOffline(tipo, tituloBusqueda);
                 }
             }
 
-            // BUSCADOR PERSONALIZADO PARA SECCIÓN "OTROS"
             async function buscarPOIOtros() {
                 let termino = document.getElementById("input_otros_poi").value.trim().toLowerCase();
                 let resultadosBox = document.getElementById("radar-resultados");
@@ -992,12 +1048,13 @@ def home():
                 resultadosBox.innerHTML = `⏳ Buscando '${termino}' en un radio de 10 km...`;
 
                 if (!currentLat || !currentLon) {
-                    resultadosBox.innerHTML = "⚠️ Error: No se ha obtenido la señal GPS actual.";
+                    resultadosBox.innerHTML = `⚠️ Error: No se ha obtenido la señal GPS actual.<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${termino}')">🧭 Buscar en Google Maps Externo</button></div>`;
                     return;
                 }
 
                 let overpassQuery = `[out:json][timeout:15];(node["name"~"${termino}",i](around:10000,${currentLat},${currentLon});node["amenity"~"${termino}",i](around:10000,${currentLat},${currentLon});node["shop"~"${termino}",i](around:10000,${currentLat},${currentLon});node["craft"~"${termino}",i](around:10000,${currentLat},${currentLon}););out body 12;`;
                 let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+                let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${termino}')">🧭 Buscar '${termino}' en Google Maps Externo</button></div>`;
 
                 try {
                     let response = await fetch(url);
@@ -1038,7 +1095,7 @@ def home():
                             </div>
                         `;
                     });
-                    resultadosBox.innerHTML = htmlList;
+                    resultadosBox.innerHTML = htmlList + fallbackMapsBtn;
                 } catch (e) {
                     await buscarPOIOffline(termino, `Resultados para '${termino}'`);
                 }
