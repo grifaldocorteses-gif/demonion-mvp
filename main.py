@@ -338,6 +338,14 @@ def home():
                 color: white;
                 border-color: var(--accent-cyan);
             }
+            .btn-google-maps {
+                background: linear-gradient(135deg, #1a73e8, #1557b0);
+                color: white;
+                border: 1px solid #4285f4;
+            }
+            .btn-google-maps:hover {
+                background: #1557b0;
+            }
             .radar-results-box {
                 background: #0b1120;
                 border: 1px solid var(--border-color);
@@ -373,7 +381,7 @@ def home():
             <h3>⚡ PANEL OPERATIVO [<span id="current-user" style="color:var(--accent-cyan)"></span>]</h3>
             <hr>
             
-            <!-- BLOQUE 1: Control de Combustible y Autonomía (INTACTO) -->
+            <!-- BLOQUE 1: Control de Combustible y Autonomía -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-1', 'arrow-bloque-1')">
                     <span style="font-size:14px; font-weight:600; color:#38bdf8;">⚡ 1. Control de Combustible y Autonomía</span>
@@ -437,7 +445,7 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 2: Sello de Seguridad Obligatorio (INTACTO) -->
+            <!-- BLOQUE 2: Sello de Seguridad Obligatorio -->
             <div id="contenedor-inspeccion" class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-2', 'arrow-bloque-2')">
                     <span id="titulo-bloque-2" style="font-size:14px; font-weight:600; color:var(--accent-amber);">⚠️ 2. Mantenimiento Preventivo y Checklist (⚠️ Registrar puntos críticos obligatorios antes de usar Bloque 1)</span>
@@ -517,7 +525,6 @@ def home():
 
                     </div>
 
-                    <!-- PROTOCOLO NORMATIVO / AVISO DE SEGURIDAD -->
                     <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                         <p style="margin:0 0 4px 0; font-weight:600; color:#60a5fa; font-size:12px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
                         <p style="margin:0 0 4px 0;">Cumple strictly la reglamentación:</p>
@@ -527,7 +534,6 @@ def home():
                         <button class="btn-leido" onclick="confirmarLeidoProtocolo()">✔ Entendido y Confirmado (Regresar)</button>
                     </div>
 
-                    <!-- MENÚ DESPLEGABLE GENERAL: VIDA ÚTIL Y ESTADO SIMULTÁNEO DE COMPONENTES -->
                     <div class="check-accordion-card" style="margin-top: 8px;">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-grid-componentes', 'arrow-grid-componentes')">
                             <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📊 Vida útil y estado simultáneo de los componentes (Aceite, Arrastre, Frenos)</span>
@@ -536,7 +542,6 @@ def home():
                         <div id="body-grid-componentes" class="check-accordion-body" style="display: none;">
                             <div class="componentes-grid">
                                 
-                                <!-- 1. Cambio de Aceite -->
                                 <div class="comp-card">
                                     <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-aceite', 'arrow-comp-aceite')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
                                         <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">🛢️ Cambio de Aceite (Ciclo: 2,500 km)</span>
@@ -560,7 +565,6 @@ def home():
                                     </div>
                                 </div>
 
-                                <!-- 2. Kit de Arrastre / Piñones -->
                                 <div class="comp-card">
                                     <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-arrastre', 'arrow-comp-arrastre')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
                                         <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">⛓️ Kit de Arrastre / Piñones (Ciclo: 15,000 km)</span>
@@ -584,7 +588,6 @@ def home():
                                     </div>
                                 </div>
 
-                                <!-- 3. Pastillas de Freno -->
                                 <div class="comp-card">
                                     <div class="check-accordion-header" onclick="toggleAcordeon('body-comp-frenos', 'arrow-comp-frenos')" style="background: #111827; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px;">
                                         <span style="font-size: 12px; font-weight: 600; color:#38bdf8;">🛑 Pastillas de Freno (Ciclo: 5,000 km)</span>
@@ -615,14 +618,13 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO: ENLACES GOOGLE MAPS VISIBLES Y ACCESIBLES) -->
+            <!-- BLOQUE 3: Telemetría Avanzada y Radar GPS DUAL (Google Maps + Local Backup) -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
-                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 10 km - Enlaces Visibles Google Maps)</span>
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS Dual (Google Maps + Local Backup)</span>
                     <span id="arrow-bloque-3" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
                 </div>
                 <div id="body-bloque-3" class="bloque-principal-body">
-                    <!-- Entorno de Dispositivo -->
                     <div id="entorno-dispositivo" class="entorno-box">
                         <span id="info-clima">🌤️ Clima: Cargando...</span>
                         <span id="info-bateria">🔋 Batería: --%</span>
@@ -631,42 +633,57 @@ def home():
                         <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: Obteniendo GPS...</span>
                     </div>
 
-                    <!-- Radar GPS de Servicios Cercanos con Caché Offline -->
+                    <!-- SISTEMA DUAL DE NAVEGACIÓN Y BÚSQUEDA -->
                     <div class="check-accordion-card" style="margin-bottom: 10px;">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-radar-gps', 'arrow-radar-gps')">
-                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📡 Radar GPS SOS: Servicios y Auxilio Cercano (Radio 10 km)</span>
+                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">🗺️ Motor Dual de Búsqueda de Servicios</span>
                             <span id="arrow-radar-gps" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-radar-gps" class="check-accordion-body" style="display: block;">
-                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Búsqueda con precisión satelital, ordenamiento por distancia y enlaces directos visibles a Google Maps:</p>
                             
-                            <div class="radar-grid">
-                                <button class="btn-radar" onclick="buscarPOI('gasolinera')">⛽ Gasolineras</button>
-                                <button class="btn-radar" onclick="buscarPOI('taller')">🔧 Talleres</button>
-                                <button class="btn-radar" onclick="buscarPOI('vulcanizadora')">🛞 Vulcanizadoras</button>
-                                <button class="btn-radar" onclick="buscarPOI('refaccionaria')">🔩 Refaccionarias</button>
-                                <button class="btn-radar" onclick="buscarPOI('hospital')">🏥 Hospitales / Médicas</button>
-                                <button class="btn-radar" onclick="buscarPOI('plaza')">🏬 Plazas / Centros Com.</button>
-                                <button class="btn-radar" onclick="buscarPOI('policia')" style="grid-column: span 2;">🚨 Seguridad Pública / Policía</button>
-                            </div>
-
-                            <!-- SECCIÓN: OTROS (CON DICTADO POR VOZ) -->
-                            <div style="margin-top: 10px; background: #0b1120; padding: 8px; border-radius: 6px; border: 1px dashed var(--border-color);">
-                                <label style="font-size: 11px; font-weight: 600; color: #38bdf8;">🔍 Otros (Búsqueda Personalizada / Dictado por Voz):</label>
-                                <div class="flex-row" style="margin-top: 4px;">
-                                    <div class="input-voz-group">
-                                        <input type="text" id="input_otros_poi" placeholder="Ej. banco, farmacia, oxxo, cerrajero...">
-                                        <button type="button" class="btn-voice" onclick="escucharVoz('input_otros_poi')">🎤 Voz</button>
-                                    </div>
-                                    <button type="button" style="width: auto; padding: 8px 12px; background: #0284c7; font-size: 11px;" onclick="buscarPOIOtros()">Buscar</button>
+                            <!-- SECCIÓN 1: MOTOR PRIMARIO (GOOGLE MAPS DIRECTO) -->
+                            <div style="background: #0b1120; border: 1px solid #1d4ed8; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                                <label style="font-size: 11px; font-weight: 700; color: #60a5fa; display: block; margin-bottom: 6px;">
+                                    🚀 MOTOR PRIMARIO: Google Maps Directo (En línea)
+                                </label>
+                                <div class="radar-grid">
+                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('gasolineras')">⛽ Gasolineras</button>
+                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('taller mecanico')">🔧 Talleres</button>
+                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('vulcanizadora')">🛞 Vulcanizadoras</button>
+                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('refaccionaria')">🔩 Refaccionarias</button>
+                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('hospitales')">🏥 Hospitales</button>
+                                    <button class="btn-radar btn-google-maps" onclick="abrirGoogleMapsExterno('estacion de policia')" style="grid-column: span 2;">🚨 Seguridad Pública / Policía</button>
                                 </div>
                             </div>
 
-                            <!-- FORMULARIO DE REGISTRO MANUAL PARA ALIMENTAR CACHÉ SQLITE -->
+                            <!-- SECCIÓN 2: MOTOR DE RESPALDO (RADAR LOCAL SQLITE / OFFLINE) -->
+                            <div style="background: #0b1120; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px;">
+                                <label style="font-size: 11px; font-weight: 700; color: var(--accent-amber); display: block; margin-bottom: 4px;">
+                                    💾 MOTOR SECUNDARIO: Radar Local Resiliente (Offline / Caché)
+                                </label>
+                                <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 10px;">Escanear base local sin necesidad de datos móviles:</p>
+                                
+                                <div class="radar-grid">
+                                    <button class="btn-radar" onclick="buscarPOI('gasolinera')">⛽ Gasolineras Local</button>
+                                    <button class="btn-radar" onclick="buscarPOI('taller')">🔧 Talleres Local</button>
+                                    <button class="btn-radar" onclick="buscarPOI('vulcanizadora')">🛞 Vulka Local</button>
+                                    <button class="btn-radar" onclick="buscarPOI('refaccionaria')">🔩 Refacc. Local</button>
+                                </div>
+
+                                <div class="flex-row" style="margin-top: 8px;">
+                                    <div class="input-voz-group">
+                                        <input type="text" id="input_otros_poi" placeholder="Búsqueda local personalizada...">
+                                        <button type="button" class="btn-voice" onclick="escucharVoz('input_otros_poi')">🎤</button>
+                                    </div>
+                                    <button type="button" style="width: auto; padding: 8px 12px; background: #0284c7; font-size: 11px;" onclick="buscarPOIOtros()">Escanear DB</button>
+                                </div>
+                            </div>
+
+                            <!-- FORMULARIO DE REGISTRO MANUAL DE POI EN DB LOCAL -->
                             <div style="margin-top: 10px; background: #0b1120; padding: 8px; border-radius: 6px; border: 1px dashed rgba(16, 185, 129, 0.4);">
-                                <label style="font-size: 11px; font-weight: 600; color: var(--accent-green);">➕ Registrar POI Externo / Manualmente en Caché Local:</label>
+                                <label style="font-size: 11px; font-weight: 600; color: var(--accent-green);">➕ Guardar Punto de Interés en Caché Local (SQLite):</label>
                                 <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
-                                    <input type="text" id="manual_poi_nombre" placeholder="Nombre del establecimiento (Ej. Taller Auxilio Izcalli)">
+                                    <input type="text" id="manual_poi_nombre" placeholder="Nombre (Ej. Taller Auxilio)">
                                     <div class="flex-row">
                                         <select id="manual_poi_tipo" style="flex:1; margin:0;">
                                             <option value="taller">Taller</option>
@@ -676,13 +693,13 @@ def home():
                                             <option value="hospital">Hospital</option>
                                             <option value="policia">Policía</option>
                                         </select>
-                                        <button type="button" style="width:auto; padding:8px 12px; background:#059669; font-size:11px; margin:0;" onclick="registrarPoiManual()">Guardar en DB</button>
+                                        <button type="button" style="width:auto; padding:8px 12px; background:#059669; font-size:11px; margin:0;" onclick="registrarPoiManual()">Guardar</button>
                                     </div>
                                 </div>
                             </div>
 
                             <div id="radar-resultados" class="radar-results-box" style="display: none;">
-                                <span id="radar-loading">Pulsa un botón o busca por voz para escanear tu zona...</span>
+                                <span id="radar-loading">Seleccione un motor para iniciar búsqueda...</span>
                             </div>
                         </div>
                     </div>
@@ -832,6 +849,15 @@ def home():
                 window.addEventListener('offline', actualizarEstadoRedDetallado);
             }
 
+            function abrirGoogleMapsExterno(queryBusqueda = "servicios") {
+                if (!currentLat || !currentLon) {
+                    window.open(`https://www.google.com/maps/search/${encodeURIComponent(queryBusqueda)}`, "_blank");
+                    return;
+                }
+                let url = `https://www.google.com/maps/search/${encodeURIComponent(queryBusqueda)}/@${currentLat},${currentLon},14z`;
+                window.open(url, "_blank");
+            }
+
             function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
                 let R = 6371; 
                 let dLat = (lat2 - lat1) * Math.PI / 180;
@@ -895,15 +921,6 @@ def home():
                 }
             }
 
-            function abrirGoogleMapsExterno(queryBusqueda = "servicios") {
-                if (!currentLat || !currentLon) {
-                    window.open("https://www.google.com/maps", "_blank");
-                    return;
-                }
-                let url = `https://www.google.com/maps/search/${encodeURIComponent(queryBusqueda)}/@${currentLat},${currentLon},14z`;
-                window.open(url, "_blank");
-            }
-
             async function buscarPOIOffline(tipo, tituloBusqueda) {
                 let resultadosBox = document.getElementById("radar-resultados");
                 try {
@@ -912,7 +929,7 @@ def home():
                     });
                     let poisCache = await res.json();
 
-                    let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Abrir búsqueda directa en Google Maps</button></div>`;
+                    let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar btn-google-maps" style="width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Abrir búsqueda directa en Google Maps</button></div>`;
 
                     if (!poisCache || poisCache.length === 0) {
                         resultadosBox.innerHTML = `⚠️ <b>Modo Sin Red (Offline):</b> No hay registros previos guardados en la base de datos local para '${tipo}'.${fallbackMapsBtn}`;
@@ -926,36 +943,36 @@ def home():
 
                     elementosConDistancia.sort((a, b) => a.distanciaKm - b.distanciaKm);
 
-                    let htmlList = `<b style="color:var(--accent-amber);">${tituloBusqueda} [💾 MODO OFFLINE - Base de Datos Local]:</b><br><br>`;
+                    let htmlList = `<b style="color:var(--accent-amber);">${tituloBusqueda} [💾 BASE LOCAL - SQLITE]:</b><br><br>`;
                     elementosConDistancia.forEach((el, index) => {
                         let brandStr = el.brand ? ` (${el.brand})` : "";
                         let distStr = el.distanciaKm < 999 ? ` (~${el.distanciaKm.toFixed(2)} km)` : "";
                         let mapsUrl = `geo:${el.lat},${el.lon}?q=${el.lat},${el.lon}(${encodeURIComponent(el.nombre)})`;
                         let webUrl = `https://www.google.com/maps/search/?api=1&query=${el.lat},${el.lon}`;
-                        let etiquetaPrioridad = index === 0 ? " <span style='color:var(--accent-green); font-weight:600;'>[⭐ ¡Más Cercano!]</span>" : "";
+                        let etiquetaPrioridad = index === 0 ? " <span style='color:var(--accent-green); font-weight:600;'>[⭐ Más Cercano]</span>" : "";
 
                         htmlList += `
                             <div class="poi-item">
                                 <b>${index + 1}. ${el.nombre}${brandStr}</b>${etiquetaPrioridad}<br>
                                 <span style="color:var(--text-muted); font-size:10px;">Distancia: ${distStr}</span><br>
-                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir App GPS (Nativo)</a> | 
-                                <a href="${webUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">🌐 Enlace Google Maps Web</a>
+                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 App GPS</a> | 
+                                <a href="${webUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">🌐 Google Maps Web</a>
                             </div>
                         `;
                     });
                     resultadosBox.innerHTML = htmlList + fallbackMapsBtn;
                 } catch(e) {
-                    resultadosBox.innerHTML = `⚠️ Error crítico al acceder a la caché local.<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Abrir Google Maps Externo</button></div>`;
+                    resultadosBox.innerHTML = `⚠️ Error crítico al acceder a la caché local.<div style="margin-top:8px;"><button class="btn-radar btn-google-maps" style="width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Abrir Google Maps Externo</button></div>`;
                 }
             }
 
             async function buscarPOI(tipo) {
                 let resultadosBox = document.getElementById("radar-resultados");
                 resultadosBox.style.display = "block";
-                resultadosBox.innerHTML = "⏳ Escaneando la zona cercana en un radio de 10 km...";
+                resultadosBox.innerHTML = "⏳ Escaneando base local y red secundaria en 10 km...";
 
                 if (!currentLat || !currentLon) {
-                    resultadosBox.innerHTML = `⚠️ Error: No se ha obtenido la señal GPS actual.<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Buscar en Google Maps Externo</button></div>`;
+                    resultadosBox.innerHTML = `⚠️ Error: No hay señal GPS actual.<div style="margin-top:8px;"><button class="btn-radar btn-google-maps" style="width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Buscar en Google Maps</button></div>`;
                     return;
                 }
 
@@ -966,28 +983,18 @@ def home():
                     tituloBusqueda = "⛽ Gasolineras Cercanas";
                 } else if (tipo === 'taller') {
                     queryTag = 'node["shop"="car_repair"]';
-                    tituloBusqueda = "🔧 Talleres Mecánicos Cercanos";
+                    tituloBusqueda = "🔧 Talleres Mecánicos";
                 } else if (tipo === 'vulcanizadora') {
                     queryTag = 'node["shop"="tyres"]';
-                    tituloBusqueda = "🛞 Vulcanizadoras Cercanas";
+                    tituloBusqueda = "🛞 Vulcanizadoras";
                 } else if (tipo === 'refaccionaria') {
                     queryTag = 'node["shop"="car_parts"]';
-                    tituloBusqueda = "🔩 Refaccionarias Cercanas";
-                } else if (tipo === 'hospital') {
-                    queryTag = 'node["amenity"="hospital"]';
-                    tituloBusqueda = "🏥 Hospitales y Unidades Médicas";
-                } else if (tipo === 'plaza') {
-                    queryTag = 'node["shop"="mall"]';
-                    tituloBusqueda = "🏬 Plazas / Centros Comerciales";
-                } else if (tipo === 'policia') {
-                    queryTag = 'node["amenity"="police"]';
-                    tituloBusqueda = "🚨 Seguridad Pública y Policía";
+                    tituloBusqueda = "🔩 Refaccionarias";
                 }
 
                 let overpassQuery = `[out:json][timeout:15];(${queryTag}(around:10000,${currentLat},${currentLon}););out body 12;`;
                 let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
-
-                let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 ¿Deseas más opciones? Buscar '${tipo}' directamente en Google Maps</button></div>`;
+                let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar btn-google-maps" style="width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${tipo}')">🧭 Buscar '${tipo}' en Google Maps</button></div>`;
 
                 try {
                     let response = await fetch(url);
@@ -1009,23 +1016,21 @@ def home():
 
                     elementosConDistancia.sort((a, b) => a.distanciaKm - b.distanciaKm);
 
-                    let htmlList = `<b style="color:var(--accent-cyan);">${tituloBusqueda} (~10 km - Prioridad por Cercanía):</b><br><br>`;
+                    let htmlList = `<b style="color:var(--accent-cyan);">${tituloBusqueda} (Red Secundaria OSM):</b><br><br>`;
                     elementosConDistancia.forEach((el, index) => {
-                        let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento sin nombre comercial";
-                        let brand = el.tags && el.tags.brand ? ` (${el.tags.brand})` : "";
+                        let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento local";
                         let lat = el.lat;
                         let lon = el.lon;
                         let distStr = el.distanciaKm < 999 ? ` (~${el.distanciaKm.toFixed(2)} km)` : "";
                         let mapsUrl = `geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(name)})`;
                         let webUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-                        let etiquetaPrioridad = index === 0 ? " <span style='color:var(--accent-green); font-weight:600;'>[⭐ ¡Más Cercano!]</span>" : "";
                         
                         htmlList += `
                             <div class="poi-item">
-                                <b>${index + 1}. ${name}${brand}</b>${etiquetaPrioridad}<br>
+                                <b>${index + 1}. ${name}</b><br>
                                 <span style="color:var(--text-muted); font-size:10px;">Distancia: ${distStr}</span><br>
-                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir App GPS (Nativo)</a> | 
-                                <a href="${webUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">🌐 Enlace Google Maps Web</a>
+                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 App GPS</a> | 
+                                <a href="${webUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">🌐 Google Maps Web</a>
                             </div>
                         `;
                     });
@@ -1041,64 +1046,11 @@ def home():
                 resultadosBox.style.display = "block";
 
                 if (!termino) {
-                    resultadosBox.innerHTML = "⚠️ Escribe o dicta un término en la sección 'Otros' para buscar.";
+                    resultadosBox.innerHTML = "⚠️ Ingrese un término para la búsqueda local.";
                     return;
                 }
 
-                resultadosBox.innerHTML = `⏳ Buscando '${termino}' en un radio de 10 km...`;
-
-                if (!currentLat || !currentLon) {
-                    resultadosBox.innerHTML = `⚠️ Error: No se ha obtenido la señal GPS actual.<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${termino}')">🧭 Buscar en Google Maps Externo</button></div>`;
-                    return;
-                }
-
-                let overpassQuery = `[out:json][timeout:15];(node["name"~"${termino}",i](around:10000,${currentLat},${currentLon});node["amenity"~"${termino}",i](around:10000,${currentLat},${currentLon});node["shop"~"${termino}",i](around:10000,${currentLat},${currentLon});node["craft"~"${termino}",i](around:10000,${currentLat},${currentLon}););out body 12;`;
-                let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
-                let fallbackMapsBtn = `<div style="margin-top:8px;"><button class="btn-radar" style="background:#0284c7; width:100%; justify-content:center;" onclick="abrirGoogleMapsExterno('${termino}')">🧭 Buscar '${termino}' en Google Maps Externo</button></div>`;
-
-                try {
-                    let response = await fetch(url);
-                    let data = await response.json();
-                    
-                    if (!data.elements || data.elements.length === 0) {
-                        await buscarPOIOffline(termino, `Resultados para '${termino}'`);
-                        return;
-                    }
-
-                    guardarPoisEnCache(termino, data.elements);
-
-                    let elementosConDistancia = data.elements.map(el => {
-                        let lat = el.lat;
-                        let lon = el.lon;
-                        let dist = (lat && lon) ? calcularDistanciaKm(currentLat, currentLon, lat, lon) : 999;
-                        return { ...el, distanciaKm: dist };
-                    });
-
-                    elementosConDistancia.sort((a, b) => a.distanciaKm - b.distanciaKm);
-
-                    let htmlList = `<b style="color:var(--accent-cyan);">Resultados para '${termino}' (~10 km - Ordenados por Cercanía):</b><br><br>`;
-                    elementosConDistancia.forEach((el, index) => {
-                        let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento de Servicio";
-                        let lat = el.lat;
-                        let lon = el.lon;
-                        let distStr = `(~${el.distanciaKm.toFixed(2)} km)`;
-                        let mapsUrl = `geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(name)})`;
-                        let webUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-                        let etiquetaPrioridad = index === 0 ? " <span style='color:var(--accent-green); font-weight:600;'>[⭐ ¡Más Cercano!]</span>" : "";
-                        
-                        htmlList += `
-                            <div class="poi-item">
-                                <b>${index + 1}. ${name}</b>${etiquetaPrioridad}<br>
-                                <span style="color:var(--text-muted); font-size:10px;">Distancia: ${distStr}</span><br>
-                                <a href="${mapsUrl}" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir App GPS (Nativo)</a> | 
-                                <a href="${webUrl}" target="_blank" style="color: #60a5fa; text-decoration: underline;">🌐 Enlace Google Maps Web</a>
-                            </div>
-                        `;
-                    });
-                    resultadosBox.innerHTML = htmlList + fallbackMapsBtn;
-                } catch (e) {
-                    await buscarPOIOffline(termino, `Resultados para '${termino}'`);
-                }
+                await buscarPOIOffline(termino, `Búsqueda Local: '${termino}'`);
             }
 
             function interpretarClimaWMO(code, temp) {
