@@ -30,7 +30,10 @@ def init_db():
             km_actual REAL,
             ultimo_servicio REAL,
             peso_piloto REAL DEFAULT 0.0,
-            altura_piloto REAL DEFAULT 0.0
+            altura_piloto REAL DEFAULT 0.0,
+            nombre_meta TEXT DEFAULT 'Mantenimiento General',
+            monto_meta REAL DEFAULT 2000.0,
+            ahorro_acumulado REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -123,6 +126,8 @@ class VehiculoUpdate(BaseModel):
     km_actual: float
     peso_piloto: float = 0.0
     altura_piloto: float = 0.0
+    nombre_meta: str = "Mantenimiento General"
+    monto_meta: float = 2000.0
 
 class CargarCombustible(BaseModel):
     litros_cargados: float
@@ -727,7 +732,7 @@ def home():
                         </div>
                     </div>
 
-                    <!-- Ficha Técnica, Odómetro y Nuevos Datos Biomecánicos (Peso y Altura) -->
+                    <!-- Ficha Técnica, Biomecánica y Configuración de Meta de Ahorro -->
                     <div class="telemetria-grid">
                         <div class="telemetria-item">
                             <label>Marca</label>
@@ -771,6 +776,21 @@ def home():
                                 <button type="button" class="btn-voice" onclick="escucharVoz('altura_piloto')">🎤</button>
                             </div>
                         </div>
+                        <!-- NUEVOS CAMPOS: META FINANCIERA DE AHORRO -->
+                        <div class="telemetria-item">
+                            <label>🎯 Nombre de la Meta</label>
+                            <div class="input-voz-group">
+                                <input type="text" id="nombre_meta" placeholder="Ej. Llantas Nuevas / Casco" style="padding: 6px 8px; font-size: 11px;">
+                                <button type="button" class="btn-voice" onclick="escucharVoz('nombre_meta')">🎤</button>
+                            </div>
+                        </div>
+                        <div class="telemetria-item">
+                            <label>💵 Monto Meta ($ MXN)</label>
+                            <div class="input-voz-group">
+                                <input type="number" id="monto_meta" placeholder="Ej. 2500" style="padding: 6px 8px; font-size: 11px;">
+                                <button type="button" class="btn-voice" onclick="escucharVoz('monto_meta')">🎤</button>
+                            </div>
+                        </div>
                     </div>
 
                     <button onclick="actualizarKm()">Sincronizar Odómetro y Auditar Telemetría</button>
@@ -801,6 +821,7 @@ def home():
             let kmTotalesAcumuladosGlobal = 0.0;
             let gastoTotalAcumuladoGlobal = 0.0;
             let tiempoTotalAcumuladoGlobalMin = 0.0;
+            let ahorroAcumuladoMetaGlobal = 0.0;
             let protocoloConfirmadoLeido = false;
             let currentLat = null;
             let currentLon = null;
@@ -1220,6 +1241,7 @@ def home():
                 kmTotalesAcumuladosGlobal = 0.0;
                 gastoTotalAcumuladoGlobal = 0.0;
                 tiempoTotalAcumuladoGlobalMin = 0.0;
+                ahorroAcumuladoMetaGlobal = 0.0;
                 protocoloConfirmadoLeido = false;
                 kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
                 kmDesdeUltimoChequeo = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
@@ -1510,7 +1532,7 @@ def home():
 
                 recognition.onresult = function(event) {
                     let texto = event.results[0][0].transcript;
-                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta' || inputId === 'precio_gas' || inputId === 'presupuesto_ruta' || inputId === 'anio' || inputId === 'peso_piloto' || inputId === 'altura_piloto') {
+                    if (inputId === 'km' || inputId === 'litros_carga' || inputId === 'km_ruta' || inputId === 'precio_gas' || inputId === 'presupuesto_ruta' || inputId === 'anio' || inputId === 'peso_piloto' || inputId === 'altura_piloto' || inputId === 'monto_meta') {
                         texto = texto.replace(/[^0-9.]/g, '');
                     }
                     document.getElementById(inputId).value = texto;
@@ -1607,6 +1629,8 @@ def home():
                 let km_actual = parseFloat(document.getElementById("km").value) || 0;
                 let peso_piloto = parseFloat(document.getElementById("peso_piloto").value) || 75.0;
                 let altura_piloto = parseFloat(document.getElementById("altura_piloto").value) || 170.0;
+                let nombre_meta = document.getElementById("nombre_meta").value.trim() || "Mantenimiento General";
+                let monto_meta = parseFloat(document.getElementById("monto_meta").value) || 2000.0;
                 
                 let res = await fetch(API + "/vehiculo", {
                     method: "POST",
@@ -1614,7 +1638,7 @@ def home():
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + authToken
                     },
-                    body: JSON.stringify({ marca, modelo, anio: anio.toString(), km_actual, peso_piloto, altura_piloto })
+                    body: JSON.stringify({ marca, modelo, anio: anio.toString(), km_actual, peso_piloto, altura_piloto, nombre_meta, monto_meta })
                 });
                 let data = await res.json();
                 if(res.ok) {
@@ -1664,13 +1688,40 @@ def home():
                     let promedioDiario = antiguedadAnios > 0 ? Math.round(km_actual / (antiguedadAnios * 365)) : km_actual;
                     let promedioMensual = antiguedadAnios > 0 ? Math.round(km_actual / (antiguedadAnios * 12)) : km_actual;
 
-                    // CÁLCULOS ERGONÓMICOS Y BIOMECÁNICOS (NUEVA SECCIÓN FINAL)
                     let imcPiloto = peso_piloto > 0 && altura_piloto > 0 ? (peso_piloto / Math.pow(altura_piloto / 100, 2)).toFixed(1) : "22.0";
                     let precargaSugerida = peso_piloto > 85 ? "Aumentar 2 puntos de precarga en monoshock trasero" : (peso_piloto < 60 ? "Reducir 1 punto de precarga para mayor suavidad" : "Precarga estándar de fábrica recomendada");
                     let fatigaPostural = altura_piloto > 180 ? "Postura alta: Sugiere elevadores de manillar para prevenir tensión lumbar en trayectos >60 min" : (altura_piloto < 165 ? "Postura baja: Alcance óptimo al piso, vigilar ángulo de flexión en rodillas" : "Ergonomía neutral óptima para la geometría del asiento");
 
+                    // CÁLCULOS DE LA META DE AHORRO
+                    let pctMeta = Math.min(100, Math.round((ahorroAcumuladoMetaGlobal / monto_meta) * 100));
+                    let restanteMeta = Math.max(0, monto_meta - ahorroAcumuladoMetaGlobal);
+                    let colorBarraMeta = pctMeta >= 100 ? "var(--accent-green)" : (pctMeta > 50 ? "var(--accent-cyan)" : "var(--accent-amber)");
+                    let msgMeta = pctMeta >= 100 ? "🏆 ¡Meta Alcanzada! Tienes el capital disponible." : `🚀 Estás al ${pctMeta}% de tu meta. Faltan $${restanteMeta.toFixed(2)} MXN.`;
+
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
+                            
+                            <!-- TARJETA 1: META DE AHORRO Y PROPÓSITO DE JORNADA (PROTAGONISTA) -->
+                            <div class="diag-card" onclick="toggleDesplegable('details-meta', 'arrow-meta')" style="border-color: var(--accent-cyan);">
+                                <div class="diag-header">
+                                    <div class="diag-header-left">
+                                        <span class="diag-icon">🎯</span>
+                                        <div style="display:flex; flex-direction:column;">
+                                            <span class="diag-title">PROPÓSITO DE AHORRO: ${nombre_meta.toUpperCase()}</span>
+                                            <span class="diag-subtitle" style="color: ${colorBarraMeta};">$${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN / $${monto_meta.toFixed(2)} MXN (${pctMeta}%)</span>
+                                        </div>
+                                    </div>
+                                    <span id="arrow-meta" class="diag-arrow">▼</span>
+                                </div>
+                                <div id="details-meta" class="diag-details" style="display: block;">
+                                    <div class="progress-container" style="height: 10px; margin-bottom: 6px;">
+                                        <div class="progress-bar" style="width: ${pctMeta}%; background: ${colorBarraMeta};"></div>
+                                    </div>
+                                    <p style="margin:2px 0; color: var(--text-main);"><b>Estatus:</b> ${msgMeta}</p>
+                                    <p style="margin:2px 0; color: var(--text-muted); font-size:10px;">💡 <i>El excedente positivo de tus viáticos registrado en el Bloque 1 se suma automáticamente a este fondo.</i></p>
+                                </div>
+                            </div>
+
                             <div class="diag-card" onclick="toggleDesplegable('details-valor', 'arrow-valor')">
                                 <div class="diag-header">
                                     <div class="diag-header-left">
@@ -1749,7 +1800,6 @@ def home():
                                 </div>
                             </div>
 
-                            <!-- NUEVA TARJETA BIOMÉTRICA Y ERGONÓMICA -->
                             <div class="diag-card" onclick="toggleDesplegable('details-ergo', 'arrow-ergo')">
                                 <div class="diag-header">
                                     <div class="diag-header-left">
@@ -1773,7 +1823,7 @@ def home():
 
                         </div>
                     `;
-                    ultimoDiagnostico = `Unidad: ${data.marca} ${data.modelo} ${data.anio} | Valor Est: $${valorMonetarioEstimado} MXN | Piloto: ${peso_piloto}kg/${altura_piloto}cm`;
+                    ultimoDiagnostico = `Unidad: ${data.marca} ${data.modelo} ${data.anio} | Meta: ${nombre_meta} ($${ahorroAcumuladoMetaGlobal.toFixed(2)}/$${monto_meta})`;
                 }
             }
 
@@ -1869,6 +1919,7 @@ def home():
                     kmTotalesAcumuladosGlobal = data.km_totales_acumulados;
                     gastoTotalAcumuladoGlobal = data.gasto_total_acumulado;
                     tiempoTotalAcumuladoGlobalMin = data.tiempo_total_acumulado_min;
+                    ahorroAcumuladoMetaGlobal = data.ahorro_acumulado;
 
                     for (let comp in kmComponentes) {
                         kmComponentes[comp] += km_recorridos;
@@ -1914,6 +1965,8 @@ def home():
                     }
 
                     let balanceColor = data.balance_neto >= 0 ? "var(--accent-green)" : "var(--accent-red)";
+                    let mensajeAhorroMeta = data.balance_neto > 0 ? `<p style="margin:2px 0; color: var(--accent-cyan);"><b>🎯 Ahorro Acumulado a la Meta:</b> +$${data.balance_neto} MXN agregados (Total: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN)</p>` : "";
+
                     panelOficial.innerHTML = `
                         <p style="color: var(--accent-green); font-weight: 600; margin: 0 0 5px 0;">✔ Rendimiento Registrado [${data.nombre_ruta}]:</p>
                         <p style="margin:2px 0;"><b>${data.ubicacion_registro}</b></p>
@@ -1921,6 +1974,7 @@ def home():
                         <p style="margin:2px 0;"><b>Consumo / Costo:</b> ${data.litros_consumidos} L (<b>$${data.costo_viaje} MXN</b>)</p>
                         <p style="margin:2px 0;"><b>Presupuesto / Viáticos:</b> $${data.presupuesto} MXN</p>
                         <p style="margin:2px 0; color: ${balanceColor};"><b>Balance Neto:</b> $${data.balance_neto} MXN</p>
+                        ${mensajeAhorroMeta}
                         <p style="margin:2px 0;"><b>⏱️ Tiempo del Viaje:</b> ~${data.tiempo_viaje}</p>
                         <p style="margin:2px 0;"><b>Autonomía Restante:</b> ${data.autonomia_restante_km} km (${data.litros_restantes} L)</p>
                         <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${data.alerta_operativa}</p>
@@ -1928,6 +1982,9 @@ def home():
                         <p style="color: #60a5fa; font-weight: 600; margin:2px 0;">📊 Acumulados Globales:</p>
                         <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km | Gasto: $${gastoTotalAcumuladoGlobal} MXN</p>
                     `;
+
+                    // Actualizar directamente la vista en el Bloque 3 si está desplegada
+                    actualizarKm();
                 } else {
                     alert(data.detail);
                 }
@@ -1946,6 +2003,9 @@ def home():
                         document.getElementById("km").value = data.km_actual || 0;
                         document.getElementById("peso_piloto").value = data.peso_piloto || "";
                         document.getElementById("altura_piloto").value = data.altura_piloto || "";
+                        document.getElementById("nombre_meta").value = data.nombre_meta || "Mantenimiento General";
+                        document.getElementById("monto_meta").value = data.monto_meta || 2000.0;
+                        ahorroAcumuladoMetaGlobal = data.ahorro_acumulado || 0.0;
                     }
                 }
                 
@@ -2107,29 +2167,36 @@ def reiniciar_tanque_y_telemetria(authorization: str = Header(None)):
     cursor = conn.cursor()
     cursor.execute("UPDATE tanque_usuario SET litros_tanque = 0.0 WHERE usuario = ?", (usuario,))
     cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0, tiempo_total_acumulado_min = 0.0 WHERE usuario = ?", (usuario,))
+    cursor.execute("UPDATE vehiculos SET ahorro_acumulado = 0.0 WHERE usuario = ?", (usuario,))
     cursor.execute("DELETE FROM bitacora_rutas WHERE usuario = ?", (usuario,))
     conn.commit()
     conn.close()
-    return {"mensaje": "Tanque y contadores de telemetría reiniciados con éxito."}
+    return {"mensaje": "Tanque y contadores de telemetría e historial de ahorro reiniciados con éxito."}
 
 @app.post("/vehiculo")
 def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT id, km_actual, ultimo_servicio, ahorro_acumulado FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     
     if row:
-        vehiculo_id, km_previo, ultimo_servicio = row
+        vehiculo_id, km_previo, ultimo_servicio, ahorro_acum = row
         if ultimo_servicio is None:
             ultimo_servicio = 0.0
-        cursor.execute("UPDATE vehiculos SET marca = ?, modelo = ?, anio = ?, km_actual = ?, peso_piloto = ?, altura_piloto = ? WHERE id = ?", 
-                       (v.marca, v.modelo, v.anio, v.km_actual, v.peso_piloto, v.altura_piloto, vehiculo_id))
+        cursor.execute("""
+            UPDATE vehiculos 
+            SET marca = ?, modelo = ?, anio = ?, km_actual = ?, peso_piloto = ?, altura_piloto = ?, nombre_meta = ?, monto_meta = ? 
+            WHERE id = ?
+        """, (v.marca, v.modelo, v.anio, v.km_actual, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta, vehiculo_id))
     else:
         ultimo_servicio = v.km_actual
-        cursor.execute("INSERT INTO vehiculos (usuario, marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", 
-                       (usuario, v.marca, v.modelo, v.anio, v.km_actual, ultimo_servicio, v.peso_piloto, v.altura_piloto))
+        ahorro_acum = 0.0
+        cursor.execute("""
+            INSERT INTO vehiculos (usuario, marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto, nombre_meta, monto_meta, ahorro_acumulado) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0)
+        """, (usuario, v.marca, v.modelo, v.anio, v.km_actual, ultimo_servicio, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta))
     
     conn.commit()
     conn.close()
@@ -2143,9 +2210,12 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
         "km_actual": v.km_actual,
         "peso_piloto": v.peso_piloto,
         "altura_piloto": v.altura_piloto,
+        "nombre_meta": v.nombre_meta,
+        "monto_meta": v.monto_meta,
+        "ahorro_acumulado": ahorro_acum if ahorro_acum else 0.0,
         "km_desde_servicio": km_desde_servicio,
         "alerta_color": "green",
-        "mensaje_alerta": "Odómetro sincronizado y ficha técnica actualizada."
+        "mensaje_alerta": "Odómetro y metas financieras sincronizadas."
     }
 
 @app.get("/vehiculo")
@@ -2154,7 +2224,7 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto FROM vehiculos WHERE usuario = ?", (usuario,))
+    cursor.execute("SELECT marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto, nombre_meta, monto_meta, ahorro_acumulado FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
     conn.close()
     
@@ -2272,6 +2342,16 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     m_viaje = int(minutos_viaje % 60)
     tiempo_viaje_str = f"{h_viaje}h {m_viaje}m" if h_viaje > 0 else f"{m_viaje} min"
 
+    # SUMAR EXCEDENTE AL AHARRO ACUMULADO SI ES POSITIVO
+    cursor.execute("SELECT ahorro_acumulado FROM vehiculos WHERE usuario = ?", (usuario,))
+    v_row = cursor.fetchone()
+    ahorro_actual = v_row[0] if v_row and v_row[0] is not None else 0.0
+    
+    nuevo_ahorro = ahorro_actual
+    if balance_neto > 0:
+        nuevo_ahorro = round(ahorro_actual + balance_neto, 2)
+        cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (nuevo_ahorro, usuario))
+
     cursor.execute("""
         INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado, tiempo_total_acumulado_min) 
         VALUES (?, ?, ?, ?)
@@ -2308,6 +2388,7 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "costo_viaje": costo_viaje,
         "presupuesto": e.presupuesto,
         "balance_neto": balance_neto,
+        "ahorro_acumulado": nuevo_ahorro,
         "costo_por_km": costo_por_km,
         "tiempo_viaje": tiempo_viaje_str,
         "autonomia_restante_km": autonomia_restante_km,
