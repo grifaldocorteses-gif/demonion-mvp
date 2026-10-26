@@ -295,7 +295,7 @@ def home():
             .bloque-principal-header:hover { background: #131d31; }
             .bloque-principal-body { display: none; padding: 16px; }
 
-            /* Estilos NUEVOS para el Bloque 3 Interactivo / Radar SOS */
+            /* Estilos para el Radar GPS SOS con 7 categorías y radio de 15 km */
             .radar-grid {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
@@ -356,7 +356,7 @@ def home():
             <h3>⚡ PANEL OPERATIVO [<span id="current-user" style="color:var(--accent-cyan)"></span>]</h3>
             <hr>
             
-            <!-- BLOQUE 1: Control de Combustible y Autonomía -->
+            <!-- BLOQUE 1: Control de Combustible y Autonomía (INTACTO) -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-1', 'arrow-bloque-1')">
                     <span style="font-size:14px; font-weight:600; color:#38bdf8;">⚡ 1. Control de Combustible y Autonomía</span>
@@ -420,7 +420,7 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 2: Sello de Seguridad Obligatorio -->
+            <!-- BLOQUE 2: Sello de Seguridad Obligatorio (INTACTO) -->
             <div id="contenedor-inspeccion" class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-2', 'arrow-bloque-2')">
                     <span id="titulo-bloque-2" style="font-size:14px; font-weight:600; color:var(--accent-amber);">⚠️ 2. Mantenimiento Preventivo y Checklist (⚠️ Registrar puntos críticos obligatorios antes de usar Bloque 1)</span>
@@ -598,10 +598,10 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 3: REDISEÑO COMPLETO (Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS) -->
+            <!-- BLOQUE 3: Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS (ACTUALIZADO CON 15 KM Y 7 CATEGORÍAS) -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
-                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS</span>
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS (Radio 15 km)</span>
                     <span id="arrow-bloque-3" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
                 </div>
                 <div id="body-bloque-3" class="bloque-principal-body">
@@ -614,20 +614,22 @@ def home():
                         <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: Obteniendo GPS...</span>
                     </div>
 
-                    <!-- Radar GPS de Servicios Cercanos (NUEVA IMPLEMENTACIÓN) -->
+                    <!-- Radar GPS de Servicios Cercanos (ACTUALIZADO: 7 categorías y 15 km) -->
                     <div class="check-accordion-card" style="margin-bottom: 10px;">
                         <div class="check-accordion-header" onclick="toggleAcordeon('body-radar-gps', 'arrow-radar-gps')">
-                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📡 Radar GPS SOS: Servicios y Auxilio Cercano</span>
+                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📡 Radar GPS SOS: Servicios y Auxilio Cercano (Radio 15 km)</span>
                             <span id="arrow-radar-gps" style="font-size:10px; font-weight:600;">▼</span>
                         </div>
                         <div id="body-radar-gps" class="check-accordion-body" style="display: block;">
-                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Selecciona un servicio para buscar unidades y talleres en un radio de 5 km mediante tu GPS:</p>
+                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Selecciona un servicio para buscar establecimientos en un radio ampliado de <b>15 km</b> mediante tu GPS:</p>
                             <div class="radar-grid">
                                 <button class="btn-radar" onclick="buscarPOI('gasolinera')">⛽ Gasolineras</button>
                                 <button class="btn-radar" onclick="buscarPOI('taller')">🔧 Talleres</button>
                                 <button class="btn-radar" onclick="buscarPOI('vulcanizadora')">🛞 Vulcanizadoras</button>
                                 <button class="btn-radar" onclick="buscarPOI('refaccionaria')">🔩 Refaccionarias</button>
-                                <button class="btn-radar" onclick="buscarPOI('hospital')" style="grid-column: span 2;">🏥 Unidades Médicas / Hospitales</button>
+                                <button class="btn-radar" onclick="buscarPOI('hospital')">🏥 Hospitales / Médicas</button>
+                                <button class="btn-radar" onclick="buscarPOI('plaza')">🏬 Plazas / Centros Com.</button>
+                                <button class="btn-radar" onclick="buscarPOI('policia')" style="grid-column: span 2;">🚨 Seguridad Pública / Policía</button>
                             </div>
                             <div id="radar-resultados" class="radar-results-box" style="display: none;">
                                 <span id="radar-loading">Pulsa un botón para escanear tu zona...</span>
@@ -776,11 +778,11 @@ def home():
                 window.addEventListener('offline', actualizarEstadoRedDetallado);
             }
 
-            // NUEVA FUNCIÓN: Radar GPS SOS para buscar POIs cercanos (Overpass API)
+            // NUEVA FUNCIÓN: Radar GPS SOS ampliado a 15 km con 7 categorías (incluye Plazas y Policía)
             async function buscarPOI(tipo) {
                 let resultadosBox = document.getElementById("radar-resultados");
                 resultadosBox.style.display = "block";
-                resultadosBox.innerHTML = "⏳ Escaneando la zona cercana mediante GPS...";
+                resultadosBox.innerHTML = "⏳ Escaneando la zona cercana en un radio de 15 km...";
 
                 if (!currentLat || !currentLon) {
                     resultadosBox.innerHTML = "⚠️ Error: No se ha obtenido la señal GPS actual. Activa la ubicación del navegador.";
@@ -797,16 +799,23 @@ def home():
                     tituloBusqueda = "🔧 Talleres Mecánicos Cercanos";
                 } else if (tipo === 'vulcanizadora') {
                     queryTag = 'node["shop"="tyres"]';
-                    tituloBusqueda = "🛞 Vulcanizadoras y Neumáticos Cercanos";
+                    tituloBusqueda = "🛞 Vulcanizadoras Cercanas";
                 } else if (tipo === 'refaccionaria') {
                     queryTag = 'node["shop"="car_parts"]';
                     tituloBusqueda = "🔩 Refaccionarias Cercanas";
                 } else if (tipo === 'hospital') {
                     queryTag = 'node["amenity"="hospital"]';
-                    tituloBusqueda = "🏥 Unidades Médicas / Hospitales Cercanos";
+                    tituloBusqueda = "🏥 Hospitales y Unidades Médicas";
+                } else if (tipo === 'plaza') {
+                    queryTag = 'node["shop"="mall"]';
+                    tituloBusqueda = "🏬 Centros Comerciales y Plazas";
+                } else if (tipo === 'policia') {
+                    queryTag = 'node["amenity"="police"]';
+                    tituloBusqueda = "🚨 Seguridad Pública y Policía";
                 }
 
-                let overpassQuery = `[out:json][timeout:10];(${queryTag}(around:5000,${currentLat},${currentLon}););out body 5;`;
+                // Radio ampliado a 15000 metros (15 km) y hasta 8 resultados listados
+                let overpassQuery = `[out:json][timeout:15];(${queryTag}(around:15000,${currentLat},${currentLon}););out body 8;`;
                 let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
 
                 try {
@@ -814,11 +823,11 @@ def home():
                     let data = await response.json();
                     
                     if (!data.elements || data.elements.length === 0) {
-                        resultadosBox.innerHTML = `<b>${tituloBusqueda}:</b> No se encontraron establecimientos exactos en un radio de 5 km.`;
+                        resultadosBox.innerHTML = `<b>${tituloBusqueda}:</b> No se encontraron establecimientos exactos en un radio de 15 km.`;
                         return;
                     }
 
-                    let htmlList = `<b style="color:var(--accent-cyan);">${tituloBusqueda} (~5 km):</b><br><br>`;
+                    let htmlList = `<b style="color:var(--accent-cyan);">${tituloBusqueda} (~15 km):</b><br><br>`;
                     data.elements.forEach((el, index) => {
                         let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento sin nombre comercial";
                         let brand = el.tags && el.tags.brand ? ` (${el.tags.brand})` : "";
