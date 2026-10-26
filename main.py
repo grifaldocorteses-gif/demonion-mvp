@@ -127,9 +127,6 @@ class EvaluarRuta(BaseModel):
 class RegistrarMantenimiento(BaseModel):
     componente: str
 
-class ConfirmarChequeoComponente(BaseModel):
-    componente: str
-
 def verificar_token(authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Token ausente o inválido")
@@ -297,6 +294,53 @@ def home():
             .bloque-principal-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #0e1626; transition: background 0.2s; border-bottom: 1px solid var(--border-color); }
             .bloque-principal-header:hover { background: #131d31; }
             .bloque-principal-body { display: none; padding: 16px; }
+
+            /* Estilos NUEVOS para el Bloque 3 Interactivo / Radar SOS */
+            .radar-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+                margin-top: 8px;
+            }
+            .btn-radar {
+                background: #1e293b;
+                border: 1px solid var(--border-color);
+                padding: 8px 10px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                color: #38bdf8;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .btn-radar:hover {
+                background: #0284c7;
+                color: white;
+                border-color: var(--accent-cyan);
+            }
+            .radar-results-box {
+                background: #0b1120;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 10px;
+                margin-top: 8px;
+                max-height: 200px;
+                overflow-y: auto;
+                font-size: 11px;
+                color: var(--text-muted);
+            }
+            .poi-item {
+                padding: 6px 8px;
+                border-bottom: 1px dashed var(--border-color);
+                margin-bottom: 4px;
+            }
+            .poi-item:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
+            }
         </style>
     </head>
     <body>
@@ -456,7 +500,7 @@ def home():
 
                     </div>
 
-                    <!-- PROTOCOLO NORMATIVO / AVISO DE SEGURIDAD RECUPERADO -->
+                    <!-- PROTOCOLO NORMATIVO / AVISO DE SEGURIDAD -->
                     <div id="protocolo-normativo" class="alerta-normativa" style="display:none;">
                         <p style="margin:0 0 4px 0; font-weight:600; color:#60a5fa; font-size:12px;">🛡️ PROTOCOLO DE SEGURIDAD OPERATIVA Y NORMATIVA VIAL</p>
                         <p style="margin:0 0 4px 0;">Cumple estrictamente la reglamentación:</p>
@@ -554,13 +598,14 @@ def home():
                 </div>
             </div>
 
-            <!-- BLOQUE 3: Telemetría Avanzada y Entorno Dinámico -->
+            <!-- BLOQUE 3: REDISEÑO COMPLETO (Telemetría Avanzada, Entorno Dinámico y Radar GPS SOS) -->
             <div class="bloque-principal-card">
                 <div class="bloque-principal-header" onclick="toggleAcordeon('body-bloque-3', 'arrow-bloque-3')">
-                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Entorno Dinámico</span>
+                    <span style="font-size:14px; font-weight:600; color:#38bdf8;">🌐 3. Telemetría Avanzada y Radar GPS SOS</span>
                     <span id="arrow-bloque-3" style="font-size:12px; font-weight:600; color:#38bdf8;">▼</span>
                 </div>
                 <div id="body-bloque-3" class="bloque-principal-body">
+                    <!-- Entorno de Dispositivo -->
                     <div id="entorno-dispositivo" class="entorno-box">
                         <span id="info-clima">🌤️ Clima: Cargando...</span>
                         <span id="info-bateria">🔋 Batería: --%</span>
@@ -569,6 +614,28 @@ def home():
                         <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: Obteniendo GPS...</span>
                     </div>
 
+                    <!-- Radar GPS de Servicios Cercanos (NUEVA IMPLEMENTACIÓN) -->
+                    <div class="check-accordion-card" style="margin-bottom: 10px;">
+                        <div class="check-accordion-header" onclick="toggleAcordeon('body-radar-gps', 'arrow-radar-gps')">
+                            <span style="font-size:12px; font-weight:600; color:var(--accent-cyan);">📡 Radar GPS SOS: Servicios y Auxilio Cercano</span>
+                            <span id="arrow-radar-gps" style="font-size:10px; font-weight:600;">▼</span>
+                        </div>
+                        <div id="body-radar-gps" class="check-accordion-body" style="display: block;">
+                            <p style="margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px;">Selecciona un servicio para buscar unidades y talleres en un radio de 5 km mediante tu GPS:</p>
+                            <div class="radar-grid">
+                                <button class="btn-radar" onclick="buscarPOI('gasolinera')">⛽ Gasolineras</button>
+                                <button class="btn-radar" onclick="buscarPOI('taller')">🔧 Talleres</button>
+                                <button class="btn-radar" onclick="buscarPOI('vulcanizadora')">🛞 Vulcanizadoras</button>
+                                <button class="btn-radar" onclick="buscarPOI('refaccionaria')">🔩 Refaccionarias</button>
+                                <button class="btn-radar" onclick="buscarPOI('hospital')" style="grid-column: span 2;">🏥 Unidades Médicas / Hospitales</button>
+                            </div>
+                            <div id="radar-resultados" class="radar-results-box" style="display: none;">
+                                <span id="radar-loading">Pulsa un botón para escanear tu zona...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ficha Técnica y Odómetro -->
                     <div class="telemetria-grid">
                         <div class="telemetria-item">
                             <label>Marca</label>
@@ -629,6 +696,8 @@ def home():
             let gastoTotalAcumuladoGlobal = 0.0;
             let tiempoTotalAcumuladoGlobalMin = 0.0;
             let protocoloConfirmadoLeido = false;
+            let currentLat = null;
+            let currentLon = null;
             let kmComponentes = {
                 "Cambio de Aceite": 0,
                 "Kit de Arrastre / Piñones": 0,
@@ -656,10 +725,10 @@ def home():
 
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(position => {
-                        let lat = position.coords.latitude;
-                        let lon = position.coords.longitude;
+                        currentLat = position.coords.latitude;
+                        currentLon = position.coords.longitude;
                         
-                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14`, {
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLat}&lon=${currentLon}&zoom=14`, {
                             headers: { 'Accept-Language': 'es' }
                         })
                         .then(res => res.json())
@@ -668,10 +737,10 @@ def home():
                             document.getElementById("info-ubicacion").innerText = `📍 Ubicación: ${direccion}`;
                         })
                         .catch(() => {
-                            document.getElementById("info-ubicacion").innerText = `📍 Coordenadas: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+                            document.getElementById("info-ubicacion").innerText = `📍 Coordenadas: ${currentLat.toFixed(2)}, ${currentLon.toFixed(2)}`;
                         });
 
-                        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
+                        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${currentLat}&longitude=${currentLon}&current_weather=true`)
                             .then(res => res.json())
                             .then(data => {
                                 if (data && data.current_weather) {
@@ -705,6 +774,69 @@ def home():
                 }
                 window.addEventListener('online', actualizarEstadoRedDetallado);
                 window.addEventListener('offline', actualizarEstadoRedDetallado);
+            }
+
+            // NUEVA FUNCIÓN: Radar GPS SOS para buscar POIs cercanos (Overpass API)
+            async function buscarPOI(tipo) {
+                let resultadosBox = document.getElementById("radar-resultados");
+                resultadosBox.style.display = "block";
+                resultadosBox.innerHTML = "⏳ Escaneando la zona cercana mediante GPS...";
+
+                if (!currentLat || !currentLon) {
+                    resultadosBox.innerHTML = "⚠️ Error: No se ha obtenido la señal GPS actual. Activa la ubicación del navegador.";
+                    return;
+                }
+
+                let queryTag = "";
+                let tituloBusqueda = "";
+                if (tipo === 'gasolinera') {
+                    queryTag = 'node["amenity"="fuel"]';
+                    tituloBusqueda = "⛽ Gasolineras Cercanas";
+                } else if (tipo === 'taller') {
+                    queryTag = 'node["shop"="car_repair"]';
+                    tituloBusqueda = "🔧 Talleres Mecánicos Cercanos";
+                } else if (tipo === 'vulcanizadora') {
+                    queryTag = 'node["shop"="tyres"]';
+                    tituloBusqueda = "🛞 Vulcanizadoras y Neumáticos Cercanos";
+                } else if (tipo === 'refaccionaria') {
+                    queryTag = 'node["shop"="car_parts"]';
+                    tituloBusqueda = "🔩 Refaccionarias Cercanas";
+                } else if (tipo === 'hospital') {
+                    queryTag = 'node["amenity"="hospital"]';
+                    tituloBusqueda = "🏥 Unidades Médicas / Hospitales Cercanos";
+                }
+
+                let overpassQuery = `[out:json][timeout:10];(${queryTag}(around:5000,${currentLat},${currentLon}););out body 5;`;
+                let url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+
+                try {
+                    let response = await fetch(url);
+                    let data = await response.json();
+                    
+                    if (!data.elements || data.elements.length === 0) {
+                        resultadosBox.innerHTML = `<b>${tituloBusqueda}:</b> No se encontraron establecimientos exactos en un radio de 5 km.`;
+                        return;
+                    }
+
+                    let htmlList = `<b style="color:var(--accent-cyan);">${tituloBusqueda} (~5 km):</b><br><br>`;
+                    data.elements.forEach((el, index) => {
+                        let name = el.tags && el.tags.name ? el.tags.name : "Establecimiento sin nombre comercial";
+                        let brand = el.tags && el.tags.brand ? ` (${el.tags.brand})` : "";
+                        let lat = el.lat;
+                        let lon = el.lon;
+                        let mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+                        
+                        htmlList += `
+                            <div class="poi-item">
+                                <b>${index + 1}. ${name}${brand}</b><br>
+                                <a href="${mapsUrl}" target="_blank" style="color: #38bdf8; text-decoration: underline;">🧭 Abrir en Google Maps / Ruta</a>
+                            </div>
+                        `;
+                    });
+                    resultadosBox.innerHTML = htmlList;
+                } catch (e) {
+                    resultadosBox.innerHTML = "⚠️ Error de conexión al consultar el radar de servicios. Intenta de nuevo.";
+                }
             }
 
             function interpretarClimaWMO(code, temp) {
@@ -1015,7 +1147,6 @@ def home():
                     if(protocoloElem) protocoloElem.style.display = "none";
                     ultimoDiagnostico = "Estado Operativo: Bloqueado por Seguridad Preventiva";
                 } else {
-                    // Cuando todos los 6 puntos están en OK y se confirma, se oculta el checklist de puntos y se muestra el protocolo/aviso normativo
                     bloquearSistema(false, "✔ Puntos de inspección confirmados y operativos.");
                     if(checklistElem) checklistElem.style.display = "none";
                     if(protocoloElem) protocoloElem.style.display = "block";
@@ -1089,7 +1220,6 @@ def home():
 
                 let climaActual = document.getElementById("info-clima").innerText.replace("🌤️ Clima: ", "");
                 let horaActual = document.getElementById("info-horario").innerText.replace("🕒 Hora: ", "");
-                let redActual = document.getElementById("info-red").innerText.replace("📶 Red: ", "");
                 let ubicacionActual = document.getElementById("info-ubicacion").innerText.replace("📍 ", "");
                 let alertasSimuladas = evaluarAlertasOperativas(kmRutaVal, minutosViaje, litrosConsumidos);
                 let colorBalanceSim = balanceNetoSim >= 0 ? "var(--accent-green)" : "var(--accent-red)";
