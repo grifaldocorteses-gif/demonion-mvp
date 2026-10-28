@@ -1765,7 +1765,7 @@ def home():
 
                     let imcPiloto = peso_piloto > 0 && altura_piloto > 0 ? (peso_piloto / Math.pow(altura_piloto / 100, 2)).toFixed(1) : "22.0";
                     let precargaSugerida = peso_piloto > 85 ? "Aumentar 2 puntos de precarga en monoshock trasero" : (peso_piloto < 60 ? "Reducir 1 punto de precarga para mayor suavidad" : "Precarga estándar de fábrica recomendada");
-                    let fatigaPostural = altura_piloto > 180 ? "Postura alta: Sugiere elevadores de manillar para prevenir tensión lumbar en trayectos >60 min" : (altura_piloto < 165 ? "Postura baja: Alcance óptimo al piso, vigilar ángulo de flexión en rodillas" : "Ergonomía neutral óptima para la geometría del asiento");
+                    let fatigaPostural = altura_piloto > 180 ? "Postura alta: Sugiere elevadores de manillar para prevenir tensión lumbar in trayectos >60 min" : (altura_piloto < 165 ? "Postura baja: Alcance óptimo al piso, vigilar ángulo de flexión en rodillas" : "Ergonomía neutral óptima para la geometría del asiento");
 
                     let pctMeta = Math.min(100, Math.max(0, Math.round((ahorroAcumuladoMetaGlobal / monto_meta) * 100)));
                     let restanteMeta = Math.max(0, monto_meta - ahorroAcumuladoMetaGlobal);
@@ -1791,7 +1791,8 @@ def home():
                     let totalPresupuestoGlobal = presupuestoTotalAcumuladoGlobal || 0.0;
                     let costoGasolinaRealVal = gastoGasolinaRealGlobal || 0.0;
                     let litrosTanqueVal = litrosActualesTanque || 0.0;
-                    let balanceTermometroReal = round(totalPresupuestoGlobal - costoGasolinaRealVal, 2);
+                    let balanceNetoTermometro = round(totalPresupuestoGlobal - gastoTotalAcumuladoGlobal, 2);
+                    let balanceRealTermometro = ahorroAcumuladoMetaGlobal;
 
                     document.getElementById("diagnostico").innerHTML = `
                         <div class="diagnostico-container">
@@ -1813,7 +1814,7 @@ def home():
                                     </div>
                                     <p style="margin:2px 0; color: var(--text-main);"><b>Estatus:</b> ${msgMeta}</p>
                                     ${alertaFelicitacionHtml}
-                                    <p style="margin:6px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados (Termómetro):</b> Inversión: $${costoGasolinaRealVal.toFixed(2)} MXN (${litrosTanqueVal.toFixed(2)} lt gas) vs Ganancias: $${totalPresupuestoGlobal.toFixed(2)} MXN | <b>Balance Real:</b> $${balanceTermometroReal.toFixed(2)} MXN</p>
+                                    <p style="margin:6px 0 0 0; color: var(--text-muted); font-size:10px;">📊 <b>Balances Auditados (Termómetro):</b> Inversión: $${costoGasolinaRealVal.toFixed(2)} MXN (${litrosTanqueVal.toFixed(2)} lt gas) vs Balance Neto: $${balanceNetoTermometro.toFixed(2)} MXN | <b>Balance Real:</b> $${balanceRealTermometro.toFixed(2)} MXN</p>
                                 </div>
                             </div>
 
@@ -2472,7 +2473,7 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     costo_viajes_row = cursor.fetchone()
     total_costo_viajes = costo_viajes_row[0] if costo_viajes_row and costo_viajes_row[0] is not None else 0.0
 
-    gasto_total_inversion = max(nuevo_gasto_gasolina, total_costo_viajes)
+    gasto_total_inversion = max(gasto_gasolina_real, total_costo_viajes)
     ahorro_real_actualizado = round(total_presupuestos - gasto_total_inversion, 2)
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_actualizado, usuario))
 
