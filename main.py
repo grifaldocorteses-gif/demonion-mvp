@@ -2084,7 +2084,9 @@ def home():
                         <p style="margin:2px 0; color:var(--accent-amber);"><b>🛡️ Alertas Operativas:</b> ${data.alerta_operativa}</p>
                         <hr style="border: 0; border-top: 1px dashed rgba(16, 185, 129, 0.3); margin: 6px 0;">
                         <p style="color: #60a5fa; font-weight: 600; margin:2px 0;">📊 Acumulados Globales:</p>
-                        <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km | Pagos Recibidos: $${presupuestoTotalAcumuladoGlobal} MXN</p>
+                        <p style="margin:2px 0;"><b>Km Totales:</b> ${kmTotalesAcumuladosGlobal} km | <b>Gasto Total:</b> $${gastoTotalAcumuladoGlobal.toFixed(2)} MXN</p>
+                        <p style="margin:2px 0;"><b>Presupuesto Total:</b> $${presupuestoTotalAcumuladoGlobal.toFixed(2)} MXN | <b>Balance Acumulado:</b> $${round(presupuestoTotalAcumuladoGlobal - gastoTotalAcumuladoGlobal, 2)} MXN</p>
+                        <p style="margin:2px 0;"><b>Tiempo Total Acumulado:</b> ${Math.floor(tiempoTotalAcumuladoGlobalMin / 60)}h ${Math.round(tiempoTotalAcumuladoGlobalMin % 60)}m</p>
                     `;
 
                     actualizarKm();
