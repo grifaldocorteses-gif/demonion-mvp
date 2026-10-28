@@ -2307,9 +2307,11 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    cursor.execute("SELECT SUM(presupuesto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    presupuesto_row = cursor.fetchone()
-    total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
+    # CÁLCULO CORREGIDO: Partir del Balance Neto Acumulado (suma de balances netos de rutas)
+    # menos la diferencia entre el gasto real de tanque y el consumo teórico registrado en viajes.
+    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    balance_row = cursor.fetchone()
+    total_balance_neto = balance_row[0] if balance_row and balance_row[0] is not None else 0.0
 
     cursor.execute("SELECT gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
     tanque_row = cursor.fetchone()
@@ -2319,8 +2321,7 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     costo_viajes_row = cursor.fetchone()
     total_costo_viajes = costo_viajes_row[0] if costo_viajes_row and costo_viajes_row[0] is not None else 0.0
 
-    gasto_total_inversion = max(gasto_gasolina_real, total_costo_viajes)
-    ahorro_real_meta = round(total_presupuestos - gasto_total_inversion, 2)
+    ahorro_real_meta = round(total_balance_neto - (gasto_gasolina_real - total_costo_viajes), 2)
 
     cursor.execute("SELECT id, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
@@ -2368,9 +2369,9 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    cursor.execute("SELECT SUM(presupuesto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    presupuesto_row = cursor.fetchone()
-    total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
+    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    balance_row = cursor.fetchone()
+    total_balance_neto = balance_row[0] if balance_row and balance_row[0] is not None else 0.0
 
     cursor.execute("SELECT gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
     tanque_row = cursor.fetchone()
@@ -2380,8 +2381,7 @@ def obtener_vehiculo(authorization: str = Header(None)):
     costo_viajes_row = cursor.fetchone()
     total_costo_viajes = costo_viajes_row[0] if costo_viajes_row and costo_viajes_row[0] is not None else 0.0
 
-    gasto_total_inversion = max(gasto_gasolina_real, total_costo_viajes)
-    ahorro_real_meta = round(total_presupuestos - gasto_total_inversion, 2)
+    ahorro_real_meta = round(total_balance_neto - (gasto_gasolina_real - total_costo_viajes), 2)
 
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
     conn.commit()
@@ -2466,16 +2466,15 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
         ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?, gasto_gasolina_real = ?
     """, (usuario, nuevo_total_litros, nuevo_gasto_gasolina, nuevo_total_litros, nuevo_gasto_gasolina))
 
-    cursor.execute("SELECT SUM(presupuesto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    presupuesto_row = cursor.fetchone()
-    total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
+    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    balance_row = cursor.fetchone()
+    total_balance_neto = balance_row[0] if balance_row and balance_row[0] is not None else 0.0
 
     cursor.execute("SELECT SUM(costo_viaje) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
     costo_viajes_row = cursor.fetchone()
     total_costo_viajes = costo_viajes_row[0] if costo_viajes_row and costo_viajes_row[0] is not None else 0.0
 
-    gasto_total_inversion = max(nuevo_gasto_gasolina, total_costo_viajes)
-    ahorro_real_actualizado = round(total_presupuestos - gasto_total_inversion, 2)
+    ahorro_real_actualizado = round(total_balance_neto - (nuevo_gasto_gasolina - total_costo_viajes), 2)
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_actualizado, usuario))
 
     conn.commit()
@@ -2546,16 +2545,15 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, e.presupuesto, balance_neto, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
 
-    cursor.execute("SELECT SUM(presupuesto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    presupuesto_row = cursor.fetchone()
-    total_presupuestos = presupuesto_row[0] if presupuesto_row and presupuesto_row[0] is not None else 0.0
+    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+    balance_row = cursor.fetchone()
+    total_balance_neto = balance_row[0] if balance_row and balance_row[0] is not None else 0.0
 
     cursor.execute("SELECT SUM(costo_viaje) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
     costo_viajes_row = cursor.fetchone()
     total_costo_viajes = costo_viajes_row[0] if costo_viajes_row and costo_viajes_row[0] is not None else 0.0
 
-    gasto_total_inversion = max(gasto_gasolina_real, total_costo_viajes)
-    ahorro_real_meta = round(total_presupuestos - gasto_total_inversion, 2)
+    ahorro_real_meta = round(total_balance_neto - (gasto_gasolina_real - total_costo_viajes), 2)
 
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
 
