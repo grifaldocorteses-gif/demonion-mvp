@@ -2306,10 +2306,11 @@ def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # LA REGLA SOLICITADA: Únicamente sumar todos los balances netos de las rutas para el propósito de ahorro real.
-    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    balance_row = cursor.fetchone()
-    ahorro_real_meta = round(balance_row[0] if balance_row and balance_row[0] is not None else 0.0, 2)
+    cursor.execute("SELECT gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+    est_row = cursor.fetchone()
+    gasto_total_acumulado = est_row[0] if est_row and est_row[0] is not None else 0.0
+    
+    ahorro_real_meta = round(v.monto_meta - gasto_total_acumulado, 2)
 
     cursor.execute("SELECT id, km_actual, ultimo_servicio FROM vehiculos WHERE usuario = ?", (usuario,))
     row = cursor.fetchone()
@@ -2357,9 +2358,15 @@ def obtener_vehiculo(authorization: str = Header(None)):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    balance_row = cursor.fetchone()
-    ahorro_real_meta = round(balance_row[0] if balance_row and balance_row[0] is not None else 0.0, 2)
+    cursor.execute("SELECT monto_meta FROM vehiculos WHERE usuario = ?", (usuario,))
+    meta_row = cursor.fetchone()
+    monto_meta = meta_row[0] if meta_row and meta_row[0] is not None else 2000.0
+
+    cursor.execute("SELECT gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+    est_row = cursor.fetchone()
+    gasto_total_acumulado = est_row[0] if est_row and est_row[0] is not None else 0.0
+
+    ahorro_real_meta = round(monto_meta - gasto_total_acumulado, 2)
 
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
     conn.commit()
@@ -2444,9 +2451,15 @@ def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
         ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?, gasto_gasolina_real = ?
     """, (usuario, nuevo_total_litros, nuevo_gasto_gasolina, nuevo_total_litros, nuevo_gasto_gasolina))
 
-    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    balance_row = cursor.fetchone()
-    ahorro_real_actualizado = round(balance_row[0] if balance_row and balance_row[0] is not None else 0.0, 2)
+    cursor.execute("SELECT monto_meta FROM vehiculos WHERE usuario = ?", (usuario,))
+    meta_row = cursor.fetchone()
+    monto_meta = meta_row[0] if meta_row and meta_row[0] is not None else 2000.0
+
+    cursor.execute("SELECT gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+    est_row = cursor.fetchone()
+    gasto_total_acumulado = est_row[0] if est_row and est_row[0] is not None else 0.0
+
+    ahorro_real_actualizado = round(monto_meta - gasto_total_acumulado, 2)
 
     cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_actualizado, usuario))
 
@@ -2518,11 +2531,9 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (usuario, e.nombre_ruta, e.km_recorridos, costo_viaje, e.presupuesto, balance_neto, tiempo_viaje_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
 
-    cursor.execute("SELECT SUM(balance_neto) FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    balance_row = cursor.fetchone()
-    ahorro_real_meta = round(balance_row[0] if balance_row and balance_row[0] is not None else 0.0, 2)
-
-    cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
+    cursor.execute("SELECT monto_meta FROM vehiculos WHERE usuario = ?", (usuario,))
+    meta_row = cursor.fetchone()
+    monto_meta = meta_row[0] if meta_row and meta_row[0] is not None else 2000.0
 
     cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
     est_row = cursor.fetchone()
@@ -2530,6 +2541,10 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     gasto_total_acumulado = est_row[1]
     presupuesto_total_acumulado = est_row[2]
     tiempo_total_acumulado_min = est_row[3]
+
+    ahorro_real_meta = round(monto_meta - gasto_total_acumulado, 2)
+
+    cursor.execute("UPDATE vehiculos SET ahorro_acumulado = ? WHERE usuario = ?", (ahorro_real_meta, usuario))
 
     cursor.execute("""
         INSERT INTO tanque_usuario (usuario, litros_tanque, gasto_gasolina_real) VALUES (?, ?, ?)
@@ -2557,6 +2572,7 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
         "gasto_total_acumulado": gasto_total_acumulado,
         "presupuesto_total_acumulado": presupuesto_total_acumulado,
         "tiempo_total_acumulado_min": tiempo_total_acumulado_min,
+        "clima_regs": e.clima_registro,
         "clima_registro": e.clima_registro,
         "hora_registro": e.hora_registro,
         "red_registro": e.red_registro,
