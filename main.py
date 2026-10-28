@@ -17,13 +17,14 @@ def init_db():
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
-            password TEXT
+            password TEXT,
+            token_persistente TEXT
         )
     """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS vehiculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario TEXT,
+            usuario TEXT UNIQUE,
             marca TEXT,
             modelo TEXT,
             anio TEXT,
@@ -120,6 +121,11 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
+    try:
+        cursor.execute("ALTER TABLE usuarios ADD COLUMN token_persistente TEXT")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
 
@@ -131,6 +137,9 @@ def hash_password(password: str) -> str:
 class User(BaseModel):
     username: str
     password: str
+
+class TokenCheck(BaseModel):
+    token: str
 
 class VehiculoUpdate(BaseModel):
     marca: str
@@ -172,9 +181,21 @@ def verificar_token(authorization: str = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Token ausente o inválido")
     token = authorization.split(" ")[1]
-    if token not in active_sessions:
-        raise HTTPException(status_code=401, detail="Sesión expirada o inválida")
-    return active_sessions[token]
+    if token in active_sessions:
+        return active_sessions[token]
+    
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT username FROM usuarios WHERE token_persistente = ?", (token,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        username = row[0]
+        active_sessions[token] = username
+        return username
+
+    raise HTTPException(status_code=401, detail="Sesión expirada o inválida")
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -827,7 +848,8 @@ def home():
 
         <script>
             const API = window.location.origin;
-            let authToken = "";
+            let authToken = localStorage.getItem("demonion_token") || "";
+            let currentUser = localStorage.getItem("demonion_user") || "";
             let ultimoDiagnostico = "";
             let sistemaBloqueado = false;
             let litrosActualesTanque = 0.0;
@@ -853,6 +875,33 @@ def home():
             let bitacoraLocal = [];
             let viajesJornadaList = [];
             let consultaViajeOculta = false;
+
+            window.addEventListener('DOMContentLoaded', async () => {
+                if (authToken) {
+                    try {
+                        let res = await fetch(API + "/verify-token", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ token: authToken })
+                        });
+                        if (res.ok) {
+                            let data = await res.json();
+                            currentUser = data.username;
+                            document.getElementById("current-user").innerText = currentUser;
+                            document.getElementById("auth").style.display = "none";
+                            document.getElementById("app").style.display = "block";
+                            await cargarEstadoVehiculo();
+                            sincronizarVistaComponente();
+                            verificarJornadaYDiagnostico();
+                            iniciarTelemetriaNativa();
+                        } else {
+                            logout();
+                        }
+                    } catch(e) {
+                        logout();
+                    }
+                }
+            });
 
             function iniciarTelemetriaNativa() {
                 if (navigator.getBattery) {
@@ -1617,6 +1666,9 @@ def home():
                 if(res.ok) {
                     let data = await res.json();
                     authToken = data.token;
+                    currentUser = u;
+                    localStorage.setItem("demonion_token", authToken);
+                    localStorage.setItem("demonion_user", currentUser);
                     
                     limpiarVariablesLocales();
                     
@@ -1635,6 +1687,9 @@ def home():
 
             function logout() {
                 authToken = "";
+                currentUser = "";
+                localStorage.removeItem("demonion_token");
+                localStorage.removeItem("demonion_user");
                 limpiarVariablesLocales();
                 document.getElementById("user").value = "";
                 document.getElementById("pass").value = "";
@@ -1733,7 +1788,6 @@ def home():
                         ? `⚠️ En Negativo / Recuperando Inversión: $${ahorroAcumuladoMetaGlobal.toFixed(2)} MXN.` 
                         : (ahorroAcumuladoMetaGlobal >= monto_meta ? "🏆 ¡Meta Alcanzada! Tienes el capital disponible." : `🚀 Estás al ${pctMeta}% de tu meta. Faltan $${restanteMeta.toFixed(2)} MXN.`);
 
-                    // CÁLCULO DE VALORES REALES PARA EL BALANCE AUDITADO
                     let totalPresupuestoGlobal = presupuestoTotalAcumuladoGlobal || 0.0;
                     let costoGasolinaRealVal = gastoGasolinaRealGlobal || 0.0;
                     let litrosTanqueVal = litrosActualesTanque || 0.0;
@@ -2179,14 +2233,30 @@ def login(user: User):
     hashed_password = hash_password(user.password)
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM usuarios WHERE username = ? AND password = ?", (user.username, hashed_password))
+    cursor.execute("SELECT username FROM usuarios WHERE username = ? AND password = ?", (user.username, hashed_password))
     row = cursor.fetchone()
-    conn.close()
     if not row:
+        conn.close()
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+    
     token = secrets.token_hex(32)
     active_sessions[token] = user.username
-    return {"token": token}
+    cursor.execute("UPDATE usuarios SET token_persistente = ? WHERE username = ?", (token, user.username))
+    conn.commit()
+    conn.close()
+    return {"token": token, "username": user.username}
+
+@app.post("/verify-token")
+def verify_token_endpoint(tk: TokenCheck):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT username FROM usuarios WHERE token_persistente = ?", (tk.token,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        active_sessions[tk.token] = row[0]
+        return {"username": row[0]}
+    raise HTTPException(status_code=401, detail="Token inválido")
 
 @app.get("/tanque/estado")
 def obtener_estado_tanque(authorization: str = Header(None)):
