@@ -1,109 +1,95 @@
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import HTMLResponse, FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import sqlite3
 import hashlib
 import secrets
 import os
 
-app = FastAPI(title="DEMONION MVP - Enterprise Cyber Core", version="5.1.0")
+app = FastAPI(title="DEMONION MVP - Enterprise Cyber Core", version="5.2.0")
 active_sessions = {}
 
 DATA_DIR = "/data" if os.path.exists("/data") and os.access("/data", os.W_OK) else "."
 DB_NAME = os.path.join(DATA_DIR, "ventas.db")
 
 def get_db():
-    conn = sqlite3.connect(DB_NAME, timeout=20.0)
+    conn = sqlite3.connect(DB_NAME, timeout=30.0)
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
 def init_db():
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.executescript("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT,
-            token_persistente TEXT
-        );
-        CREATE TABLE IF NOT EXISTS vehiculos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario TEXT UNIQUE,
-            marca TEXT,
-            modelo TEXT,
-            anio TEXT,
-            km_actual REAL DEFAULT 0.0,
-            ultimo_servicio REAL DEFAULT 0.0,
-            peso_piloto REAL DEFAULT 0.0,
-            altura_piloto REAL DEFAULT 0.0,
-            nombre_meta TEXT DEFAULT 'Mantenimiento General',
-            monto_meta REAL DEFAULT 2000.0,
-            ahorro_acumulado REAL DEFAULT 0.0
-        );
-        CREATE TABLE IF NOT EXISTS tanque_usuario (
-            usuario TEXT PRIMARY KEY,
-            litros_tanque REAL DEFAULT 0.0,
-            gasto_gasolina_real REAL DEFAULT 0.0
-        );
-        CREATE TABLE IF NOT EXISTS estadisticas_rutas (
-            usuario TEXT PRIMARY KEY,
-            km_totales_acumulados REAL DEFAULT 0.0,
-            gasto_total_acumulado REAL DEFAULT 0.0,
-            tiempo_total_acumulado_min REAL DEFAULT 0.0,
-            presupuesto_total_acumulado REAL DEFAULT 0.0
-        );
-        CREATE TABLE IF NOT EXISTS bitacora_rutas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario TEXT,
-            nombre_ruta TEXT,
-            km_recorridos REAL DEFAULT 0.0,
-            costo_viaje REAL DEFAULT 0.0,
-            presupuesto REAL DEFAULT 0.0,
-            balance_neto REAL DEFAULT 0.0,
-            tiempo_viaje TEXT,
-            clima_registro TEXT,
-            hora_registro TEXT,
-            red_registro TEXT,
-            trafico_registro TEXT,
-            ubicacion_registro TEXT,
-            alerta_operativa TEXT,
-            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE TABLE IF NOT EXISTS combustible (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario TEXT,
-            km_recorridos REAL DEFAULT 0.0,
-            litros_consumidos REAL DEFAULT 0.0,
-            rendimiento REAL DEFAULT 30.0
-        );
-        CREATE TABLE IF NOT EXISTS mantenimiento_componentes (
-            usuario TEXT,
-            componente TEXT,
-            km_acumulados REAL DEFAULT 0.0,
-            km_desde_ultimo_aviso REAL DEFAULT 0.0,
-            PRIMARY KEY (usuario, componente)
-        );
-        CREATE TABLE IF NOT EXISTS bitacora_servicios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario TEXT,
-            componente TEXT,
-            km_realizado REAL DEFAULT 0.0,
-            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE TABLE IF NOT EXISTS radar_cache (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tipo TEXT,
-            nombre TEXT,
-            brand TEXT,
-            lat REAL,
-            lon REAL,
-            fecha_guardado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    """)
-    conn.commit()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.executescript("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                token_persistente TEXT
+            );
+            CREATE TABLE IF NOT EXISTS vehiculos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario TEXT UNIQUE NOT NULL,
+                marca TEXT,
+                modelo TEXT,
+                anio TEXT,
+                km_actual REAL DEFAULT 0.0,
+                ultimo_servicio REAL DEFAULT 0.0,
+                peso_piloto REAL DEFAULT 0.0,
+                altura_piloto REAL DEFAULT 0.0,
+                nombre_meta TEXT DEFAULT 'Mantenimiento General',
+                monto_meta REAL DEFAULT 2000.0,
+                ahorro_acumulado REAL DEFAULT 0.0
+            );
+            CREATE TABLE IF NOT EXISTS tanque_usuario (
+                usuario TEXT PRIMARY KEY,
+                litros_tanque REAL DEFAULT 0.0,
+                gasto_gasolina_real REAL DEFAULT 0.0
+            );
+            CREATE TABLE IF NOT EXISTS estadisticas_rutas (
+                usuario TEXT PRIMARY KEY,
+                km_totales_acumulados REAL DEFAULT 0.0,
+                gasto_total_acumulado REAL DEFAULT 0.0,
+                tiempo_total_acumulado_min REAL DEFAULT 0.0,
+                presupuesto_total_acumulado REAL DEFAULT 0.0
+            );
+            CREATE TABLE IF NOT EXISTS bitacora_rutas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario TEXT NOT NULL,
+                nombre_ruta TEXT,
+                km_recorridos REAL DEFAULT 0.0,
+                costo_viaje REAL DEFAULT 0.0,
+                presupuesto REAL DEFAULT 0.0,
+                balance_neto REAL DEFAULT 0.0,
+                tiempo_viaje TEXT,
+                clima_registro TEXT,
+                hora_registro TEXT,
+                red_registro TEXT,
+                trafico_registro TEXT,
+                ubicacion_registro TEXT,
+                alerta_operativa TEXT,
+                fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS mantenimiento_componentes (
+                usuario TEXT NOT NULL,
+                componente TEXT NOT NULL,
+                km_acumulados REAL DEFAULT 0.0,
+                km_desde_ultimo_aviso REAL DEFAULT 0.0,
+                PRIMARY KEY (usuario, componente)
+            );
+            CREATE TABLE IF NOT EXISTS radar_cache (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tipo TEXT,
+                nombre TEXT,
+                brand TEXT,
+                lat REAL,
+                lon REAL,
+                fecha_guardado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        conn.commit()
 
 init_db()
 
@@ -111,8 +97,8 @@ def hash_password(password: str) -> str:
     return hashlib.sha256(password.strip().encode()).hexdigest()
 
 class User(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=4)
 
 class TokenCheck(BaseModel):
     token: str
@@ -121,20 +107,20 @@ class VehiculoUpdate(BaseModel):
     marca: str
     modelo: str
     anio: str
-    km_actual: float
+    km_actual: float = Field(..., ge=0)
     peso_piloto: float = 0.0
     altura_piloto: float = 0.0
     nombre_meta: str = "Mantenimiento General"
-    monto_meta: float = 2000.0
+    monto_meta: float = Field(2000.0, ge=0)
 
 class CargarCombustible(BaseModel):
-    litros_cargados: float
-    precio_litro: float = 24.0
+    litros_cargados: float = Field(..., gt=0)
+    precio_litro: float = Field(24.0, gt=0)
 
 class EvaluarRuta(BaseModel):
     nombre_ruta: str = "Ruta General"
-    km_recorridos: float
-    precio_gasolina: float
+    km_recorridos: float = Field(..., gt=0)
+    precio_gasolina: float = Field(24.0, gt=0)
     presupuesto: float = 0.0
     clima_registro: str = "N/D"
     hora_registro: str = "N/D"
@@ -153,18 +139,17 @@ class CachePOI(BaseModel):
     lat: float
     lon: float
 
-def verificar_token(authorization: str = Header(None)):
+def verificar_token(authorization: str = Header(None)) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Token ausente o inválido")
     token = authorization.split(" ")[1].strip()
     if token in active_sessions:
         return active_sessions[token]
     
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT username FROM usuarios WHERE token_persistente = ?", (token,))
-    row = cursor.fetchone()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT username FROM usuarios WHERE token_persistente = ?", (token,))
+        row = cursor.fetchone()
     
     if row:
         active_sessions[token] = row[0]
@@ -183,12 +168,12 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>DEMONION MVP - Enterprise Cyber Core</title>
+        <title>DEMONION MVP - Enterprise Cyber Core v5.2</title>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <style>
             :root {
                 --bg-main: #060911;
-                --bg-card: rgba(17, 24, 39, 0.9);
+                --bg-card: rgba(17, 24, 39, 0.95);
                 --border-color: #1e293b;
                 --text-main: #f3f4f6;
                 --text-muted: #9ca3af;
@@ -219,7 +204,6 @@ def home():
             .btn-reset-tanque { background: #dc2626; font-weight: 600; font-size: 12px; padding: 10px; width: 30%; }
             .btn-main-carga { width: 68%; }
             .btn-leido { background: var(--accent-green); font-weight: 600; margin-top: 10px; }
-            .btn-accion-carpeta { background: #334155; width: auto; padding: 4px 8px; font-size: 10px; margin: 0; }
             #auth { display: block; max-width: 420px; margin: 40px auto; }
             #app { display: none; max-width: 720px; margin: 0 auto; }
             .flex-row { display: flex; gap: 6px; align-items: center; }
@@ -253,7 +237,7 @@ def home():
     </head>
     <body>
         <div id="auth" class="card">
-            <h3>🛡️ ACCESO DEMONION MVP</h3>
+            <h3>🛡️ ACCESO DEMONION MVP v5.2</h3>
             <input type="text" id="user" placeholder="Usuario" autocomplete="username">
             <input type="password" id="pass" placeholder="Contraseña" autocomplete="current-password">
             <button id="btn-login" onclick="login()">Iniciar Sesión</button>
@@ -291,7 +275,7 @@ def home():
                 <div id="body-bloque-1" class="bloque-principal-body">
                     <div class="flex-row">
                         <div class="input-voz-group">
-                            <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" oninput="simularCarga()">
+                            <input type="number" id="litros_carga" placeholder="Litros de Gasolina Agregados" step="0.1">
                             <button type="button" class="btn-voice" onclick="escucharVoz('litros_carga')">🎤 Voz</button>
                         </div>
                     </div>
@@ -307,19 +291,19 @@ def home():
                     </div>
                     <div class="flex-row" style="margin-top: 4px;">
                         <div class="input-voz-group">
-                            <input type="number" id="km_ruta" placeholder="Km a Recorrer" oninput="simularRuta()">
+                            <input type="number" id="km_ruta" placeholder="Km a Recorrer" step="0.1">
                             <button type="button" class="btn-voice" onclick="escucharVoz('km_ruta')">🎤 Voz</button>
                         </div>
                     </div>
                     <div class="flex-row">
                         <div class="input-voz-group">
-                            <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" oninput="simularRuta()">
+                            <input type="number" id="precio_gas" placeholder="Precio Gasolina ($ / Litro)" value="24.0" step="0.1">
                             <button type="button" class="btn-voice" onclick="escucharVoz('precio_gas')">🎤 Voz</button>
                         </div>
                     </div>
                     <div class="flex-row">
                         <div class="input-voz-group">
-                            <input type="number" id="presupuesto_ruta" placeholder="Presupuesto / Pago Recibido" value="0.0" oninput="simularRuta()">
+                            <input type="number" id="presupuesto_ruta" placeholder="Presupuesto / Pago Recibido" value="0.0" step="0.1">
                             <button type="button" class="btn-voice" onclick="escucharVoz('presupuesto_ruta')">🎤 Voz</button>
                         </div>
                     </div>
@@ -334,7 +318,6 @@ def home():
                             <div id="lista-viajes-acordeon" style="display: flex; flex-direction: column; gap: 6px;"></div>
                         </div>
                     </div>
-                    <div id="diagnostico-oficial" class="panel-oficial" style="display:none;"></div>
                 </div>
             </div>
 
@@ -450,11 +433,11 @@ def home():
                 </div>
                 <div id="body-bloque-3" class="bloque-principal-body">
                     <div id="entorno-dispositivo" class="entorno-box">
-                        <span id="info-clima">🌤️ Clima: Cargando...</span>
+                        <span id="info-clima">🌤️ Clima: Óptimo</span>
                         <span id="info-bateria">🔋 Batería: --%</span>
                         <span id="info-horario">🕒 Hora: --:--</span>
-                        <span id="info-red">📶 Red: Analizando...</span>
-                        <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: Obteniendo GPS...</span>
+                        <span id="info-red">📶 Red: Online</span>
+                        <span id="info-ubicacion" style="grid-column: span 2;">📍 Ubicación: GPS Activo</span>
                     </div>
 
                     <div class="check-accordion-card" style="margin-bottom: 10px;">
@@ -497,7 +480,7 @@ def home():
                     </div>
 
                     <hr>
-                    <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp / Local)</button>
+                    <button class="btn-share" onclick="compartirReporte()">📲 Compartir Reporte (WhatsApp)</button>
                     <button class="btn-backup" onclick="descargarRespaldo()">💾 Descargar Copia de Seguridad (DB)</button>
                 </div>
             </div>
@@ -519,9 +502,7 @@ def home():
             let presupuestoTotalAcumuladoGlobal = 0.0;
             let ahorroAcumuladoMetaGlobal = 0.0;
             let protocoloConfirmadoLeido = false;
-            let currentLat = null, currentLon = null;
             let kmComponentes = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
-            let kmDesdeUltimoChequeo = { "Cambio de Aceite": 0, "Kit de Arrastre / Piñones": 0, "Pastillas de Freno": 0 };
             let viajesJornadaList = [];
 
             function mostrarMensajeAuth(msg, esError = true) {
@@ -544,7 +525,7 @@ def home():
             }
 
             window.addEventListener('DOMContentLoaded', async () => {
-                if (authToken && authToken !== "null" && authToken !== "undefined") {
+                if (authToken) {
                     try {
                         let res = await fetch(API + "/verify-token", {
                             method: "POST",
@@ -558,7 +539,7 @@ def home():
                             logout();
                         }
                     } catch(e) {
-                        mostrarMensajeAuth("⚠️ Servidor sin conexión. Intenta nuevamente.");
+                        mostrarMensajeAuth("⚠️ Servidor sin conexión.");
                     }
                 }
             });
@@ -619,7 +600,7 @@ def home():
                             document.getElementById("peso_piloto").value = data.peso_piloto || "";
                             document.getElementById("altura_piloto").value = data.altura_piloto || "";
                             document.getElementById("nombre_meta").value = data.nombre_meta || "Mantenimiento General";
-                            document.getElementById("monto_meta").value = data.monto_meta || 900.0;
+                            document.getElementById("monto_meta").value = data.monto_meta || 2000.0;
                             ahorroAcumuladoMetaGlobal = data.ahorro_acumulado || 0.0;
                         }
                     }
@@ -651,7 +632,6 @@ def home():
                         dm.forEach(item => {
                             if (kmComponentes.hasOwnProperty(item.componente)) {
                                 kmComponentes[item.componente] = item.km_acumulados || 0;
-                                kmDesdeUltimoChequeo[item.componente] = item.km_desde_ultimo_aviso ?? item.km_acumulados ?? 0;
                             }
                         });
                     }
@@ -773,7 +753,6 @@ def home():
             }
 
             async function confirmarChequeoComponente(comp) {
-                kmDesdeUltimoChequeo[comp] = 0;
                 sincronizarVistaComponente();
                 alert(`✔ Chequeo confirmado para ${comp}.`);
             }
@@ -786,7 +765,6 @@ def home():
                 });
                 if (res.ok) {
                     kmComponentes[comp] = 0;
-                    kmDesdeUltimoChequeo[comp] = 0;
                     sincronizarVistaComponente();
                     alert(`✔ Ciclo de ${comp} reiniciado al 100%.`);
                 }
@@ -794,14 +772,13 @@ def home():
 
             function escucharVoz(inputId) {
                 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SR) { alert("Sin soporte de voz."); return; }
+                if (!SR) { alert("Sin soporte de voz nativo en este navegador."); return; }
                 const r = new SR(); r.lang = 'es-MX'; r.start();
                 r.onresult = e => { document.getElementById(inputId).value = e.results[0][0].transcript; };
             }
 
             function abrirGoogleMapsExterno(q) {
-                let url = (currentLat && currentLon) ? `https://www.google.com/maps/search/${encodeURIComponent(q)}/@${currentLat},${currentLon},14z` : `https://www.google.com/maps/search/${encodeURIComponent(q)}`;
-                window.open(url, "_blank");
+                window.open(`https://www.google.com/maps/search/${encodeURIComponent(q)}`, "_blank");
             }
 
             async function buscarMisRutas() {
@@ -838,7 +815,7 @@ def home():
             }
 
             async function cargarCombustible() {
-                if (sistemaBloqueado) { alert("⚠️ Completa el Checklist."); return; }
+                if (sistemaBloqueado) { alert("⚠️ Completa el Checklist de Seguridad."); return; }
                 let litros_cargados = parseFloat(document.getElementById("litros_carga").value);
                 let precio_litro = parseFloat(document.getElementById("precio_gas").value) || 24.0;
                 if (!litros_cargados || litros_cargados <= 0) return;
@@ -858,7 +835,7 @@ def home():
             }
 
             async function reiniciarTanqueYTelemetria() {
-                if (!confirm("¿Reiniciar tanque y contadores?")) return;
+                if (!confirm("¿Reiniciar tanque y contadores de la jornada?")) return;
                 let res = await fetch(API + "/combustible/reiniciar-telemetria", { method: "POST", headers: { "Authorization": "Bearer " + authToken } });
                 if (res.ok) { 
                     litrosActualesTanque = 0.0;
@@ -874,7 +851,7 @@ def home():
             }
 
             async function evaluarRuta() {
-                if (sistemaBloqueado) { alert("⚠️ Completa el Checklist."); return; }
+                if (sistemaBloqueado) { alert("⚠️ Completa el Checklist de Seguridad."); return; }
                 let km_recorridos = parseFloat(document.getElementById("km_ruta").value);
                 if (!km_recorridos || km_recorridos <= 0) return;
                 let payload = {
@@ -918,40 +895,35 @@ def home():
 
 @app.post("/register")
 def register(user: User):
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("INSERT INTO usuarios (username, password) VALUES (?, ?)", (user.username.strip(), hash_password(user.password)))
-        conn.commit()
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="El usuario ya existe.")
-    finally:
-        conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("INSERT INTO usuarios (username, password) VALUES (?, ?)", (user.username.strip(), hash_password(user.password)))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="El usuario ya existe.")
     return {"mensaje": "Registrado"}
 
 @app.post("/login")
 def login(user: User):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT username FROM usuarios WHERE username = ? AND password = ?", (user.username.strip(), hash_password(user.password)))
-    row = cursor.fetchone()
-    if not row:
-        conn.close()
-        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-    token = secrets.token_hex(32)
-    active_sessions[token] = row[0]
-    cursor.execute("UPDATE usuarios SET token_persistente = ? WHERE username = ?", (token, row[0]))
-    conn.commit()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT username FROM usuarios WHERE username = ? AND password = ?", (user.username.strip(), hash_password(user.password)))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+        token = secrets.token_hex(32)
+        active_sessions[token] = row[0]
+        cursor.execute("UPDATE usuarios SET token_persistente = ? WHERE username = ?", (token, row[0]))
+        conn.commit()
     return {"token": token, "username": row[0]}
 
 @app.post("/verify-token")
 def verify_token_endpoint(tk: TokenCheck):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT username FROM usuarios WHERE token_persistente = ?", (tk.token.strip(),))
-    row = cursor.fetchone()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT username FROM usuarios WHERE token_persistente = ?", (tk.token.strip(),))
+        row = cursor.fetchone()
     if row:
         active_sessions[tk.token] = row[0]
         return {"username": row[0]}
@@ -960,148 +932,138 @@ def verify_token_endpoint(tk: TokenCheck):
 @app.get("/tanque/estado")
 def obtener_estado_tanque(authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT litros_tanque, gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT litros_tanque, gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
+        row = cursor.fetchone()
     return {"litros_tanque": row[0] if row and row[0] else 0.0, "gasto_gasolina_real": row[1] if row and row[1] else 0.0}
 
 @app.get("/estadisticas/rutas")
 def obtener_estadisticas_rutas(authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    conn.close()
+    with get_db() as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado, tiempo_total_acumulado_min FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+        row = cursor.fetchone()
     return dict(row) if row else {"km_totales_acumulados": 0.0, "gasto_total_acumulado": 0.0, "presupuesto_total_acumulado": 0.0, "tiempo_total_acumulado_min": 0.0}
 
 @app.post("/combustible/reiniciar-telemetria")
 def reiniciar_tanque_y_telemetria(authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE tanque_usuario SET litros_tanque = 0.0, gasto_gasolina_real = 0.0 WHERE usuario = ?", (usuario,))
-    cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0, presupuesto_total_acumulado = 0.0, tiempo_total_acumulado_min = 0.0 WHERE usuario = ?", (usuario,))
-    cursor.execute("UPDATE vehiculos SET ahorro_acumulado = 0.0 WHERE usuario = ?", (usuario,))
-    cursor.execute("DELETE FROM bitacora_rutas WHERE usuario = ?", (usuario,))
-    conn.commit()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE tanque_usuario SET litros_tanque = 0.0, gasto_gasolina_real = 0.0 WHERE usuario = ?", (usuario,))
+        cursor.execute("UPDATE estadisticas_rutas SET km_totales_acumulados = 0.0, gasto_total_acumulado = 0.0, presupuesto_total_acumulado = 0.0, tiempo_total_acumulado_min = 0.0 WHERE usuario = ?", (usuario,))
+        cursor.execute("UPDATE vehiculos SET ahorro_acumulado = 0.0 WHERE usuario = ?", (usuario,))
+        cursor.execute("DELETE FROM bitacora_rutas WHERE usuario = ?", (usuario,))
+        conn.commit()
     return {"mensaje": "Reiniciado"}
 
 @app.post("/vehiculo")
 def gestionar_vehiculo(v: VehiculoUpdate, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
-    est_row = cursor.fetchone()
-    gasto_total = est_row[0] if est_row and est_row[0] else 0.0
-    ahorro_real = round(v.monto_meta - gasto_total, 2)
-    cursor.execute("SELECT id FROM vehiculos WHERE usuario = ?", (usuario,))
-    if cursor.fetchone():
-        cursor.execute("UPDATE vehiculos SET marca=?, modelo=?, anio=?, km_actual=?, peso_piloto=?, altura_piloto=?, nombre_meta=?, monto_meta=?, ahorro_acumulado=? WHERE usuario=?",
-                       (v.marca, v.modelo, v.anio, v.km_actual, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta, ahorro_real, usuario))
-    else:
-        cursor.execute("INSERT INTO vehiculos (usuario, marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto, nombre_meta, monto_meta, ahorro_acumulado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                       (usuario, v.marca, v.modelo, v.anio, v.km_actual, v.km_actual, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta, ahorro_real))
-    conn.commit()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT gasto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+        est_row = cursor.fetchone()
+        gasto_total = est_row[0] if est_row and est_row[0] else 0.0
+        ahorro_real = round(v.monto_meta - gasto_total, 2)
+        cursor.execute("SELECT id FROM vehiculos WHERE usuario = ?", (usuario,))
+        if cursor.fetchone():
+            cursor.execute("UPDATE vehiculos SET marca=?, modelo=?, anio=?, km_actual=?, peso_piloto=?, altura_piloto=?, nombre_meta=?, monto_meta=?, ahorro_acumulado=? WHERE usuario=?",
+                           (v.marca, v.modelo, v.anio, v.km_actual, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta, ahorro_real, usuario))
+        else:
+            cursor.execute("INSERT INTO vehiculos (usuario, marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto, nombre_meta, monto_meta, ahorro_acumulado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                           (usuario, v.marca, v.modelo, v.anio, v.km_actual, v.km_actual, v.peso_piloto, v.altura_piloto, v.nombre_meta, v.monto_meta, ahorro_real))
+        conn.commit()
     return {"marca": v.marca, "modelo": v.modelo, "km_actual": v.km_actual, "nombre_meta": v.nombre_meta, "monto_meta": v.monto_meta, "ahorro_acumulado": ahorro_real}
 
 @app.get("/vehiculo")
 def obtener_vehiculo(authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto, nombre_meta, monto_meta, ahorro_acumulado FROM vehiculos WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    conn.close()
+    with get_db() as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT marca, modelo, anio, km_actual, ultimo_servicio, peso_piloto, altura_piloto, nombre_meta, monto_meta, ahorro_acumulado FROM vehiculos WHERE usuario = ?", (usuario,))
+        row = cursor.fetchone()
     return dict(row) if row else {}
 
 @app.get("/mantenimiento/estado")
 def obtener_estado_mantenimiento(authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT componente, km_acumulados, km_desde_ultimo_aviso FROM mantenimiento_componentes WHERE usuario = ?", (usuario,))
-    rows = cursor.fetchall()
-    conn.close()
+    with get_db() as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT componente, km_acumulados, km_desde_ultimo_aviso FROM mantenimiento_componentes WHERE usuario = ?", (usuario,))
+        rows = cursor.fetchall()
     return [dict(r) for r in rows]
 
 @app.get("/bitacora")
 def obtener_bitacora(authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, presupuesto, balance_neto, tiempo_viaje FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 100", (usuario,))
-    rows = cursor.fetchall()
-    conn.close()
+    with get_db() as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT nombre_ruta, km_recorridos, costo_viaje, presupuesto, balance_neto, tiempo_viaje FROM bitacora_rutas WHERE usuario = ? ORDER BY id DESC LIMIT 100", (usuario,))
+        rows = cursor.fetchall()
     return [dict(r) for r in rows]
 
 @app.post("/mantenimiento/reiniciar")
 def reiniciar_mantenimiento(m: RegistrarMantenimiento, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados, km_desde_ultimo_aviso) VALUES (?, ?, 0.0, 0.0) ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = 0.0, km_desde_ultimo_aviso = 0.0", (usuario, m.componente))
-    conn.commit()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados, km_desde_ultimo_aviso) VALUES (?, ?, 0.0, 0.0) ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = 0.0, km_desde_ultimo_aviso = 0.0", (usuario, m.componente))
+        conn.commit()
     return {"mensaje": "Reiniciado"}
 
 @app.post("/combustible/cargar")
 def cargar_combustible(c: CargarCombustible, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT litros_tanque, gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    litros = round((row[0] if row and row[0] else 0.0) + c.litros_cargados, 2)
-    gasto = round((row[1] if row and row[1] else 0.0) + (c.litros_cargados * c.precio_litro), 2)
-    cursor.execute("INSERT INTO tanque_usuario (usuario, litros_tanque, gasto_gasolina_real) VALUES (?, ?, ?) ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?, gasto_gasolina_real = ?", (usuario, litros, gasto, litros, gasto))
-    conn.commit()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT litros_tanque, gasto_gasolina_real FROM tanque_usuario WHERE usuario = ?", (usuario,))
+        row = cursor.fetchone()
+        litros = round((row[0] if row and row[0] else 0.0) + c.litros_cargados, 2)
+        gasto = round((row[1] if row and row[1] else 0.0) + (c.litros_cargados * c.precio_litro), 2)
+        cursor.execute("INSERT INTO tanque_usuario (usuario, litros_tanque, gasto_gasolina_real) VALUES (?, ?, ?) ON CONFLICT(usuario) DO UPDATE SET litros_tanque = ?, gasto_gasolina_real = ?", (usuario, litros, gasto, litros, gasto))
+        conn.commit()
     return {"litros_tanque": litros, "gasto_gasolina_real": gasto}
 
 @app.post("/combustible/evaluar")
 def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
     usuario = verificar_token(authorization)
-    conn = get_db()
-    cursor = conn.cursor()
-    for comp in ["Cambio de Aceite", "Kit de Arrastre / Piñones", "Pastillas de Freno"]:
-        cursor.execute("INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados, km_desde_ultimo_aviso) VALUES (?, ?, ?, ?) ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = km_acumulados + ?, km_desde_ultimo_aviso = km_desde_ultimo_aviso + ?",
-                       (usuario, comp, e.km_recorridos, e.km_recorridos, e.km_recorridos, e.km_recorridos))
+    with get_db() as conn:
+        cursor = conn.cursor()
+        for comp in ["Cambio de Aceite", "Kit de Arrastre / Piñones", "Pastillas de Freno"]:
+            cursor.execute("INSERT INTO mantenimiento_componentes (usuario, componente, km_acumulados, km_desde_ultimo_aviso) VALUES (?, ?, ?, ?) ON CONFLICT(usuario, componente) DO UPDATE SET km_acumulados = km_acumulados + ?, km_desde_ultimo_aviso = km_desde_ultimo_aviso + ?",
+                           (usuario, comp, e.km_recorridos, e.km_recorridos, e.km_recorridos, e.km_recorridos))
 
-    cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
-    row = cursor.fetchone()
-    litros_tanque = row[0] if row and row[0] else 0.0
-    litros_cons = round(e.km_recorridos / 30.0, 2)
-    costo = round(litros_cons * e.precio_gasolina, 2)
-    balance = round(-costo if e.presupuesto == 0.0 else e.presupuesto - costo, 2)
-    litros_restantes = max(0.0, round(litros_tanque - litros_cons, 2))
-    minutos = round((e.km_recorridos / 35.0) * 60)
-    tiempo_str = f"{minutos} min"
+        cursor.execute("SELECT litros_tanque FROM tanque_usuario WHERE usuario = ?", (usuario,))
+        row = cursor.fetchone()
+        litros_tanque = row[0] if row and row[0] else 0.0
+        litros_cons = round(e.km_recorridos / 30.0, 2)
+        costo = round(litros_cons * e.precio_gasolina, 2)
+        balance = round(-costo if e.presupuesto == 0.0 else e.presupuesto - costo, 2)
+        litros_restantes = max(0.0, round(litros_tanque - litros_cons, 2))
+        minutos = round((e.km_recorridos / 35.0) * 60)
+        tiempo_str = f"{minutos} min"
 
-    cursor.execute("INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado, tiempo_total_acumulado_min) VALUES (?, ?, ?, ?, ?) ON CONFLICT(usuario) DO UPDATE SET km_totales_acumulados = km_totales_acumulados + ?, gasto_total_acumulado = gasto_total_acumulado + ?, presupuesto_total_acumulado = presupuesto_total_acumulado + ?, tiempo_total_acumulado_min = tiempo_total_acumulado_min + ?",
-                   (usuario, e.km_recorridos, costo, e.presupuesto, minutos, e.km_recorridos, costo, e.presupuesto, minutos))
-    cursor.execute("INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, presupuesto, balance_neto, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                   (usuario, e.nombre_ruta, e.km_recorridos, costo, e.presupuesto, balance, tiempo_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
-    cursor.execute("UPDATE tanque_usuario SET litros_tanque = ? WHERE usuario = ?", (litros_restantes, usuario))
+        cursor.execute("INSERT INTO estadisticas_rutas (usuario, km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado, tiempo_total_acumulado_min) VALUES (?, ?, ?, ?, ?) ON CONFLICT(usuario) DO UPDATE SET km_totales_acumulados = km_totales_acumulados + ?, gasto_total_acumulado = gasto_total_acumulado + ?, presupuesto_total_acumulado = presupuesto_total_acumulado + ?, tiempo_total_acumulado_min = tiempo_total_acumulado_min + ?",
+                       (usuario, e.km_recorridos, costo, e.presupuesto, minutos, e.km_recorridos, costo, e.presupuesto, minutos))
+        cursor.execute("INSERT INTO bitacora_rutas (usuario, nombre_ruta, km_recorridos, costo_viaje, presupuesto, balance_neto, tiempo_viaje, clima_registro, hora_registro, red_registro, trafico_registro, ubicacion_registro, alerta_operativa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                       (usuario, e.nombre_ruta, e.km_recorridos, costo, e.presupuesto, balance, tiempo_str, e.clima_registro, e.hora_registro, e.red_registro, e.trafico_registro, e.ubicacion_registro, e.alerta_operativa))
+        cursor.execute("UPDATE tanque_usuario SET litros_tanque = ? WHERE usuario = ?", (litros_restantes, usuario))
 
-    cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
-    est = cursor.fetchone()
-    cursor.execute("SELECT monto_meta FROM vehiculos WHERE usuario = ?", (usuario,))
-    m_row = cursor.fetchone()
-    monto_meta = m_row[0] if m_row and m_row[0] else 2000.0
-    ahorro_real = round(monto_meta - est[1], 2)
+        cursor.execute("SELECT km_totales_acumulados, gasto_total_acumulado, presupuesto_total_acumulado FROM estadisticas_rutas WHERE usuario = ?", (usuario,))
+        est = cursor.fetchone()
+        cursor.execute("SELECT monto_meta FROM vehiculos WHERE usuario = ?", (usuario,))
+        m_row = cursor.fetchone()
+        monto_meta = m_row[0] if m_row and m_row[0] else 2000.0
+        ahorro_real = round(monto_meta - est[1], 2)
+        conn.commit()
 
-    conn.commit()
-    conn.close()
     return {
         "costo_viaje": costo, "balance_neto": balance, "tiempo_viaje": tiempo_str,
         "litros_restantes": litros_restantes, "km_totales_acumulados": est[0],
@@ -1112,22 +1074,20 @@ def evaluar_ruta(e: EvaluarRuta, authorization: str = Header(None)):
 @app.post("/radar/cache")
 def guardar_cache_poi(item: CachePOI, authorization: str = Header(None)):
     verificar_token(authorization)
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO radar_cache (tipo, nombre, brand, lat, lon) VALUES (?, ?, ?, ?, ?)", (item.tipo.lower(), item.nombre, item.brand, item.lat, item.lon))
-    conn.commit()
-    conn.close()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO radar_cache (tipo, nombre, brand, lat, lon) VALUES (?, ?, ?, ?, ?)", (item.tipo.lower(), item.nombre, item.brand, item.lat, item.lon))
+        conn.commit()
     return {"status": "ok"}
 
 @app.get("/radar/cache")
 def obtener_cache_poi(tipo: str, authorization: str = Header(None)):
     verificar_token(authorization)
-    conn = get_db()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT nombre, brand, lat, lon FROM radar_cache WHERE tipo = ? OR nombre LIKE ? ORDER BY id DESC LIMIT 15", (tipo.lower(), f"%{tipo}%"))
-    rows = cursor.fetchall()
-    conn.close()
+    with get_db() as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT nombre, brand, lat, lon FROM radar_cache WHERE tipo = ? OR nombre LIKE ? ORDER BY id DESC LIMIT 15", (tipo.lower(), f"%{tipo}%"))
+        rows = cursor.fetchall()
     return [dict(r) for r in rows]
 
 @app.get("/backup")
