@@ -245,16 +245,6 @@ def home():
             .telemetria-item { display: flex; flex-direction: column; gap: 2px; }
             .telemetria-item label { font-size: 11px; font-weight: 600; color: var(--text-muted); }
             .entorno-box { background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.2); padding: 10px; border-radius: 8px; font-size: 11px; color: #38bdf8; margin-bottom: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-            .diagnostico-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-            .diag-card { background: #0b1120; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: all 0.2s; }
-            .diag-card:hover { border-color: var(--accent-cyan); background: #131d31; }
-            .diag-header { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-            .diag-header-left { display: flex; align-items: center; gap: 10px; }
-            .diag-icon { font-size: 18px; line-height: 1; }
-            .diag-title { font-weight: 600; color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
-            .diag-subtitle { font-size: 12px; font-weight: 600; }
-            .diag-arrow { font-size: 10px; color: var(--text-muted); font-weight: 600; transition: transform 0.2s; }
-            .diag-details { display: none; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 11px; color: var(--text-muted); }
             .checklist-box { background: rgba(245, 158, 11, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3); margin-top: 10px; margin-bottom: 10px; }
             .check-accordion-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 6px; overflow: hidden; }
             .check-accordion-header { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #0b1120; }
